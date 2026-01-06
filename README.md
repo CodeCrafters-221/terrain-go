@@ -13,126 +13,139 @@ Objectif :
 
 ---
 
-## 👑 AzizDev — Lead Developer / Product Owner
+## 👑 AzizDev — Lead Frontend & Coordinateur
 
-### 🎯 Rôle global
-- Vision produit et direction technique
-- Garant de la cohérence globale du projet
-- Décisions techniques finales
-- Responsable GitHub & organisation du travail
+👉 Tu es le chef d’orchestre (vision + qualité + rythme)
 
-### 🧠 Conception & Organisation
-- Définition des fonctionnalités principales
-- Découpage du projet en pages, sections et composants
-- Validation des choix UI / UX
-- Rédaction et maintenance du README
+### 🎯 Responsabilités principales
 
-### 💻 Frontend (React + Tailwind)
-- Mise en place de l’architecture frontend
-- Création des layouts globaux :
-  - AppLayout
-  - DashboardLayout
-- Pages clés :
-  - Landing Page
-  - Page Recherche
-- Gestion du routing (React Router)
-- Connexion frontend ↔ backend
+- Créer et maintenir la structure du projet
 
-### 🧑‍💼 GitHub & Coordination
-- Création du repository GitHub
-- Mise en place des branches (`main`, `develop`)
-- Validation des Pull Requests
-- Gestion des conflits Git
-- Organisation des réunions rapides
+- Garantir la cohérence UI/UX
 
----
+- Valider les PR (Pull Requests)
 
-## 🎨 Bicom — Frontend UI / UX Developer
+- Trancher en cas de blocage
 
-### 🎯 Rôle global
-- Responsable du rendu visuel et de l’expérience utilisateur
-- Garant de la cohérence graphique
+### 🛠️ Tâches concrètes
 
-### 🎨 UI / UX
-- Déclinaison du design sur toutes les pages
-- Responsive design (mobile, tablette, desktop)
-- Choix des animations et micro-interactions
-- Accessibilité (lisibilité, contrastes, UX)
+- Initialisation du projet (React + Tailwind)
 
-### 🧩 Composants React
-- Boutons (Button)
-- Inputs / Selects
-- Cards (terrain, réservation)
-- Modals
-- Pagination
-- Stepper (réservation)
+- Arborescence des dossiers
 
-### 📄 Pages UI principales
-- HeroSection
-- FeaturesSection
-- Fiches terrain (cards)
+- AppLayout, Header, Footer
+
+- Landing Page (Hero, CTA, Features)
+
+- Routing global
+
 - Profil utilisateur
-- Dashboard (partie visuelle)
+
+- Revue de code de l’équipe
+
+- README GitHub
+
+## 🧠 Règle pour toi :
+
+Tu ne codes pas tout, tu fais coder intelligemment.
+---
+
+## 🎨 Bicom — Frontend Pages & UI
+
+👉 Le spécialiste des pages visibles
+
+### 🎯 Responsabilités principales
+
+- Pages côté joueur
+
+- Composants visuels
+
+- Responsive design
+
+### 🛠️ Tâches concrètes
+
+- Page Recherche terrains
+
+- FieldCard
+
+- Filtres (quartier, prix, type)
+
+- Page Détails terrain
+
+- Galerie photos
+
+- Section avis utilisateurs
+
+- Responsive mobile / desktop
+
+## 🧠 Objectif :
+
+Si quelqu’un voit le site → il voit le travail de Bicom
 
 ---
 
-## 🔧 JoyBoy — Backend Developer / API
+## 🧩 JoyBoy — Réservation & UX Flow
 
-### 🎯 Rôle global
-- Responsable de toute la logique backend
-- Sécurité, authentification et API
+👉 Le cerveau fonctionnel du projet
 
-### 🛠 Backend
-- Setup backend (Node.js ou Laravel)
-- Architecture MVC / API REST
-- Gestion des erreurs
+### 🎯 Responsabilités principales
 
-### 🔐 Authentification
-- Inscription / Connexion
-- Gestion des rôles :
-  - Joueur
-  - Propriétaire
-- Sécurisation des routes
+- Parcours de réservation
 
-### 🔄 Logique métier
-- Réservations (création, modification, annulation)
-- Disponibilités des terrains
-- Calcul des prix
-- Paiement (simulation ou réel)
+- Logique UX
 
-### 🌐 API
-- Création des endpoints REST
-- Documentation des routes API
-- Tests via Postman
+- États (loading, erreur, succès)
 
+### 🛠️ Tâches concrètes
+
+- BookingWidget
+
+- Sélecteur date / heure / durée
+
+- Page Réservation (steps)
+
+- Récapitulatif réservation
+
+- Confirmation
+
+- Gestion des états UX
+
+- Préparation intégration paiement
+
+## 🧠 Objectif :
+
+La réservation doit être fluide, simple, rassurante
 ---
 
-## 📊 JuniorPacho — Database / QA / Support
+## 🧑‍💼 JuniorPacho — Dashboard Propriétaire
 
-### 🎯 Rôle global
-- Garant de la fiabilité du projet
-- Responsable base de données et tests
+👉 Le boss côté pro
 
-### 🗄 Base de Données
-- Modélisation de la BDD :
-  - users
-  - fields
-  - bookings
-  - reviews
-  - payments
-- Relations entre tables
-- Optimisation des requêtes
+### 🎯 Responsabilités principales
 
-### 🧪 Tests & Qualité
-- Tests fonctionnels
-- Vérification des flows utilisateurs
-- Détection des bugs
-- Validation avant merge
+- Dashboard
 
-### 📚 Documentation
-- Aide à la documentation technique
-- Schémas BDD
-- Notes de fonctionnement
+- Gestion terrains & réservations
+
+- Vision “business”
+
+### 🛠️ Tâches concrètes
+
+- DashboardLayout
+
+- Sidebar navigation
+
+- Overview (stats)
+
+- Gestion terrains (CRUD visuel)
+
+- Gestion réservations
+
+- Tables & graphiques (mock data)
+
+## 🧠 Objectif :
+
+Un propriétaire doit se dire : “ce site est sérieux”
 
 ---
 
