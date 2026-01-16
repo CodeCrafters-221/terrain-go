@@ -17,8 +17,35 @@
 }
 
 .heroSection {
-  @apply absolute inset-0 w-full h-full min-h-screen
+  @apply relative flex inset-0 w-full h-full min-h-screen
   bg-cover bg-center  bg-no-repeat z-0 bg-[center-65%]
   bg-[linear-gradient(rgba(35,26,16,0.4),rgba(35,26,16,0.95)),url('/public/heroBg.png')];
 }
 
+.featuresSection {
+  @apply w-full py-20 px-5 lg:px-40 flex flex-col gap-8 bg-mainBg;
+}
+.card1 {
+  @apply h-64 w-full rounded-md bg-cover bg-center 
+  bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/public/features1.png')];
+}
+.card2 {
+  @apply h-64 w-full rounded-md bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/public/features2.png')];
+}
+.card3 {
+  @apply h-52 w-full rounded-lg bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/public/features3.png')];
+}
+/* .card4 {
+  @apply h-64 w-full rounded-lg bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/public/features4.png')];
+}
+.card5 {
+  @apply h-64 w-full rounded-2xl bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/public/features5.png')];
+} */
+.userBgImg {
+  @apply bg-cover bg-center bg-no-repeat rounded-full
+  bg-[url(/public/userpng.png)];
+}
