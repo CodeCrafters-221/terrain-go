@@ -6,6 +6,13 @@
   --color-primary: rgb(255 122 0);
   --color-mainBg: rgb(36, 27, 16);
   --font-lexend: "lexend", sans-serif;
+  
+  --color-primary: #f27f0d;
+  --color-background-light: #f8f7f5;
+  --color-background-dark: #221910;
+  --color-surface-dark: #2f2316;
+  --color-surface-highlight: #493622;
+  --color-text-secondary: #cbad90;
 }
 
 .header {
