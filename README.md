@@ -1,21 +1,3 @@
-HEAD
-
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
 # ⚽ FOOTBOOKING — Plateforme de Réservation de Terrains de Foot
 
@@ -65,7 +47,8 @@ Objectif :
 
 ## 🧠 Règle pour toi :
 
-## Tu ne codes pas tout, tu fais coder intelligemment.
+Tu ne codes pas tout, tu fais coder intelligemment.
+---
 
 ## 🎨 Bicom — Frontend Pages & UI
 
@@ -131,7 +114,8 @@ Si quelqu’un voit le site → il voit le travail de Bicom
 
 ## 🧠 Objectif :
 
-## La réservation doit être fluide, simple, rassurante
+La réservation doit être fluide, simple, rassurante
+---
 
 ## 🧑‍💼 JuniorPacho — Dashboard Propriétaire
 
@@ -185,14 +169,12 @@ src/
 ## 🗂️ ORGANISATION GITHUB (IMPORTANT)
 
 ### 🔀 Branches
-
 - `main` → version stable
 - `develop` → branche de développement
 - `feature/nom-feature`
 - `fix/nom-bug`
 
 ### ✅ Règles obligatoires
-
 - ❌ Aucun push direct sur `main`
 - ✅ Toujours passer par une branche feature
 - ✅ Pull Request obligatoire
@@ -200,7 +182,6 @@ src/
 - ✅ Tests validés avant merge
 
 ### ✍️ Convention de commit
-
 - `feat: ajout recherche terrain`
 - `fix: bug réservation`
 - `refactor: nettoyage code`
@@ -247,9 +228,3 @@ src/
 🔥 **On le livre.**
 
 ---
-
-origin/dev
-
-
-- router/index.jsx
-## : Merged all routes (/, /user-profile, /terrain-details, /search)
