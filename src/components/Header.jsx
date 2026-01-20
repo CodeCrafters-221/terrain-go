@@ -11,7 +11,7 @@ export default function Header() {
           Footbooking
         </h2>
       </div>
-      <div className=" navigation">
+      <div className=" navigation md:flex">
         <a
           className="text-white hover:text-primary transition-colors text-lg font-Archivo black font-medium leading-normal"
           href="#"
