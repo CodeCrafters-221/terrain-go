@@ -249,3 +249,7 @@ src/
 ---
 
 origin/dev
+
+
+- router/index.jsx
+## : Merged all routes (/, /user-profile, /terrain-details, /search)
