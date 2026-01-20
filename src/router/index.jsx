@@ -12,15 +12,15 @@ export const router = createBrowserRouter([
     children: [{ path: "/", element: <Home /> }],
   },
   {
-    element: <AppLayout />,
+    element: <UserProfile/>,
     children: [{ path: "/user-profile", element: <UserProfile /> }],
   },
   {
-    element: <AppLayout />,
+    element: <TerrainDetails />,
     children: [{ path: "/terrain-details", element: <TerrainDetails /> }],
   },
   {
-    element: <AppLayout />,
+    element: <SearchPage/>,
     children: [{ path: "/search", element: <SearchPage /> }],
   },
 ]);
