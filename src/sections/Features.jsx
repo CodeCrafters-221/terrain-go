@@ -35,9 +35,9 @@ export default function Features() {
               disponibilités en temps réel, réservez et payez en toute sécurité.
             </p>
             <div className="card-actions justify-start">
-              <button className="inline-flex items-center justify-center rounded-full h-12 px-6 bg-white hover:bg-gray-100 text-[#231a10] text-sm font-bold transition-colors">
+              <Link to="/search" className="inline-flex items-center justify-center rounded-full h-12 px-6 bg-white hover:bg-gray-100 text-[#231a10] text-sm font-bold transition-colors">
                 Réserver un terrain
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -58,9 +58,9 @@ export default function Features() {
               gérer votre planning, vos tarifs et vos clients.
             </p>
             <div className="card-actions justify-start">
-              <button className="inline-flex items-center justify-center rounded-full h-12 px-6 border border-white/30 hover:bg-white/10 text-white text-sm font-bold transition-colors backdrop-blur-sm">
+              <Link to="/auth/register" className="inline-flex items-center justify-center rounded-full h-12 px-6 border border-white/30 hover:bg-white/10 text-white text-sm font-bold transition-colors backdrop-blur-sm">
                 Devenir partenaire
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function Features() {
       </div>
 
       <div className="flex justify-center items-center gap-4 py-8">
-        {/* stadiiums details */}
+        {/* stadiums details */}
         <StadiumCard
           city={"Dakar Sacré-Cœur"}
           price={25000}
