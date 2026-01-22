@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { Link } from "react-router";
 
-
-=======
->>>>>>> dev
 export default function Header() {
   return (
     <div className="header">
