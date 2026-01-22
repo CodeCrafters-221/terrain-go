@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 
 
 export default function Header() {
@@ -18,12 +19,12 @@ export default function Header() {
         >
           Accueil
         </a>
-        <a
+        <Link
           className="text-white hover:text-primary transition-colors text-lg font-Archivo black font-medium leading-normal"
-          href="#"
+          to="/search"
         >
           Trouver un terrain
-        </a>
+        </Link>
         <a
           className="text-white hover:text-primary transition-colors text-lg font-Archivo black font-medium leading-normal"
           href="#"
@@ -31,9 +32,9 @@ export default function Header() {
           Pour les propriétaires
         </a>
 
-        <button className="bg-primary rounded-full font-montserrat font-semibold text-text text-lg px-4 py-2 cursor-pointer">
+        <Link to="/auth/login" className="bg-primary rounded-full font-montserrat font-semibold text-text text-lg px-4 py-2 cursor-pointer">
           Se connecter
-        </button>
+        </Link>
       </div>
     </div>
   );

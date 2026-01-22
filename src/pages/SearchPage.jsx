@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 
 const SearchPage = () => {
     return (
@@ -17,9 +18,9 @@ const SearchPage = () => {
                         <a className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors" href="#">Devenir Partenaire</a>
                     </nav>
                     <div className="flex items-center gap-4">
-                        <button className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-colors text-background-dark text-sm font-bold leading-normal tracking-[0.015em]">
+                        <Link to="/auth/login" className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-colors text-background-dark text-sm font-bold leading-normal tracking-[0.015em]">
                             <span className="truncate">Connexion</span>
-                        </button>
+                        </Link>
                         <div
                             className="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-surface-dark"
                             data-alt="User profile avatar showing a smiling person"

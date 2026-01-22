@@ -4,6 +4,7 @@ import Cta2 from "../components/Cta2";
 import firstStadiumCard from "../assets/features3.png";
 import secondStadiumCard from "../assets/features4.png";
 import thirdStadiumCard from "../assets/features5.png";
+import { Link } from "react-router";
 export default function Features() {
   return (
     <div className="featuresSection">
@@ -22,7 +23,7 @@ export default function Features() {
           <div className="card1"></div>
           <div className="relative z-20 p-8 -mt-20">
             <div className="inline-flex items-center justify-center size-14 rounded-full bg-primary mb-6 shadow-lg shadow-primary/20">
-              <span class="material-symbols-outlined !text-3xl ">
+              <span class="material-symbols-outlined text-3xl">
                 sports_soccer
               </span>
             </div>
@@ -45,7 +46,7 @@ export default function Features() {
 
           <div className="relative z-20 p-8 -mt-20">
             <div className="inline-flex items-center justify-center size-14 rounded-full bg-[#342618] mb-6 shadow-lg shadow-primary/20">
-              <span class="material-symbols-outlined !text-3xl text-primary">
+              <span class="material-symbols-outlined text-3xl text-primary">
                 storefront
               </span>
             </div>
@@ -69,15 +70,15 @@ export default function Features() {
         <h1 className="text-white text-2xl md:text-3xl font-lexend font-bold ">
           Terrains en vedette à Dakar
         </h1>
-        <a
-          href="#"
+        <Link
+          to="/search"
           className="hidden md:flex items-center text-primary font-medium hover:text-orange-400 text-sm"
         >
           Voir tout{" "}
           <span className="material-symbols-outlined ml-1 text-lg">
             arrow_forward
           </span>
-        </a>
+        </Link>
       </div>
 
       <div className="flex justify-center items-center gap-4 py-8">
