@@ -30,22 +30,22 @@ import Register from "../pages/Auth/Register";
 
 
 export const router = createBrowserRouter([
-  { 
-    path: "/", 
-    element: <AppLayout />, 
-    children: [
-      { index: true, element: <Home /> },
-      { path: "/search", element: <SearchPage /> },
-      { path: "/user-profile", element: <UserProfile /> },
-      { path: "/terrain-details", element: <TerrainDetails /> },
-    ]
-  },
   {
-    path: "/auth",
-    element: <AuthLayout />,
+    element: <AppLayout />,
     children: [
-      { index: "/auth/login", element: <Login /> },
-      { path: "/auth/register", element: <Register /> },
+      { path: "/", element: <Home /> },
+      {
+        path: "/profile",
+        element: <UserProfile />,
+      },
+      {
+        path: "/terrain-details",
+        element: <TerrainDetails />,
+      },
+      {
+        path: "/search",
+        element: <SearchPage />,
+      },
     ],
   },
 ]);
