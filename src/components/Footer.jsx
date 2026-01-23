@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router";
 
 export default function Footer() {
   return (
@@ -56,14 +57,14 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a className="hover:text-primary transition-colors" href="#">
+                <Link to="/search" className="hover:text-primary transition-colors" href="#">
                   Trouver un terrain
-                </a>
+                </Link>
               </li>
               <li>
-                <a className="hover:text-primary transition-colors" href="#">
+                <Link to="/" className="hover:text-primary transition-colors" href="#">
                   Ajouter un terrain
-                </a>
+                </Link>
               </li>
               <li>
                 <a className="hover:text-primary transition-colors" href="#">

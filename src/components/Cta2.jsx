@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import SignupModal from "./SignupModal";
+import { useState } from "react";
+// import { useNavigate } from "react-router-dom";
+import SignupModal from "../pages/Auth/Register";
+import { toast } from "react-toastify";
 
 export default function Cta2() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
 
   const handleCreateAccount = () => {
@@ -16,8 +17,9 @@ export default function Cta2() {
 
   const handleSignupSuccess = () => {
     setIsSignupModalOpen(false);
+    toast.success("Inscription reussie !");
     // Rediriger vers le tableau de bord ou la page d'accueil après succès
-    navigate("/dashboard");
+    // navigate("/dashboard");
   };
 
   return (
