@@ -1,6 +1,9 @@
 import { Link } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 const SearchPage = () => {
+    const { user } = useAuth();
+
     return (
         <div className="bg-background-dark text-white min-h-screen flex flex-col overflow-x-hidden font-display">
             {/* Top Navigation */}
@@ -18,14 +21,19 @@ const SearchPage = () => {
                         <a className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors" href="#">Devenir Partenaire</a>
                     </nav>
                     <div className="flex items-center gap-4">
-                        <Link to="/auth/login" className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-colors text-background-dark text-sm font-bold leading-normal tracking-[0.015em]">
-                            <span className="truncate">Connexion</span>
-                        </Link>
-                        <div
-                            className="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-surface-dark"
-                            data-alt="User profile avatar showing a smiling person"
-                            style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBdJyWt6KYLxUW18PxDybaPnYFQpsJrnXs29RH-Yjla5XXFbCa2a88Mr74ljGOR6_MAMJp5hDAenWB2pg_pFvFmtCf3yS5bttebeUmIJ46QYZZ16U6_0MfLsEPkWFGhwhu0rJqHHDXrEvzkwpmKmFGK8RH9Xt36a7uKyOrUtVEz_9RsBgST1SVrmN5QQUY7tM4vbvRfC1vynGbVZAiTlwpBjK9b99AgzZ4GIJc_cP8YbQhKNzLwOFk7jUTPvT8ZHh4VhI26lwVqw")' }}
-                        ></div>
+                        {
+                            user ?
+                                <Link to="/profile">
+                                    <div className="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-surface-dark"
+                                        data-alt="User profile avatar showing a smiling person"
+                                        style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBdJyWt6KYLxUW18PxDybaPnYFQpsJrnXs29RH-Yjla5XXFbCa2a88Mr74ljGOR6_MAMJp5hDAenWB2pg_pFvFmtCf3yS5bttebeUmIJ46QYZZ16U6_0MfLsEPkWFGhwhu0rJqHHDXrEvzkwpmKmFGK8RH9Xt36a7uKyOrUtVEz_9RsBgST1SVrmN5QQUY7tM4vbvRfC1vynGbVZAiTlwpBjK9b99AgzZ4GIJc_cP8YbQhKNzLwOFk7jUTPvT8ZHh4VhI26lwVqw")' }}
+                                    ></div>
+                                </Link>
+                                :
+                                <Link to="/auth/login" className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-colors text-background-dark text-sm font-bold leading-normal tracking-[0.015em]">
+                                    <span className="truncate">Connexion</span>
+                                </Link>
+                        }
                         <button className="md:hidden text-white">
                             <span className="material-symbols-outlined">menu</span>
                         </button>

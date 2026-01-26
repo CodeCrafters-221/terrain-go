@@ -1,6 +1,8 @@
-import React from "react";
+import { useAuth } from "../context/AuthContext";
 
 const UserProfile = () => {
+  const { user } = useAuth();
+
   return (
     <div className="bg-[#231a10]  min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-white selection:bg-primary selection:text-white font-display">
       {/* Top Navigation Bar */}
@@ -56,14 +58,14 @@ const UserProfile = () => {
           <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-[#d96f0b] transition-colors text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-[0_0_15px_rgba(242,127,13,0.3)]">
             <span className="truncate">Réserver</span>
           </button>
-          <div
+          {/* <div
             className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-surface-highlight cursor-pointer"
             data-alt="User avatar profile picture showing a smiling man"
             style={{
               backgroundImage:
                 "url('https://lh3.googleusercontent.com/aida-public/AB6AXuANZo-U9PC-p0-W3YJGKyZzCp4doOgfJPo1-60I0UfsLUl7w6pbURIVYg3f_vYkQ62hTSfuQpDDI7IFpgdueIQt8TQ_Rjkwag7uclD6Hn9PA0KpkZ74TQiMrFaCF1JHMsn4QWIKkZnSzaijsxibT8yHNQrE1DfZItJO_Ih2RPeBkKCVjSh0A4chWocOGcJYgg0Q2PF9u2ttZ8sH6VVmEVkEsZWSl9-RGpEDB8YHCXkK6SgMyRMs1pywCsgqhxtEierXoAAFbYCFTQ')",
             }}
-          ></div>
+          ></div> */}
         </div>
       </header>
       <main className="layout-container mt-16 flex h-full grow flex-col w-full max-w-[1200px] mx-auto px-4 md:px-10 py-8 ">
@@ -79,7 +81,8 @@ const UserProfile = () => {
             ></div>
             <div className="flex flex-col justify-center gap-1">
               <h1 className="text-white text-2xl md:text-[32px] font-bold leading-tight tracking-[-0.015em]">
-                Saturo Gojo
+                {/* Saturo Gojo */}
+                { user.email }
               </h1>
               <div className="flex items-center gap-2 text-text-secondary">
                 <span className="material-symbols-outlined text-[18px]">
@@ -397,7 +400,7 @@ const UserProfile = () => {
                     <input
                       className="bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                       type="email"
-                      defaultValue="gojo.saturo.com"
+                      defaultValue={user.email}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -489,7 +492,7 @@ const UserProfile = () => {
           </div>
         </div>
       </main>
-      <footer className="mt-auto py-8 border-t border-surface-highlight bg-background-dark text-center">
+      {/* <footer className="mt-auto py-8 border-t border-surface-highlight bg-background-dark text-center">
         <div className="flex justify-center gap-6 mb-4">
           <a
             className="text-text-secondary hover:text-primary transition-colors"
@@ -513,7 +516,7 @@ const UserProfile = () => {
         <p className="text-text-secondary text-sm">
           © {new Date().getFullYear()} Footbooking Tous droits réservés.
         </p>
-      </footer>
+      </footer> */}
     </div>
   );
 };

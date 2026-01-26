@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "../../services/supabaseClient";
+import { toast } from "react-toastify";
+import { Link, useNavigate } from "react-router";
 
-export default function Login({ isOpen, onClose, onSuccess, onError }) {
+export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -10,36 +12,7 @@ export default function Login({ isOpen, onClose, onSuccess, onError }) {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Réinitialiser le formulaire quand la modale s'ouvre/se ferme
-  useEffect(() => {
-    if (!isOpen) {
-      setErrors({});
-      setFormData({
-        email: "",
-        password: "",
-      });
-    }
-  }, [isOpen]);
-
-  // Gestion de la touche Échap pour fermer
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,16 +23,7 @@ export default function Login({ isOpen, onClose, onSuccess, onError }) {
     }
   };
 
-  const handleTogglePassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  // Fermer si on clique sur le fond (backdrop)
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  const handleTogglePassword = () => setShowPassword(!showPassword);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,27 +48,27 @@ export default function Login({ isOpen, onClose, onSuccess, onError }) {
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      // Simuler un appel API
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setIsLoading(true);
       console.log("Données de connexion:", formData);
-      
+
       // Connecter l'user
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
-      onSuccess();
+      if (error) {
+        toast.error(error);
+        return;
+      }
 
-      setErrors(error);
+      console.log(data.user);
 
-      onClose(); // Fermer la modale après succès
+      toast.success("Ravi de vous revoir😀 !");
+      if(!error) navigate("/");
     } catch (error) {
-      onError(error);
-      // alert("Connexion échouée. Veuillez réessayer plus tard.");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -114,93 +78,71 @@ export default function Login({ isOpen, onClose, onSuccess, onError }) {
   const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-      onClick={handleBackdropClick}
-    >
-      <div className="bg-[#2e2318] rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative shadow-2xl border border-[#493622]">
-        {/* Bouton fermer (X) */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[#cbad90] hover:text-white transition-colors"
-          aria-label="Fermer"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
+    <div className="bg-[#2e2318] rounded-2xl w-xl shadow-2xl border border-[#493622]">
+      <div className="p-6 sm:p-8">
+        <h2 className="text-white text-2xl font-semibold text-center mb-6">
+          Se Connecter
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="email" className="text-[#cbad90] text-sm">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className={`${inputClasses} ${errors.email ? "border-red-500" : "border-[#493622]"}`}
             />
-          </svg>
-        </button>
+            {errors.email && (
+              <span className="text-red-500 text-xs">{errors.email}</span>
+            )}
+          </div>
 
-        <div className="p-6 sm:p-8">
-          <h2 className="text-white text-2xl font-semibold text-center mb-6">
-            Se Connecter
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="email" className="text-[#cbad90] text-sm">
-                Email
-              </label>
+          {/* Mot de passe */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="password" className="text-[#cbad90] text-sm">
+              Mot de passe
+            </label>
+            <div className="relative">
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
                 onChange={handleInputChange}
-                className={`${inputClasses} ${errors.email ? "border-red-500" : "border-[#493622]"}`}
+                className={`${inputClasses} ${errors.password ? "border-red-500" : "border-[#493622]"}`}
               />
-              {errors.email && (
-                <span className="text-red-500 text-xs">{errors.email}</span>
-              )}
+              <button
+                type="button"
+                onClick={handleTogglePassword}
+                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-[#cbad90] text-sm hover:text-white"
+              >
+                {showPassword ? "Masquer" : "Afficher"}
+              </button>
             </div>
+            {errors.password && (
+              <span className="text-red-500 text-xs">{errors.password}</span>
+            )}
+          </div>
 
-            {/* Mot de passe */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="password" className="text-[#cbad90] text-sm">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className={`${inputClasses} ${errors.password ? "border-red-500" : "border-[#493622]"}`}
-                />
-                <button
-                  type="button"
-                  onClick={handleTogglePassword}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-[#cbad90] text-sm hover:text-white"
-                >
-                  {showPassword ? "Masquer" : "Afficher"}
-                </button>
-              </div>
-              {errors.password && (
-                <span className="text-red-500 text-xs">{errors.password}</span>
-              )}
-            </div>
+          <button
+            type="submit"
+            className="w-full bg-primary text-black font-semibold py-3 rounded-lg hover:bg-primary/90 transition-opacity mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+          >
+            {isLoading ? "Connexion..." : "Se Connecter"}
+          </button>
 
-            <button
-              type="submit"
-              className="w-full bg-primary text-black font-semibold py-3 rounded-lg hover:bg-primary/90 transition-opacity mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              {isLoading ? "Connexion..." : "Se Connecter"}
-            </button>
-          </form>
-        </div>
+          <p className="text-white text-center">
+            Pas de compte ? <Link to="/register" className="text-primary">Créer un compte !</Link>
+          </p>
+        </form>
+
       </div>
     </div>
   );
