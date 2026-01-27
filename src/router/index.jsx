@@ -3,7 +3,7 @@ import AppLayout from "../layouts/AppLayout";
 
 import Home from "../pages/Home";
 import SearchPage from "../pages/SearchPage";
-import UserProfile from "../components/UserProfile";
+import UserProfile from "../pages/UserProfile";
 import TerrainDetails from "../pages/TerrainDetails";
 import ProtectedRoute from "../components/ProtectedRoute";
 import BookingPage from "../pages/BookingPage";
