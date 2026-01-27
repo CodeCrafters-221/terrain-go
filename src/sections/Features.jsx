@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import StadiumCard from "../components/StadiumCard";
 import ReservationModal from "../components/ReservationModal";
 import Cta2 from "../components/Cta2";
 import firstStadiumCard from "../assets/features3.png";
 import secondStadiumCard from "../assets/features4.png";
 import thirdStadiumCard from "../assets/features5.png";
-
 export default function Features() {
   const [favorites, setFavorites] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
