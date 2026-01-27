@@ -1,0 +1,12 @@
+Identifiant Projet Supabase:
+Nom du Projet: Foot Booking
+Mot de Passe: #Crafters221@
+
+VITE_SUPABASE_URL=
+https://nuqjhwmfpiggdzdnjhnr.supabase.co
+
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=
+sb_publishable_xBhT22Ya4RJfoMpu9gzmgw_0EaKfxfF
+
+VITE_SUPABASE_ANON_KEY = 
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51cWpod21mcGlnZ2R6ZG5qaG5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwOTc3NDEsImV4cCI6MjA4NDY3Mzc0MX0.KRmoWRtj7Ca48QXpKu11B0R6ciI-lqEQ90klX7yJh_I
