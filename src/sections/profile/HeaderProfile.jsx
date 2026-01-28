@@ -6,7 +6,7 @@ const HeaderProfile = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-surface-highlight bg-background-dark/95 backdrop-blur-md px-4 py-3 lg:px-10 fixed w-full top-0 z-50 transition-all duration-300">
+      <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-surface-highlight bg-[#231a10] px-4 py-3 lg:px-10 fixed w-full top-0 z-50 transition-all duration-300">
         <div className="flex items-center gap-4 lg:gap-8">
           <Link
             to="/"
