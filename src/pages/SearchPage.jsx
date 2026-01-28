@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import NavSearch from "../sections/search/NavSearch";
 import CardSearch from "../sections/search/CardSearch";
 import Pagination from "../sections/search/Pagination";
@@ -87,8 +87,16 @@ const SearchPage = () => {
     priceRange: [0, 100000],
   });
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-
   const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'map'
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   const filteredTerrains = useMemo(() => {
     return initialTerrains.filter((terrain) => {
@@ -102,6 +110,13 @@ const SearchPage = () => {
       return matchesSearch && matchesType && matchesPrice;
     });
   }, [filters]);
+
+  // Derived Pagination Data
+  const totalPages = Math.ceil(filteredTerrains.length / itemsPerPage);
+  const paginatedTerrains = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredTerrains.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTerrains, currentPage, itemsPerPage]);
 
   return (
     <div className="bg-background-dark text-white min-h-screen flex flex-col overflow-x-hidden font-display">
@@ -176,9 +191,13 @@ const SearchPage = () => {
           {/* Results Grid or Map View */}
           {viewMode === "grid" ? (
             <>
-              <CardSearch terrains={filteredTerrains} />
+              <CardSearch terrains={paginatedTerrains} />
               <div className="mt-8">
-                <Pagination />
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             </>
           ) : (
