@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import {
+  Trophy,
+  Menu as MenuIcon,
+  X as XIcon,
+  Search,
+  Calendar,
+  Handshake,
+} from "lucide-react";
 
 const NavSearch = () => {
   const { user } = useAuth();
@@ -11,9 +19,7 @@ const NavSearch = () => {
       <header className="fixed w-full top-0 z-200 bg-background-dark/95 backdrop-blur-md border-b border-surface-highlight px-4 lg:px-10 py-3 transition-all duration-300">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 lg:gap-4 text-white ">
-            <span className="material-symbols-outlined text-primary inline-block text-3xl">
-              sports_soccer
-            </span>
+            <Trophy className="text-primary w-8 h-8" strokeWidth={1.5} />
 
             <h2 className="text-white text-xl font-bold leading-tight tracking-[-0.015em] hidden sm:block font-display">
               Footbooking
@@ -68,12 +74,14 @@ const NavSearch = () => {
 
             {/* Mobile Menu Toggle */}
             <button
-              className="md:hidden text-white p-1 rounded-full hover:bg-white/10 transition-colors z-[210] relative"
+              className="md:hidden text-white p-1 rounded-full hover:bg-white/10 transition-colors z-210 relative"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              <span className="material-symbols-outlined text-2xl">
-                {isMenuOpen ? "close" : "menu"}
-              </span>
+              {isMenuOpen ? (
+                <XIcon className="w-8 h-8" />
+              ) : (
+                <MenuIcon className="w-8 h-8" />
+              )}
             </button>
           </div>
         </div>
@@ -93,7 +101,7 @@ const NavSearch = () => {
               href="#"
               onClick={() => setIsMenuOpen(false)}
             >
-              <span className="material-symbols-outlined">search</span>
+              <Search className="w-6 h-6" />
               Rechercher
             </a>
             <a
@@ -101,7 +109,7 @@ const NavSearch = () => {
               href="#"
               onClick={() => setIsMenuOpen(false)}
             >
-              <span className="material-symbols-outlined">calendar_month</span>
+              <Calendar className="w-6 h-6" />
               Mes Réservations
             </a>
             <a
@@ -109,7 +117,7 @@ const NavSearch = () => {
               href="#"
               onClick={() => setIsMenuOpen(false)}
             >
-              <span className="material-symbols-outlined">handshake</span>
+              <Handshake className="w-6 h-6" />
               Devenir Partenaire
             </a>
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Heart, MapPin, Star } from "lucide-react";
 // import PropTypes from "prop-types";
 
 export default function StadiumCard({
@@ -52,12 +53,14 @@ export default function StadiumCard({
         />
         <button
           onClick={handleFavorite}
-          className="absolute top-3 right-3 p-2 bg-black/50 rounded-full hover:bg-primary transition-colors"
+          className="absolute top-3 right-3 p-2 bg-black/50 rounded-full hover:bg-primary transition-colors group"
           aria-label="Ajouter aux favoris"
         >
-          <span className="material-symbols-outlined text-white">
-            {isFavorite ? "favorite" : "favorite_border"}
-          </span>
+          <Heart
+            className={`w-5 h-5 transition-colors ${
+              isFavorite ? "fill-white text-white" : "text-white"
+            }`}
+          />
         </button>
       </figure>
 
@@ -74,9 +77,7 @@ export default function StadiumCard({
 
         {/* Localisation */}
         <div className="flex items-start">
-          <span className="material-symbols-outlined text-[#cbad90] mr-3">
-            explore_nearby
-          </span>
+          <MapPin className="text-[#cbad90] w-5 h-5 mr-3" />
           <p className="text-[#cbad90]">{location}</p>
         </div>
 
@@ -116,12 +117,7 @@ function Badge({ label }) {
 function RatingBadge({ rating }) {
   return (
     <div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-4xl tracking-wider text-white text-[10px] font-bold flex items-center">
-      <span
-        className="material-symbols-outlined text-primary mr-1"
-        style={{ fontSize: "14px" }}
-      >
-        star
-      </span>
+      <Star className="text-primary w-3.5 h-3.5 mr-1 fill-current" />
       {rating}
     </div>
   );

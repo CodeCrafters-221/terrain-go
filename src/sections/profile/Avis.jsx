@@ -1,3 +1,4 @@
+import { MessageSquarePlus, Star } from "lucide-react";
 
 const Avis = () => {
   return (
@@ -16,7 +17,7 @@ const Avis = () => {
             <div className="flex flex-col gap-4 relative z-10">
               <div className="flex items-center gap-3 mb-2">
                 <div className="bg-primary/20 p-2 rounded-full text-primary">
-                  <span className="material-symbols-outlined">rate_review</span>
+                  <MessageSquarePlus className="w-5 h-5" />
                 </div>
                 <h3 className="text-white font-bold text-lg">
                   Avis en attente
@@ -27,21 +28,12 @@ const Avis = () => {
                 <strong>Terrain Almadies</strong> le 05 Oct ?
               </p>
               <div className="flex gap-2 my-2">
-                <span className="material-symbols-outlined text-text-secondary hover:text-primary cursor-pointer text-2xl">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-text-secondary hover:text-primary cursor-pointer text-2xl">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-text-secondary hover:text-primary cursor-pointer text-2xl">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-text-secondary hover:text-primary cursor-pointer text-2xl">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-text-secondary hover:text-primary cursor-pointer text-2xl">
-                  star
-                </span>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star
+                    key={i}
+                    className="w-6 h-6 text-text-secondary hover:text-primary cursor-pointer transition-colors"
+                  />
+                ))}
               </div>
               <textarea
                 className="w-full bg-background-dark/50 border border-surface-highlight rounded-lg p-3 text-white text-sm focus:border-primary focus:ring-0 resize-none h-24"
@@ -68,22 +60,11 @@ const Avis = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex text-primary">
-                <span className="material-symbols-outlined text-[18px] fill-current">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-[18px] fill-current">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-[18px] fill-current">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-[18px] fill-current">
-                  star
-                </span>
-                <span className="material-symbols-outlined text-[18px] fill-current text-surface-highlight">
-                  star
-                </span>
+              <div className="flex gap-0.5 text-primary">
+                {[1, 2, 3, 4].map((i) => (
+                  <Star key={i} className="w-[18px] h-[18px] fill-current" />
+                ))}
+                <Star className="w-[18px] h-[18px] text-surface-highlight" />
               </div>
             </div>
             <p className="text-text-secondary text-sm italic">

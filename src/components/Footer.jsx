@@ -1,27 +1,26 @@
 import React from "react";
 import { Link } from "react-router";
+import { Trophy, MapPin, Mail, Phone } from "lucide-react";
 
 export default function Footer() {
   return (
-    <div className="w-full bg-[#1a130c] border-t border-[#493622] pt-16 pb-8 px-5 lg:px-40">
+    <div className="w-full bg-[#1a130c] border-t border-surface-highlight pt-16 pb-8 px-5 lg:px-40">
       <div className="max-w-300 mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-3 text-white mb-6">
               <div className="size-8 flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined !text-3xl">
-                  sports_soccer
-                </span>
+                <Trophy className="w-8 h-8" strokeWidth={1.5} />
               </div>
               <h2 className="text-white text-xl font-bold">Footbooking</h2>
             </div>
-            <p className="text-[#cbad90] text-sm leading-relaxed mb-6">
+            <p className="text-text-secondary text-sm leading-relaxed mb-6">
               La plateforme de référence pour réserver vos matchs de football à
               Dakar. Simple, rapide et fiable.
             </p>
             <div className="flex gap-4">
               <a
-                className="size-10 rounded-full bg-[#2e2318] flex items-center justify-center text-[#cbad90] hover:bg-primary hover:text-[#231a10] transition-colors"
+                className="size-10 rounded-full bg-[#2e2318] flex items-center justify-center text-text-secondary hover:bg-primary hover:text-[#231a10] transition-colors"
                 href="#"
               >
                 <svg
@@ -34,7 +33,7 @@ export default function Footer() {
                 </svg>
               </a>
               <a
-                className="size-10 rounded-full bg-[#2e2318] flex items-center justify-center text-[#cbad90] hover:bg-primary hover:text-[#231a10] transition-colors"
+                className="size-10 rounded-full bg-[#2e2318] flex items-center justify-center text-text-secondary hover:bg-primary hover:text-[#231a10] transition-colors"
                 href="#"
               >
                 <svg
@@ -50,19 +49,27 @@ export default function Footer() {
           </div>
           <div className="col-span-1">
             <h3 className="text-white font-bold mb-4">Navigation</h3>
-            <ul className="flex flex-col gap-3 text-[#cbad90] text-sm">
+            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
               <li>
                 <a className="hover:text-primary transition-colors" href="#">
                   Accueil
                 </a>
               </li>
               <li>
-                <Link to="/search" className="hover:text-primary transition-colors" href="#">
+                <Link
+                  to="/search"
+                  className="hover:text-primary transition-colors"
+                  href="#"
+                >
                   Trouver un terrain
                 </Link>
               </li>
               <li>
-                <Link to="/" className="hover:text-primary transition-colors" href="#">
+                <Link
+                  to="/"
+                  className="hover:text-primary transition-colors"
+                  href="#"
+                >
                   Ajouter un terrain
                 </Link>
               </li>
@@ -75,7 +82,7 @@ export default function Footer() {
           </div>
           <div className="col-span-1">
             <h3 className="text-white font-bold mb-4">Support</h3>
-            <ul className="flex flex-col gap-3 text-[#cbad90] text-sm">
+            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
               <li>
                 <a className="hover:text-primary transition-colors" href="#">
                   Centre d'aide
@@ -100,37 +107,31 @@ export default function Footer() {
           </div>
           <div className="col-span-1">
             <h3 className="text-white font-bold mb-4">Contact</h3>
-            <ul className="flex flex-col gap-3 text-[#cbad90] text-sm">
+            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
               <li className="flex items-start gap-2">
-                <span className="material-symbols-outlined text-primary text-base mt-0.5">
-                  location_on
-                </span>
+                <MapPin className="text-primary w-4 h-4 mt-0.5" />
                 <span>Dakar, Sénégal</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-base">
-                  mail
-                </span>
+                <Mail className="text-primary w-4 h-4" />
                 <span>contact@footbooking.sn</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-base">
-                  call
-                </span>
+                <Phone className="text-primary w-4 h-4" />
                 <span>+221 77 123 45 67</span>
               </li>
             </ul>
           </div>
         </div>
-        <div className="border-t border-[#493622] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-surface-highlight pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[#684d31] text-xs">
             © 2023 Réservation Foot. Tous droits réservés.
           </p>
           <div className="flex gap-6 text-[#684d31] text-xs">
-            <a className="hover:text-[#cbad90]" href="#">
+            <a className="hover:text-text-secondary" href="#">
               Français
             </a>
-            <a className="hover:text-[#cbad90]" href="#">
+            <a className="hover:text-text-secondary" href="#">
               Wolof
             </a>
           </div>

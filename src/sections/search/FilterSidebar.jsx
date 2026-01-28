@@ -1,3 +1,5 @@
+import { X, Search, Check, CheckCircle } from "lucide-react";
+
 const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
   const pitchTypes = ["5x5", "7x7", "11x11", "Futsal", "Indoor"];
 
@@ -45,7 +47,7 @@ const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
               onClick={onClose}
               className="lg:hidden p-1 rounded-full hover:bg-white/10 text-white transition-colors"
             >
-              <span className="material-symbols-outlined">close</span>
+              <X className="w-6 h-6" />
             </button>
           </div>
         </div>
@@ -63,7 +65,7 @@ const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
               }
             />
             <div className="flex items-center justify-center pr-4 text-text-secondary group-focus-within:text-primary transition-colors">
-              <span className="material-symbols-outlined">search</span>
+              <Search className="w-5 h-5" />
             </div>
           </div>
         </div>
@@ -82,9 +84,10 @@ const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
                 />
                 <span className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-surface-highlight bg-white/5 text-sm font-medium text-text-secondary peer-checked:bg-primary peer-checked:border-primary peer-checked:text-background-dark transition-all duration-300 group-hover:bg-white/10 group-active:scale-95 select-none">
                   {filters.types.includes(type) && (
-                    <span className="material-symbols-outlined text-sm animate-fade-in font-bold">
-                      check
-                    </span>
+                    <Check
+                      className="w-4 h-4 animate-fade-in font-bold"
+                      strokeWidth={3}
+                    />
                   )}
                   {type}
                 </span>
@@ -114,7 +117,7 @@ const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
                   priceRange: [filters.priceRange[0], parseInt(e.target.value)],
                 })
               }
-              className="w-full h-1.5 bg-surface-highlight rounded-lg appearance-none cursor-pointer accent-primary hover:accent-orange-400 focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full"
+              className="w-full h-1.5 bg-surface-highlight appearance-none cursor-pointer accent-primary hover:accent-orange-400 focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-full"
             />
           </div>
         </div>
@@ -123,7 +126,7 @@ const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
           onClick={onClose}
           className="mt-auto w-full bg-white text-background-dark hover:bg-primary hover:text-white font-bold h-12 rounded-xl transition-all shadow-lg hover:shadow-primary/20 flex items-center justify-center gap-2 lg:hidden active:scale-95"
         >
-          <span className="material-symbols-outlined">check_circle</span>
+          <CheckCircle className="w-5 h-5" />
           Afficher{" "}
           {filters.search
             ? `résultats pour "${filters.search}"`

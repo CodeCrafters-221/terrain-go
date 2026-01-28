@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
 import Cta from "../components/Cta";
+import {
+  LandPlot,
+  Users,
+  CalendarCheck,
+  PartyPopper,
+  MapPin,
+  Search,
+} from "lucide-react";
 
 export default function Hero() {
   const [isVisible, setIsVisible] = useState(false);
@@ -23,9 +31,21 @@ export default function Hero() {
 
   // Statistiques en temps réel
   const stats = [
-    { icon: "stadium", value: "50+", label: "Terrains disponibles" },
-    { icon: "groups", value: "2000+", label: "Joueurs actifs" },
-    { icon: "event_available", value: "500+", label: "Réservations/mois" },
+    {
+      icon: <LandPlot className="w-8 h-8 text-primary" />,
+      value: "50+",
+      label: "Terrains disponibles",
+    },
+    {
+      icon: <Users className="w-8 h-8 text-primary" />,
+      value: "2000+",
+      label: "Joueurs actifs",
+    },
+    {
+      icon: <CalendarCheck className="w-8 h-8 text-primary" />,
+      value: "500+",
+      label: "Réservations/mois",
+    },
   ];
 
   const handleSearch = (e) => {
@@ -47,9 +67,7 @@ export default function Hero() {
       >
         {/* Badge "Nouveau" */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse">
-          <span className="material-symbols-outlined text-primary text-sm">
-            celebration
-          </span>
+          <PartyPopper className="text-primary w-4 h-4" />
           <span className="text-primary text-sm font-semibold">
             Nouveau à Dakar - Réservez maintenant !
           </span>
@@ -90,9 +108,7 @@ export default function Hero() {
           <div className="flex flex-col md:flex-row gap-3 bg-[#2e2318] p-3 rounded-2xl border border-[#493622] shadow-2xl">
             {/* Sélection de ville */}
             <div className="flex items-center gap-3 flex-1 px-4 py-3 bg-[#342618] rounded-xl">
-              <span className="material-symbols-outlined text-primary">
-                location_on
-              </span>
+              <MapPin className="text-primary w-5 h-5" />
               <select
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
@@ -111,9 +127,7 @@ export default function Hero() {
 
             {/* Barre de recherche */}
             <div className="flex items-center gap-3 flex-1 px-4 py-3 bg-[#342618] rounded-xl">
-              <span className="material-symbols-outlined text-primary">
-                search
-              </span>
+              <Search className="text-primary w-5 h-5" />
               <input
                 type="text"
                 value={searchQuery}
@@ -132,10 +146,10 @@ export default function Hero() {
               key={stat.label}
               className="bg-[#342618] rounded-2xl p-4 flex flex-col items-center justify-center"
             >
-              <span className="material-symbols-outlined text-primary text-3xl">
-                {stat.icon}
-              </span>
-              <p className="text-white text-lg font-semibold">{stat.value}</p>
+              {stat.icon}
+              <p className="text-white text-lg font-semibold mt-2">
+                {stat.value}
+              </p>
               <p className="text-gray-400 text-sm">{stat.label}</p>
             </div>
           ))}

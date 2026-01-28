@@ -2,6 +2,17 @@ import { useAuth } from "../context/AuthContext";
 import Avis from "../sections/profile/Avis";
 import HeaderProfile from "../sections/profile/HeaderProfile";
 import Parametre from "../sections/profile/Parametre";
+import {
+  MapPin,
+  Edit2,
+  CalendarCheck, // for reservations
+  Star,
+  Settings,
+  Calendar,
+  Clock,
+  QrCode,
+  MessageSquarePlus,
+} from "lucide-react";
 
 const UserProfile = () => {
   const { user, loading } = useAuth();
@@ -22,19 +33,17 @@ const UserProfile = () => {
     );
   }
 
-  
   return (
     <div className="bg-[#231a10] min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-white selection:bg-primary selection:text-white font-display">
       {/* Top Navigation Bar */}
       <HeaderProfile />
-      
+
       {/* Main Content Area */}
       <main className="layout-container flex h-full grow flex-col w-full max-w-[1200px] mx-auto px-4 md:px-10 py-8 lg:py-12 pt-24 md:pt-28">
-        
         {/* Profile Header */}
         <section className="flex flex-col md:flex-row gap-6 items-center md:items-center justify-between p-6 md:p-8 bg-surface-dark rounded-3xl mb-8 border border-surface-highlight shadow-2xl relative overflow-hidden group">
-           {/* Background Decoration */}
-           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
           <div className="flex flex-col md:flex-row gap-6 items-center w-full md:w-auto text-center md:text-left z-10">
             <div
@@ -49,9 +58,7 @@ const UserProfile = () => {
                 {user.email}
               </h1>
               <div className="flex items-center justify-center md:justify-start gap-2 text-text-secondary">
-                <span className="material-symbols-outlined text-[20px] text-primary">
-                  location_on
-                </span>
+                <MapPin className="w-5 h-5 text-primary" />
                 <p className="text-base font-medium">Dakar, Sénégal</p>
               </div>
               <div className="flex items-center justify-center md:justify-start gap-3 mt-2 flex-wrap">
@@ -64,9 +71,9 @@ const UserProfile = () => {
               </div>
             </div>
           </div>
-          
+
           <button className="flex items-center justify-center gap-2 rounded-full h-12 px-8 bg-surface-highlight hover:bg-white hover:text-background-dark text-white text-sm font-bold transition-all w-full md:w-auto shadow-lg hover:shadow-xl z-10 group/btn">
-            <span className="material-symbols-outlined text-[20px] transition-transform group-hover/btn:-rotate-12">edit</span>
+            <Edit2 className="w-5 h-5 transition-transform group-hover/btn:-rotate-12" />
             <span>Modifier le profil</span>
           </button>
         </section>
@@ -79,9 +86,7 @@ const UserProfile = () => {
               href="#reservations"
             >
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">
-                  sports_soccer
-                </span>
+                <CalendarCheck className="w-5 h-5 group-hover:text-primary transition-colors" />
                 <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
                   Mes Réservations
                 </p>
@@ -92,9 +97,7 @@ const UserProfile = () => {
               href="#avis"
             >
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">
-                  star
-                </span>
+                <Star className="w-5 h-5" />
                 <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
                   Mes Avis
                 </p>
@@ -105,9 +108,7 @@ const UserProfile = () => {
               href="#parametres"
             >
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">
-                  settings
-                </span>
+                <Settings className="w-5 h-5" />
                 <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
                   Paramètres
                 </p>
@@ -143,9 +144,9 @@ const UserProfile = () => {
                     "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfvL2_8pRKWRbrv-YGlw1NSKeHQNaJEuj6VtESuN1gmd1mt1KtP8MuLoWO16foom1n3B9JxuMC8gaItZiz21Y1GPG-maspRNz7nNmq0vjoOet1F7ZYxl5TkJdoDlr_0UeS25yq0PoU-w4qQsdXl-ciFMXW0Wp-UW-dSTem4rtDG6WpvEiWLXivFSpqt8IPjh1WsSfWpU7I1hxWQvJO9SnWlIPxYZfKtiP2bVoY8PzaxRIZpVpYhXiGJNADKIlTO1q-L4CeT6vsbQ')",
                 }}
               >
-                 <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500"/>
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500" />
               </div>
-              
+
               <div className="flex flex-1 flex-col justify-between gap-4 p-4 md:py-4 md:pr-4">
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col-reverse sm:flex-row justify-between items-start gap-2">
@@ -154,9 +155,7 @@ const UserProfile = () => {
                         Match 5x5 - Terrain Mermoz
                       </h3>
                       <div className="flex items-center gap-1.5 text-text-secondary text-sm mt-1.5 font-medium">
-                        <span className="material-symbols-outlined text-[18px] text-primary">
-                          location_on
-                        </span>
+                        <MapPin className="w-[18px] h-[18px] text-primary" />
                         <span>Mermoz, Dakar</span>
                       </div>
                     </div>
@@ -164,38 +163,30 @@ const UserProfile = () => {
                       Confirmé
                     </span>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-3 mt-2">
                     <div className="flex items-center gap-2 bg-background-dark/50 px-3 py-2 rounded-lg border border-surface-highlight/50">
-                      <span className="material-symbols-outlined text-primary text-[20px]">
-                        calendar_today
-                      </span>
+                      <Calendar className="text-primary w-5 h-5" />
                       <span className="text-white text-sm font-bold">
                         14 Oct
                       </span>
                     </div>
                     <div className="flex items-center gap-2 bg-background-dark/50 px-3 py-2 rounded-lg border border-surface-highlight/50">
-                      <span className="material-symbols-outlined text-primary text-[20px]">
-                        schedule
-                      </span>
+                      <Clock className="text-primary w-5 h-5" />
                       <span className="text-white text-sm font-bold">
                         18:00 - 19:00
                       </span>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3 mt-4 pt-4 border-t border-white/5">
                   <button className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-primary text-background-dark text-sm font-bold hover:bg-white hover:text-primary transition-all shadow-lg shadow-primary/20 flex-1 md:flex-none md:min-w-[140px] transform active:scale-95">
-                    <span className="material-symbols-outlined text-[20px]">
-                      qr_code_2
-                    </span>
+                    <QrCode className="w-5 h-5" />
                     <span>Ticket</span>
                   </button>
                   <button className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-surface-highlight text-white text-sm font-bold hover:bg-surface-highlight/80 transition-all flex-1 md:flex-none hover:text-white/90">
-                    <span className="material-symbols-outlined text-[20px]">
-                      edit
-                    </span>
+                    <Edit2 className="w-5 h-5" />
                     <span>Modifier</span>
                   </button>
                 </div>
@@ -229,27 +220,25 @@ const UserProfile = () => {
                     </span>
                   </div>
                   <p className="text-text-secondary text-sm font-medium flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px]">calendar_month</span>
+                    <Calendar className="w-4 h-4" />
                     10 Oct, 20:00 • Sacré-Cœur, Dakar
                   </p>
                 </div>
                 <button className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn">
-                  <span className="material-symbols-outlined text-[18px] group-hover/btn:scale-110 transition-transform">
-                    rate_review
-                  </span>
+                  <MessageSquarePlus className="w-[18px] h-[18px] group-hover/btn:scale-110 transition-transform" />
                   <span>Laisser un avis</span>
                 </button>
               </div>
             </div>
           </div>
-          
+
           {/* SECTION: Reviews */}
           <div id="avis" className="animate-fade-in-up">
             <Avis />
           </div>
-          
+
           {/* SECTION: Settings */}
-           <div id="parametres" className="animate-fade-in-up">
+          <div id="parametres" className="animate-fade-in-up">
             <Parametre />
           </div>
         </div>

@@ -3,6 +3,7 @@ import NavSearch from "../sections/search/NavSearch";
 import CardSearch from "../sections/search/CardSearch";
 import Pagination from "../sections/search/Pagination";
 import FilterSidebar from "../sections/search/FilterSidebar";
+import { ListFilter, LayoutGrid, Map } from "lucide-react";
 
 const initialTerrains = [
   {
@@ -87,6 +88,8 @@ const SearchPage = () => {
   });
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
+  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'map'
+
   const filteredTerrains = useMemo(() => {
     return initialTerrains.filter((terrain) => {
       const matchesSearch =
@@ -135,23 +138,33 @@ const SearchPage = () => {
                 onClick={() => setIsFilterDrawerOpen(true)}
                 className="flex lg:hidden flex-1 md:flex-none items-center justify-center gap-2 px-4 py-3 bg-surface-dark border border-surface-highlight rounded-xl text-white hover:border-primary transition-all font-bold shadow-lg"
               >
-                <span className="material-symbols-outlined text-xl">
-                  filter_list
-                </span>
+                <ListFilter className="w-5 h-5" />
                 <span>Filtres</span>
               </button>
 
-              <div className="flex items-center gap-2 bg-surface-dark p-1 rounded-lg border border-surface-highlight shrink-0 hidden sm:flex">
-                <button className="px-3 py-1.5 rounded-md bg-white/10 text-white shadow-sm flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">
-                    grid_view
-                  </span>
+              <div className="hidden sm:flex items-center gap-2 bg-surface-dark p-1 rounded-lg border border-surface-highlight shrink-0">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all ${
+                    viewMode === "grid"
+                      ? "bg-white/10 text-white shadow-sm"
+                      : "text-text-secondary hover:text-white"
+                  }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
                   <span className="text-sm font-medium hidden sm:block">
                     Grille
                   </span>
                 </button>
-                <button className="px-3 py-1.5 rounded-md text-text-secondary hover:text-white flex items-center gap-2 transition-colors">
-                  <span className="material-symbols-outlined text-sm">map</span>
+                <button
+                  onClick={() => setViewMode("map")}
+                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all ${
+                    viewMode === "map"
+                      ? "bg-white/10 text-white shadow-sm"
+                      : "text-text-secondary hover:text-white"
+                  }`}
+                >
+                  <Map className="w-4 h-4" />
                   <span className="text-sm font-medium hidden sm:block">
                     Carte
                   </span>
@@ -160,13 +173,64 @@ const SearchPage = () => {
             </div>
           </div>
 
-          {/* Results Grid */}
-          <CardSearch terrains={filteredTerrains} />
+          {/* Results Grid or Map View */}
+          {viewMode === "grid" ? (
+            <>
+              <CardSearch terrains={filteredTerrains} />
+              <div className="mt-8">
+                <Pagination />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 min-h-[500px] bg-surface-dark rounded-3xl border border-surface-highlight overflow-hidden relative group">
+              {/* Mock Map Background */}
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity hover:opacity-100 transition-all duration-700"
+                style={{
+                  backgroundImage:
+                    "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80')",
+                }}
+              ></div>
+              <div className="absolute inset-0 bg-linear-to-t from-background-dark via-transparent to-transparent opacity-60"></div>
 
-          {/* Pagination */}
-          <div className="mt-8">
-            <Pagination />
-          </div>
+              {/* Map UI Elements */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-surface-dark/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl max-w-md text-center transform transition-all group-hover:scale-105 duration-500">
+                  <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Map className="w-10 h-10 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">
+                    Vue Carte en cours d'intégration
+                  </h3>
+                  <p className="text-text-secondary text-base leading-relaxed mb-6">
+                    Nous préparons une expérience interactive pour vous aider à
+                    localiser les terrains les plus proches de vous.
+                  </p>
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className="inline-flex items-center justify-center px-8 py-3 bg-primary text-background-dark font-bold rounded-xl hover:bg-orange-600 transition-all shadow-lg shadow-primary/20"
+                  >
+                    Retour à la grille
+                  </button>
+                </div>
+              </div>
+
+              {/* Mock Pins */}
+              <div className="absolute top-1/4 left-1/3 p-2 bg-primary rounded-full shadow-lg border-2 border-white animate-bounce">
+                <div className="bg-black/50 text-[10px] font-bold px-2 py-1 rounded-md absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-white">
+                  25 000 F
+                </div>
+              </div>
+              <div
+                className="absolute bottom-1/3 right-1/4 p-2 bg-primary rounded-full shadow-lg border-2 border-white animate-bounce"
+                style={{ animationDelay: "200ms" }}
+              >
+                <div className="bg-black/50 text-[10px] font-bold px-2 py-1 rounded-md absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-white">
+                  40 000 F
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

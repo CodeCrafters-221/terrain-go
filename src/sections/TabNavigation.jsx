@@ -1,4 +1,5 @@
 import React from "react";
+import { Trophy, Star, Settings } from "lucide-react";
 
 export default function TabNavigation() {
   return (
@@ -10,9 +11,7 @@ export default function TabNavigation() {
             href="#reservations"
           >
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">
-                sports_soccer
-              </span>
+              <Trophy className="w-5 h-5 group-hover:text-primary transition-colors" />
               <p className="text-sm font-bold leading-normal tracking-[0.015em]">
                 Mes Réservations
               </p>
@@ -23,9 +22,7 @@ export default function TabNavigation() {
             href="#avis"
           >
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px]">
-                star
-              </span>
+              <Star className="w-5 h-5" />
               <p className="text-sm font-bold leading-normal tracking-[0.015em]">
                 Mes Avis
               </p>
@@ -36,9 +33,7 @@ export default function TabNavigation() {
             href="#parametres"
           >
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px]">
-                settings
-              </span>
+              <Settings className="w-5 h-5" />
               <p className="text-sm font-bold leading-normal tracking-[0.015em]">
                 Paramètres
               </p>

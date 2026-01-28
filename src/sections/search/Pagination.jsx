@@ -1,4 +1,5 @@
 import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const Pagination = () => {
   return (
@@ -6,7 +7,7 @@ const Pagination = () => {
       <div className="flex justify-center mt-8">
         <div className="flex items-center gap-2">
           <button className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-surface-dark transition-colors">
-            <span className="material-symbols-outlined">chevron_left</span>
+            <ChevronLeft className="w-5 h-5" />
           </button>
           <button className="w-10 h-10 rounded-full flex items-center justify-center bg-primary text-background-dark font-bold">
             1
@@ -18,7 +19,7 @@ const Pagination = () => {
             3
           </button>
           <button className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-surface-dark transition-colors">
-            <span className="material-symbols-outlined">chevron_right</span>
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>

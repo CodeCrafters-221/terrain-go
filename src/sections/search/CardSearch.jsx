@@ -1,10 +1,10 @@
+import { SearchX, Zap, Heart, MapPin, Star, ArrowRight } from "lucide-react";
+
 const CardSearch = ({ terrains }) => {
   if (terrains.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in-up">
-        <span className="material-symbols-outlined text-6xl text-text-secondary mb-4 opacity-20">
-          search_off
-        </span>
+        <SearchX className="w-16 h-16 text-text-secondary mb-4 opacity-20" />
         <h3 className="text-xl font-bold text-white mb-2">
           Aucun terrain trouvé
         </h3>
@@ -32,21 +32,17 @@ const CardSearch = ({ terrains }) => {
                 </span>
                 {terrain.isAvailable && (
                   <span className="bg-primary/90 backdrop-blur-sm text-background-dark text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg shadow-primary/20">
-                    <span className="material-symbols-outlined text-[14px]">
-                      bolt
-                    </span>
+                    <Zap className="w-[14px] h-[14px]" fill="currentColor" />
                     Dispo
                   </span>
                 )}
               </div>
 
               <button className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/40 text-white hover:bg-white hover:text-red-500 transition-all duration-300 backdrop-blur-sm border border-white/10 hover:border-white hover:scale-110 active:scale-90 group/btn">
-                <span className="material-symbols-outlined text-lg block transition-transform group-hover/btn:scale-110">
-                  favorite
-                </span>
+                <Heart className="w-[18px] h-[18px] transition-transform group-hover/btn:scale-110" />
               </button>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-background-dark/90 via-transparent to-transparent z-[5] opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-linear-to-t from-background-dark/90 via-transparent to-transparent z-5 opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
 
               <img
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
@@ -63,18 +59,14 @@ const CardSearch = ({ terrains }) => {
                     {terrain.name}
                   </h3>
                   <div className="flex items-center gap-1.5 text-text-secondary mt-1.5 group-hover:text-white/80 transition-colors">
-                    <span className="material-symbols-outlined text-sm text-primary">
-                      location_on
-                    </span>
+                    <MapPin className="w-[14px] h-[14px] text-primary" />
                     <span className="text-sm font-medium">
                       {terrain.location}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 bg-surface-highlight/50 px-2 py-1 rounded-lg border border-white/5">
-                  <span className="material-symbols-outlined text-yellow-400 text-sm fill-1">
-                    star
-                  </span>
+                  <Star className="w-[14px] h-[14px] text-yellow-400 fill-current" />
                   <span className="text-white text-sm font-bold">
                     {terrain.rating}
                   </span>
@@ -84,7 +76,7 @@ const CardSearch = ({ terrains }) => {
                 </div>
               </div>
 
-              <div className="h-px bg-gradient-to-r from-transparent via-border-dark to-transparent w-full my-1 opacity-50"></div>
+              <div className="h-px bg-linear-to-r from-transparent via-border-dark to-transparent w-full my-1 opacity-50"></div>
 
               <div className="flex justify-between items-center mt-auto pt-1">
                 <div className="flex flex-col">
@@ -102,9 +94,7 @@ const CardSearch = ({ terrains }) => {
                   <span className="absolute inset-0 bg-primary opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 -z-10 ease-out"></span>
                   <span className="relative z-10 flex items-center gap-2">
                     Réserver
-                    <span className="material-symbols-outlined text-lg transition-transform group-hover/btn:translate-x-1">
-                      arrow_forward
-                    </span>
+                    <ArrowRight className="w-[18px] h-[18px] transition-transform group-hover/btn:translate-x-1" />
                   </span>
                 </button>
               </div>

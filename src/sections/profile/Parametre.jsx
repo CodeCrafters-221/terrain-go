@@ -1,4 +1,12 @@
 import { useAuth } from "../../context/AuthContext";
+import {
+  User as UserIcon,
+  Lock,
+  ChevronRight,
+  LogOut,
+  Bell,
+} from "lucide-react";
+
 const Parametre = () => {
   const { user } = useAuth();
   return (
@@ -14,9 +22,7 @@ const Parametre = () => {
           {/* Personal Info Form */}
           <div className="lg:col-span-2 bg-surface-dark p-6 rounded-2xl border border-surface-highlight">
             <h3 className="text-white font-bold text-lg mb-6 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">
-                person
-              </span>
+              <UserIcon className="w-5 h-5 text-primary" />
               Informations Personnelles
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -72,9 +78,7 @@ const Parametre = () => {
             {/* Security */}
             <div className="bg-surface-dark p-6 rounded-2xl border border-surface-highlight">
               <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">
-                  lock
-                </span>
+                <Lock className="w-5 h-5 text-primary" />
                 Sécurité
               </h3>
               <button className="w-full flex items-center justify-between p-3 rounded-xl bg-background-dark hover:bg-surface-highlight/50 transition-colors border border-surface-highlight group mb-2">
@@ -84,23 +88,17 @@ const Parametre = () => {
                     Dernière modif. il y a 3 mois
                   </p>
                 </div>
-                <span className="material-symbols-outlined text-text-secondary group-hover:text-white">
-                  chevron_right
-                </span>
+                <ChevronRight className="w-5 h-5 text-text-secondary group-hover:text-white" />
               </button>
               <button className="w-full text-red-400 hover:text-red-300 text-sm font-medium py-2 text-left mt-2 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">
-                  logout
-                </span>
+                <LogOut className="w-4 h-4" />
                 Se déconnecter
               </button>
             </div>
             {/* Notifications */}
             <div className="bg-surface-dark p-6 rounded-2xl border border-surface-highlight flex-1">
               <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">
-                  notifications
-                </span>
+                <Bell className="w-5 h-5 text-primary" />
                 Notifications
               </h3>
               <div className="space-y-4">
