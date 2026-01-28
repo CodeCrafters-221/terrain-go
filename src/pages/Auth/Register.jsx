@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { supabase } from "../../services/supabaseClient";
 import { toast } from "react-toastify";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
+import { createPortal } from "react-dom";
+import CreateProfile from "../../components/CreateProfile";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -12,7 +14,7 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
+  const [showCreateProfile, setShowCreateProfile] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -60,7 +62,7 @@ export default function Register() {
       }
 
       toast.success("Compte créé. Veuillez vous connecter !");
-      navigate("/login");
+      setShowCreateProfile(true);
     } 
     catch (err) {
       console.error(err);
@@ -76,7 +78,7 @@ export default function Register() {
   const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
 
   return (
-    <div className="bg-[#2e2318] rounded-2xl w-xl shadow-2xl border border-[#493622]">
+    <div className="bg-[#2e2318] rounded-2xl w-xl shadow-2xl border border-l-surface-highlight">
       <div className="p-6 sm:p-8">
         <h2 className="text-white text-2xl font-semibold text-center mb-6">
           S'inscrire
@@ -85,7 +87,7 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="email" className="text-[#cbad90] text-sm">
+            <label htmlFor="email" className="text-text-secondary text-sm">
               Email
             </label>
             <input
@@ -94,7 +96,7 @@ export default function Register() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className={`${inputClasses} ${errors.email ? "border-red-500" : "border-[#493622]"}`}
+              className={`${inputClasses} ${errors.email ? "border-red-500" : "border-l-surface-highlight"}`}
             />
             {errors.email && (
               <span className="text-red-500 text-xs">{errors.email}</span>
@@ -103,7 +105,7 @@ export default function Register() {
 
           {/* Mot de passe */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="password" className="text-[#cbad90] text-sm">
+            <label htmlFor="password" className="text-text-secondary text-sm">
               Mot de passe
             </label>
             <div className="relative">
@@ -113,12 +115,12 @@ export default function Register() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`${inputClasses} ${errors.password ? "border-red-500" : "border-[#493622]"}`}
+                className={`${inputClasses} ${errors.password ? "border-red-500" : "border-l-surface-highlight"}`}
               />
               <button
                 type="button"
                 onClick={handleTogglePassword}
-                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-[#cbad90] text-sm hover:text-white"
+                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-text-secondary text-sm hover:text-white"
               >
                 {showPassword ? "Masquer" : "Afficher"}
               </button>
@@ -141,6 +143,9 @@ export default function Register() {
           </p>
         </form>
 
+        {
+          showCreateProfile && createPortal(<CreateProfile />, document.body)
+        }
       </div>
     </div>
   );
