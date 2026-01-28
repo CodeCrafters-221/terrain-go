@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 const UserProfile = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
 
   if (loading) {
     return (
@@ -55,7 +55,7 @@ const UserProfile = () => {
             ></div>
             <div className="flex flex-col justify-center gap-2">
               <h1 className="text-white text-2xl md:text-[32px] font-bold leading-tight tracking-tight">
-                {user.email}
+                {profile?.name}
               </h1>
               <div className="flex items-center justify-center md:justify-start gap-2 text-text-secondary">
                 <MapPin className="w-5 h-5 text-primary" />
@@ -74,7 +74,7 @@ const UserProfile = () => {
 
           <button className="flex items-center justify-center gap-2 rounded-full h-12 px-8 bg-surface-highlight hover:bg-white hover:text-background-dark text-white text-sm font-bold transition-all w-full md:w-auto shadow-lg hover:shadow-xl z-10 group/btn">
             <Edit2 className="w-5 h-5 transition-transform group-hover/btn:-rotate-12" />
-            <span>Modifier le profil</span>
+            <a href="#parametres">Modifier le profil</a>
           </button>
         </section>
 

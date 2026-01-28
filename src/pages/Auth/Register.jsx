@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../../services/supabaseClient";
 import { toast } from "react-toastify";
-import { Link } from "react-router";
-import { createPortal } from "react-dom";
-import CreateProfile from "../../components/CreateProfile";
+import { Link, useNavigate } from "react-router";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -14,7 +12,7 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showCreateProfile, setShowCreateProfile] = useState(false);
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -61,8 +59,18 @@ export default function Register() {
         return;
       }
 
-      toast.success("Compte créé. Veuillez vous connecter !");
-      setShowCreateProfile(true);
+      // Log in user
+      const { loginError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      navigate("/create-profile");
+
+      if(loginError) {
+        toast.error(loginError.message);
+        return;
+      }
     } 
     catch (err) {
       console.error(err);
@@ -142,10 +150,6 @@ export default function Register() {
             Deja un compte ? <Link to="/login" className="text-primary">Se Connecter !</Link>
           </p>
         </form>
-
-        {
-          showCreateProfile && createPortal(<CreateProfile />, document.body)
-        }
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import BookingPage from "../pages/BookingPage";
 import AuthLayout from "../layouts/AuthLayout";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
+import CreateProfile from "../components/CreateProfile";
 
 // export const router = createBrowserRouter([
 //   {
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/login", element: <Login /> },
       { path: "/register", element: <Register /> },
+      { path: "/create-profile", element: <ProtectedRoute><CreateProfile /></ProtectedRoute> },
     ],
   }
 ]);

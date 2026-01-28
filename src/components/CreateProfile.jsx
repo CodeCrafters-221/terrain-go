@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 export default function CreateProfile() {
   const [formData, setFormData] = useState({
     name: "",
     image: "",
-    phone: ""
+    phone: "",
+    ville: ""
   });
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,7 +36,11 @@ export default function CreateProfile() {
     }
 
     if (!formData.image.trim()) {
-      validationErrors.image = "Le champ nom est requis !"
+      validationErrors.image = "Le champ image est requis !"
+    }
+
+    if (!formData.ville.trim()) {
+      validationErrors.ville = "Le champ ville est requis !"
     }
 
     const phoneRegex = /^(221|00221|\+221)?(77|78|75|70|76)[0-9]{7}$/mg;
@@ -49,10 +56,11 @@ export default function CreateProfile() {
     try {
       setIsLoading(true);
 
-      const { error } = await supabase.auth.create({
+      const { error } = await supabase.from("profiles").insert({
+        id: user.id,
         name: formData.name,
-        image: formData.image,
         phone: formData.phone,
+        ville: formData.ville,
       });
 
       if (error) {
@@ -60,8 +68,8 @@ export default function CreateProfile() {
         return;
       }
 
-      toast.success("Profil créé. Veuillez vous connecter !");
-      navigate("/login");
+      toast.success("Profil créé !");
+      navigate("/");
     }
     catch (err) {
       console.error(err);
@@ -93,7 +101,7 @@ export default function CreateProfile() {
               type="text"
               id="name"
               name="name"
-              value={formData.phone}
+              value={formData.name}
               onChange={handleInputChange}
               className={`${inputClasses} ${errors.name ? "border-red-500" : "border-surface-highlight"}`}
             />
@@ -120,9 +128,29 @@ export default function CreateProfile() {
             )}
           </div>
 
+          {/* Ville */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="ville" className="text-text-secondary text-sm">
+              Ville
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                id="ville"
+                name="ville"
+                value={formData.ville}
+                onChange={handleInputChange}
+                className={`${inputClasses} ${errors.ville ? "border-red-500" : "border-surface-highlight"}`}
+              />
+            </div>
+            {errors.ville && (
+              <span className="text-red-500 text-xs">{errors.ville}</span>
+            )}
+          </div>
+
           {/* Image */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="password" className="text-text-secondary text-sm">
+            <label htmlFor="image" className="text-text-secondary text-sm">
               Image
             </label>
             <div className="relative">
@@ -147,10 +175,6 @@ export default function CreateProfile() {
           >
             {isLoading ? "Création..." : "Créer mon profil"}
           </button>
-
-          <p className="text-white text-center">
-            Deja un compte ? <Link to="/login" className="text-primary">Se Connecter !</Link>
-          </p>
         </form>
 
       </div>

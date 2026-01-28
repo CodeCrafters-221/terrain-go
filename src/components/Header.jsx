@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -24,7 +24,7 @@ export default function Header() {
   return (
     <>
       <header className="fixed w-full top-0 z-999 bg-[#231a10] border-b border-white/5 transition-all duration-300">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-350 mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
@@ -73,7 +73,7 @@ export default function Header() {
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                       <UserIcon className="w-5 h-5" />
                     </div>
-                    <span>Mon Profil</span>
+                    <span>{profile?.name}</span>
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -109,11 +109,10 @@ export default function Header() {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${
-            isMenuOpen
+          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
               ? "opacity-100 visible"
               : "opacity-0 invisible pointer-events-none"
-          }`}
+            }`}
         >
           <nav className="flex flex-col gap-6 items-center w-full">
             <Link
@@ -148,7 +147,7 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <UserIcon className="w-6 h-6" />
-                  Mon Profil
+                  {profile?.name}
                 </Link>
                 <button
                   onClick={handleLogout}

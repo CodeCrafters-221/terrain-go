@@ -6,9 +6,99 @@ import {
   LogOut,
   Bell,
 } from "lucide-react";
+import { supabase } from "../../services/supabaseClient";
+import { useNavigate } from "react-router";
+import { useState } from "react";
+import { toast } from "react-toastify";
 
 const Parametre = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const [formData, setFormData] = useState({
+    name: profile?.name ?? "",
+    email: user.email ?? "",
+    phone: profile?.phone ?? "",
+    ville: profile?.ville ?? ""
+  });
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Effacer l'erreur du champ en cours de modification
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const validationErrors = {};
+
+    if (!formData.name.trim()) {
+      validationErrors.name = "Le champ nom est requis !"
+    }
+
+    if (!formData.email.trim()) {
+      validationErrors.email = "Le champ email est requis !"
+    }
+
+    if (!formData.ville.trim()) {
+      validationErrors.ville = "Le champ ville est requis !"
+    }
+
+    const phoneRegex = /^(221|00221|\+221)?(77|78|75|70|76)[0-9]{7}$/mg;
+    if (!formData.phone.trim()) {
+      validationErrors.phone = "Le téléphone est requis";
+    } else if (!phoneRegex.test(formData.phone)) {
+      validationErrors.phone = "Format numéro invalide";
+    }
+
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    try {
+      setIsLoading(true);
+
+      const { data, error } = await supabase.from("profiles").update({
+        name: formData.name,
+        phone: formData.phone,
+        ville: formData.ville,
+      }).eq("id", user.id).select();
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      setFormData({
+        email: user.email,
+        name: data[0]?.name,
+        phone: data[0]?.phone,
+        ville: data[0]?.ville,
+      })
+
+      toast.success("Profil modifiée !");
+    }
+    catch (err) {
+      console.error(err);
+      toast.error("Erreur serveur, réessaie plus tard");
+    }
+    finally {
+      setIsLoading(false);
+    }
+  };
+
+  const inputClasses = "bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors";
+
   return (
     <>
       <div
@@ -25,15 +115,16 @@ const Parametre = () => {
               <UserIcon className="w-5 h-5 text-primary" />
               Informations Personnelles
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-text-secondary">
                   Nom complet
                 </label>
                 <input
-                  className="bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-                  type="text"
-                  defaultValue="Saturo Gojo"
+                  className={`${inputClasses} ${errors.name ? "border-red-500" : "border-surface-highlight"}`} type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -41,9 +132,10 @@ const Parametre = () => {
                   Email
                 </label>
                 <input
-                  className="bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-                  type="email"
-                  defaultValue={user.email}
+                  className={`${inputClasses} ${errors.email ? "border-red-500" : "border-surface-highlight"}`} type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -51,9 +143,10 @@ const Parametre = () => {
                   Téléphone
                 </label>
                 <input
-                  className="bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-                  type="tel"
-                  defaultValue="+221 77 123 45 67"
+                  className={`${inputClasses} ${errors.phone ? "border-red-500" : "border-surface-highlight"}`} type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -61,17 +154,19 @@ const Parametre = () => {
                   Ville
                 </label>
                 <input
-                  className="bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                  className={`${inputClasses} ${errors.ville ? "border-red-500" : "border-surface-highlight"}`}
                   type="text"
-                  defaultValue="Dakar"
+                  name="ville"
+                  value={formData.ville}
+                  onChange={handleInputChange}
                 />
               </div>
-            </div>
-            <div className="mt-8 flex justify-end">
-              <button className="bg-surface-highlight hover:bg-primary hover:text-background-dark text-white font-bold py-2.5 px-6 rounded-full transition-colors shadow-lg">
-                Enregistrer les modifications
-              </button>
-            </div>
+              <div className="mt-6 col-span-2 flex justify-end">
+                <button type="submit" className="bg-surface-highlight hover:bg-primary hover:text-background-dark text-white font-bold py-2.5 px-6 rounded-full transition-colors shadow-lg">
+                  {isLoading ? "Modification..." : "Modifier mon profil"}
+                </button>
+              </div>
+            </form>
           </div>
           {/* Side Settings (Password & Notifications) */}
           <div className="flex flex-col gap-6">
@@ -90,7 +185,7 @@ const Parametre = () => {
                 </div>
                 <ChevronRight className="w-5 h-5 text-text-secondary group-hover:text-white" />
               </button>
-              <button className="w-full text-red-400 hover:text-red-300 text-sm font-medium py-2 text-left mt-2 flex items-center gap-2">
+              <button onClick={handleLogout} className="w-full text-red-400 hover:text-red-300 text-sm font-medium py-2 text-left mt-2 flex items-center gap-2">
                 <LogOut className="w-4 h-4" />
                 Se déconnecter
               </button>
