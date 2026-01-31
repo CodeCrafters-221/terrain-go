@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom"; // Import useSearchParams
 import StadiumCard from "../components/StadiumCard";
 import ReservationModal from "../components/ReservationModal";
-import LoginModal from "../pages/Auth/Login";
-import SignupModal from "../pages/Auth/Register";
+// import LoginModal from "../pages/Auth/Login";
+// import SignupModal from "../pages/Auth/Register";
 import Cta2 from "../components/Cta2";
 
 // Import images
@@ -19,8 +19,8 @@ export default function Features() {
   // États Modales
   const [isReservationOpen, setIsReservationOpen] = useState(false);
   const [selectedStadium, setSelectedStadium] = useState(null);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isSignupOpen, setIsSignupOpen] = useState(false);
+  // const [isLoginOpen, setIsLoginOpen] = useState(false);
+  // const [isSignupOpen, setIsSignupOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 

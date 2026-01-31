@@ -4,45 +4,16 @@ import { useNavigate } from "react-router-dom";
 export default function Hero() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
-
-  const cities = [
-    "Dakar",
-    "Pikine",
-    "Guédiawaye",
-    "Rufisque",
-    "Thiès",
-    "Mbour",
-  ];
 
   const stats = [
     { icon: "stadium", value: "50+", label: "Terrains" },
     { icon: "groups", value: "2000+", label: "Joueurs" },
     { icon: "event_available", value: "500+", label: "Réservations" },
   ];
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-
-    // 1. Construire les paramètres de recherche
-    const params = new URLSearchParams();
-    if (searchQuery) params.append("q", searchQuery);
-    if (selectedCity) params.append("city", selectedCity);
-
-    // 2. Mettre à jour l'URL sans recharger la page
-    navigate(`/?${params.toString()}`, { replace: true });
-
-    // 3. Scroller doucement vers la section des résultats
-    const featuresSection = document.getElementById("stadiums-list");
-    if (featuresSection) {
-      featuresSection.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   return (
     <div className="heroSection relative overflow-hidden">
@@ -79,59 +50,6 @@ export default function Hero() {
           La première plateforme de réservation de terrains de football à Dakar.
         </h2>
 
-        {/* Barre de recherche */}
-        <form
-          onSubmit={handleSearch}
-          className={`w-full max-w-3xl mt-8 transition-all duration-700 delay-400 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}
-        >
-          <div className="flex flex-col md:flex-row gap-3 bg-[#2e2318] p-3 rounded-2xl border border-[#493622] shadow-2xl">
-            {/* Ville */}
-            <div className="flex items-center gap-3 flex-1 px-4 py-3 bg-[#342618] rounded-xl border border-transparent focus-within:border-primary/50 transition-colors">
-              <span className="material-symbols-outlined text-primary">
-                location_on
-              </span>
-              <select
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="flex-1 bg-transparent text-white outline-none cursor-pointer placeholder-gray-400 w-full"
-              >
-                <option value="" className="bg-[#342618]">
-                  Toutes les villes
-                </option>
-                {cities.map((city) => (
-                  <option key={city} value={city} className="bg-[#342618]">
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Recherche Texte */}
-            <div className="flex items-center gap-3 flex-1 px-4 py-3 bg-[#342618] rounded-xl border border-transparent focus-within:border-primary/50 transition-colors">
-              <span className="material-symbols-outlined text-primary">
-                search
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Nom, quartier..."
-                className="flex-1 bg-transparent text-white outline-none placeholder-gray-400 w-full"
-              />
-            </div>
-
-            {/* Bouton */}
-            <button
-              type="submit"
-              className="bg-primary hover:bg-primary/90 text-black font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-            >
-              <span className="hidden md:inline">Rechercher</span>
-              <span className="material-symbols-outlined md:hidden">
-                search
-              </span>
-            </button>
-          </div>
-        </form>
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mt-8 w-full max-w-3xl">
           {stats.map((stat) => (
