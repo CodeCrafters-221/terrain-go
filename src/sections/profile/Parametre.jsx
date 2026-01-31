@@ -8,16 +8,16 @@ import {
 } from "lucide-react";
 import { supabase } from "../../services/supabaseClient";
 import { useNavigate } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 const Parametre = () => {
   const { user, profile } = useAuth();
   const [formData, setFormData] = useState({
-    name: profile?.name ?? "",
-    email: user.email ?? "",
-    phone: profile?.phone ?? "",
-    ville: profile?.ville ?? ""
+    name: "",
+    email: "",
+    phone: "",
+    ville: "",
   });
   const navigate = useNavigate();
 
@@ -43,20 +43,20 @@ const Parametre = () => {
 
     const validationErrors = {};
 
-    if (!formData.name.trim()) {
+    if (formData.name == "") {
       validationErrors.name = "Le champ nom est requis !"
     }
 
-    if (!formData.email.trim()) {
+    if (formData.email == "") {
       validationErrors.email = "Le champ email est requis !"
     }
 
-    if (!formData.ville.trim()) {
+    if (formData.ville == "") {
       validationErrors.ville = "Le champ ville est requis !"
     }
 
-    const phoneRegex = /^(221|00221|\+221)?(77|78|75|70|76)[0-9]{7}$/mg;
-    if (!formData.phone.trim()) {
+    const phoneRegex = /^(221|00221|\+221)?(77|78|75|70|76)[0-9]{7}$/;
+    if (formData.phone == "") {
       validationErrors.phone = "Le téléphone est requis";
     } else if (!phoneRegex.test(formData.phone)) {
       validationErrors.phone = "Format numéro invalide";
@@ -68,34 +68,45 @@ const Parametre = () => {
     try {
       setIsLoading(true);
 
-      const { data, error } = await supabase.from("profiles").update({
+      const { error } = await supabase.from("profiles").update({
         name: formData.name,
         phone: formData.phone,
         ville: formData.ville,
       }).eq("id", user.id).select();
 
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
+      if (error) throw error;
 
-      setFormData({
-        email: user.email,
-        name: data[0]?.name,
-        phone: data[0]?.phone,
-        ville: data[0]?.ville,
-      })
+      if (formData.email !== user.email) {
+        const { error: authError } =
+          await supabase.auth.updateUser({
+            email: formData.email,
+          });
+
+        if (authError) throw authError;
+      }
 
       toast.success("Profil modifiée !");
     }
     catch (err) {
       console.error(err);
-      toast.error("Erreur serveur, réessaie plus tard");
+      toast.error(err || "Erreur serveur !");
     }
     finally {
       setIsLoading(false);
     }
   };
+
+
+  useEffect(() => {
+    if (profile && user) {
+      setFormData({
+        name: profile?.name || "",
+        email: user?.email || "",
+        phone: profile?.phone || "",
+        ville: profile?.ville || "",
+      });
+    }
+  }, [profile, user]);
 
   const inputClasses = "bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors";
 
@@ -126,6 +137,9 @@ const Parametre = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                 />
+                {errors.name && (
+                  <span className="text-red-500 text-xs">{errors.name}</span>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-text-secondary">
@@ -137,6 +151,9 @@ const Parametre = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                 />
+                {errors.email && (
+                  <span className="text-red-500 text-xs">{errors.email}</span>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-text-secondary">
@@ -148,6 +165,9 @@ const Parametre = () => {
                   value={formData.phone}
                   onChange={handleInputChange}
                 />
+                {errors.phone && (
+                  <span className="text-red-500 text-xs">{errors.phone}</span>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-text-secondary">
@@ -160,6 +180,9 @@ const Parametre = () => {
                   value={formData.ville}
                   onChange={handleInputChange}
                 />
+                {errors.ville && (
+                  <span className="text-red-500 text-xs">{errors.ville}</span>
+                )}
               </div>
               <div className="mt-6 col-span-2 flex justify-end">
                 <button type="submit" className="bg-surface-highlight hover:bg-primary hover:text-background-dark text-white font-bold py-2.5 px-6 rounded-full transition-colors shadow-lg">

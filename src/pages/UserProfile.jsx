@@ -39,27 +39,23 @@ const UserProfile = () => {
       <HeaderProfile />
 
       {/* Main Content Area */}
-      <main className="layout-container flex h-full grow flex-col w-full max-w-[1200px] mx-auto px-4 md:px-10 py-8 lg:py-12 pt-24 md:pt-28">
+      <main className="layout-container flex h-full grow flex-col w-full max-w-300 mx-auto px-4 md:px-10 py-8 lg:py-12 pt-24 md:pt-28">
         {/* Profile Header */}
         <section className="flex flex-col md:flex-row gap-6 items-center md:items-center justify-between p-6 md:p-8 bg-surface-dark rounded-3xl mb-8 border border-surface-highlight shadow-2xl relative overflow-hidden group">
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
           <div className="flex flex-col md:flex-row gap-6 items-center w-full md:w-auto text-center md:text-left z-10">
-            <div
-              className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-28 w-28 md:h-32 md:w-32 ring-4 ring-surface-highlight shadow-xl transition-transform hover:scale-105 duration-300"
-              style={{
-                backgroundImage:
-                  "url('https://i.pinimg.com/736x/0c/cb/ce/0ccbce52385d8b784a412dc9f55f3d30.jpg')",
-              }}
-            ></div>
+            <img className="rounded-full object-cover size-28 md:size-32 shadow-xl transition-transform hover:scale-105 duration-300"
+              src={profile?.image || "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn"}
+            />
             <div className="flex flex-col justify-center gap-2">
               <h1 className="text-white text-2xl md:text-[32px] font-bold leading-tight tracking-tight">
                 {profile?.name}
               </h1>
               <div className="flex items-center justify-center md:justify-start gap-2 text-text-secondary">
                 <MapPin className="w-5 h-5 text-primary" />
-                <p className="text-base font-medium">Dakar, Sénégal</p>
+                <p className="text-base font-medium">{profile?.ville}, Sénégal</p>
               </div>
               <div className="flex items-center justify-center md:justify-start gap-3 mt-2 flex-wrap">
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary ring-1 ring-inset ring-primary/20 uppercase tracking-wider">
@@ -79,7 +75,7 @@ const UserProfile = () => {
         </section>
 
         {/* Tabs Navigation */}
-        <div className="sticky top-[73px] z-40 bg-[#231a10]/95 backdrop-blur-md pt-2 pb-2 mb-8 border-b border-surface-highlight w-full -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="sticky top-18.25 z-40 bg-[#231a10]/95 backdrop-blur-md pt-2 pb-2 mb-8 border-b border-surface-highlight w-full -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-8 overflow-x-auto hide-scrollbar snap-x">
             <a
               className="flex flex-col items-center justify-center border-b-[3px] border-primary text-white pb-3 px-2 min-w-fit cursor-pointer group snap-start transition-all"

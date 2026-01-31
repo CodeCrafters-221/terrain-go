@@ -53,7 +53,7 @@ export default function Login() {
       console.log("Données de connexion:", formData);
 
       // Connecter l'user
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
@@ -62,8 +62,6 @@ export default function Login() {
         toast.error(error);
         return;
       }
-
-      console.log(data.user);
 
       toast.success("Ravi de vous revoir😀 !");
       if(!error) navigate("/");

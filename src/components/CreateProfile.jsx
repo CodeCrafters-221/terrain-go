@@ -7,10 +7,10 @@ import { useAuth } from "../context/AuthContext";
 export default function CreateProfile() {
   const [formData, setFormData] = useState({
     name: "",
-    image: "",
     phone: "",
     ville: ""
   });
+  const [avatar, setAvatar] = useState(null);
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -31,20 +31,20 @@ export default function CreateProfile() {
 
     const validationErrors = {};
 
-    if (!formData.name.trim()) {
+    if (formData.name == "") {
       validationErrors.name = "Le champ nom est requis !"
     }
 
-    if (!formData.image.trim()) {
-      validationErrors.image = "Le champ image est requis !"
-    }
+    // if (!formData.image.trim()) {
+    //   validationErrors.image = "Le champ image est requis !"
+    // }
 
-    if (!formData.ville.trim()) {
+    if (formData.ville == "") {
       validationErrors.ville = "Le champ ville est requis !"
     }
 
-    const phoneRegex = /^(221|00221|\+221)?(77|78|75|70|76)[0-9]{7}$/mg;
-    if (!formData.phone.trim()) {
+    const phoneRegex = /^(221|00221|\+221)?(77|78|75|70|76)[0-9]{7}$/;
+    if (formData.phone == "") {
       validationErrors.phone = "Le téléphone est requis";
     } else if (!phoneRegex.test(formData.phone)) {
       validationErrors.phone = "Format numéro invalide";
@@ -56,11 +56,34 @@ export default function CreateProfile() {
     try {
       setIsLoading(true);
 
+      let avatarUrl = null;
+
+      if (avatar) {
+        const ext = avatar.name.split(".").pop();
+        const filePath = `${user.id}/avatar.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, avatar, {
+            upsert: true,
+            contentType: avatar.type,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(filePath);
+
+        avatarUrl = data.publicUrl;
+      }
+
       const { error } = await supabase.from("profiles").insert({
         id: user.id,
         name: formData.name,
         phone: formData.phone,
         ville: formData.ville,
+        image: avatarUrl,
       });
 
       if (error) {
@@ -91,7 +114,7 @@ export default function CreateProfile() {
           Création de Profil
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} method="POST" className="space-y-4">
           {/* Name */}
           <div className="flex flex-col gap-1">
             <label htmlFor="name" className="text-text-secondary text-sm">
@@ -156,10 +179,10 @@ export default function CreateProfile() {
             <div className="relative">
               <input
                 type="file"
+                accept="image/*"
                 id="image"
                 name="image"
-                value={formData.image}
-                onChange={handleInputChange}
+                onChange={(e) => setAvatar(e.target.files[0])}
                 className={`${inputClasses} ${errors.image ? "border-red-500" : "border-surface-highlight"}`}
               />
             </div>
