@@ -65,14 +65,12 @@ export default function Header() {
             {/* Desktop Auth Actions */}
             <div className="hidden lg:flex items-center gap-4">
               {user ? (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <Link
                     to="/profile"
                     className="flex items-center gap-2 text-white hover:text-primary transition-colors font-medium border border-white/10 rounded-full pl-1 pr-4 py-1 hover:bg-white/5"
                   >
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                      <UserIcon className="w-5 h-5" />
-                    </div>
+                    <img src={profile?.image} className="size-12 object-cover rounded-full" />
                     <span>{profile?.name}</span>
                   </Link>
                   <button
@@ -110,8 +108,8 @@ export default function Header() {
         {/* Mobile Menu Overlay */}
         <div
           className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
-              ? "opacity-100 visible"
-              : "opacity-0 invisible pointer-events-none"
+            ? "opacity-100 visible"
+            : "opacity-0 invisible pointer-events-none"
             }`}
         >
           <nav className="flex flex-col gap-6 items-center w-full">
