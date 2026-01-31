@@ -3,13 +3,14 @@ import AppLayout from "../layouts/AppLayout";
 
 import Home from "../pages/Home";
 import SearchPage from "../pages/SearchPage";
-import UserProfile from "../components/UserProfile";
+import UserProfile from "../pages/UserProfile";
 import TerrainDetails from "../pages/TerrainDetails";
 import ProtectedRoute from "../components/ProtectedRoute";
 import BookingPage from "../pages/BookingPage";
 import AuthLayout from "../layouts/AuthLayout";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
+import CreateProfile from "../components/CreateProfile";
 
 // export const router = createBrowserRouter([
 //   {
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/login", element: <Login /> },
       { path: "/register", element: <Register /> },
+      { path: "/create-profile", element: <ProtectedRoute><CreateProfile /></ProtectedRoute> },
     ],
   }
 ]);

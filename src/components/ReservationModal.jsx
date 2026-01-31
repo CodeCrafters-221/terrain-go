@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { MapPin, X, Star } from "lucide-react";
 
 export default function ReservationModal({ isOpen, onClose, stadium }) {
   const [formData, setFormData] = useState({
@@ -122,19 +123,17 @@ export default function ReservationModal({ isOpen, onClose, stadium }) {
         <div className="sticky top-0 bg-[#2e2318] border-b border-[#493622] p-6 flex justify-between items-center">
           <div>
             <h2 className="text-white text-2xl font-bold">{stadium.city}</h2>
-            <p className="text-[#cbad90] text-sm flex items-center mt-1">
-              <span className="material-symbols-outlined text-sm mr-1">
-                explore_nearby
-              </span>
+            <div className="text-[#cbad90] text-sm flex items-center mt-1">
+              <MapPin className="w-4 h-4 mr-1" />
               {stadium.location}
-            </p>
+            </div>
           </div>
           <button
             onClick={onClose}
             className="text-white hover:text-primary transition-colors"
             aria-label="Fermer"
           >
-            <span className="material-symbols-outlined text-3xl">close</span>
+            <X className="w-8 h-8" />
           </button>
         </div>
 
@@ -153,9 +152,7 @@ export default function ReservationModal({ isOpen, onClose, stadium }) {
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-primary text-sm">
-                  star
-                </span>
+                <Star className="text-primary w-4 h-4 fill-current" />
                 <span className="text-white font-semibold">
                   {stadium.notes}
                 </span>

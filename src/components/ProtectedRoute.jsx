@@ -3,14 +3,13 @@ import { useAuth } from "../context/AuthContext";
 import { Navigate } from "react-router";
 
 export default function ProtectedRoute({ children }) {
-    const { user, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-    if(loading) {
-        toast.loading("Chargement...");
-        return;
-    }
+  if (loading) {
+    return null;
+  }
 
-    if(!user) return <Navigate to="/" />
+  if (!user) return <Navigate to="/" />;
 
-    return children;
+  return children;
 }
