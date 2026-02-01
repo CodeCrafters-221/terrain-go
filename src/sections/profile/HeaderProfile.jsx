@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { supabase } from "../../services/supabaseClient";
+
 import {
   Trophy,
   Search,
   Menu as MenuIcon,
   X as XIcon,
+  LogOut as LogOutIcon,
   Home,
   LandPlot,
   Users,
@@ -13,6 +16,12 @@ import {
 
 const HeaderProfile = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    Navigate("/");
+    setIsMenuOpen(false);
+  };
 
   return (
     <>
@@ -71,10 +80,17 @@ const HeaderProfile = () => {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </a>
           </nav>
-
-          <button className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-[#d96f0b] transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-[0_0_15px_rgba(242,127,13,0.3)] hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] active:scale-95">
-            <span className="truncate">Réserver</span>
+          {/* LogOut */}
+          <button
+            onClick={handleLogout}
+            className="text-text-secondary hover:text-white transition-colors"
+            title="Se déconnecter"
+          >
+            <LogOutIcon className="w-5 h-5" />
           </button>
+          {/* <button className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-[#d96f0b] transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-[0_0_15px_rgba(242,127,13,0.3)] hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] active:scale-95">
+            <span className="truncate">Réserver</span>
+          </button> */}
 
           {/* Mobile Menu Toggle */}
           <button

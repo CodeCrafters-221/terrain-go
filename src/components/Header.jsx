@@ -1,25 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { supabase } from "../services/supabaseClient";
 import {
   Trophy,
   Menu as MenuIcon,
   X as XIcon,
   User as UserIcon,
-  LogOut as LogOutIcon,
 } from "lucide-react";
 
 export default function Header() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-    setIsMenuOpen(false);
-  };
 
   return (
     <>
@@ -70,16 +62,12 @@ export default function Header() {
                     to="/profile"
                     className="flex items-center gap-2 text-white hover:text-primary transition-colors font-medium border border-white/10 rounded-full pl-1 pr-4 py-1 hover:bg-white/5"
                   >
-                    <img src={profile?.image} className="size-12 object-cover rounded-full" />
+                    <img
+                      src={profile?.image}
+                      className="size-12 object-cover rounded-full"
+                    />
                     <span>{profile?.name}</span>
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-text-secondary hover:text-white transition-colors"
-                    title="Se déconnecter"
-                  >
-                    <LogOutIcon className="w-5 h-5" />
-                  </button>
                 </div>
               ) : (
                 <Link
@@ -107,10 +95,11 @@ export default function Header() {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
-            ? "opacity-100 visible"
-            : "opacity-0 invisible pointer-events-none"
-            }`}
+          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${
+            isMenuOpen
+              ? "opacity-100 visible"
+              : "opacity-0 invisible pointer-events-none"
+          }`}
         >
           <nav className="flex flex-col gap-6 items-center w-full">
             <Link
@@ -147,13 +136,6 @@ export default function Header() {
                   <UserIcon className="w-6 h-6" />
                   {profile?.name}
                 </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-text-secondary hover:text-white font-medium py-4 transition-colors flex items-center justify-center gap-2"
-                >
-                  <LogOutIcon className="w-6 h-6" />
-                  Se déconnecter
-                </button>
               </>
             ) : (
               <Link

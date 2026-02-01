@@ -32,7 +32,7 @@ export default function Hero() {
     {
       icon: <CalendarCheck className="w-8 h-8 text-primary" />,
       value: "500+",
-      label: "Réservations/mois",
+      label: "Réservations par mois",
     },
   ];
 
@@ -73,7 +73,7 @@ export default function Hero() {
         </Link>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-4 mt-5">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -83,7 +83,7 @@ export default function Hero() {
               <p className="text-white text-lg font-semibold mt-2">
                 {stat.value}
               </p>
-              <p className="text-gray-400 text-sm">{stat.label}</p>
+              <p className="text-gray-400 text-sm text-center">{stat.label}</p>
             </div>
           ))}
         </div>
