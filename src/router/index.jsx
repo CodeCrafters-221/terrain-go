@@ -11,6 +11,7 @@ import AuthLayout from "../layouts/AuthLayout";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import CreateProfile from "../components/CreateProfile";
+import CreateField from "../components/CreateField";
 
 // export const router = createBrowserRouter([
 //   {
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/register", element: <Register /> },
       { path: "/create-profile", element: <ProtectedRoute><CreateProfile /></ProtectedRoute> },
+      { path: "/create-field", element: <ProtectedRoute><CreateField /></ProtectedRoute> },
     ],
   }
 ]);

@@ -8,7 +8,8 @@ export default function CreateProfile() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    ville: ""
+    ville: "",
+    role: "",
   });
   const [avatar, setAvatar] = useState(null);
 
@@ -35,9 +36,9 @@ export default function CreateProfile() {
       validationErrors.name = "Le champ nom est requis !"
     }
 
-    // if (!formData.image.trim()) {
-    //   validationErrors.image = "Le champ image est requis !"
-    // }
+    if(!formData.role) {
+      validationErrors.role = "Veuillez choisir un role !"
+    }
 
     if (formData.ville == "") {
       validationErrors.ville = "Le champ ville est requis !"
@@ -84,6 +85,7 @@ export default function CreateProfile() {
         phone: formData.phone,
         ville: formData.ville,
         image: avatarUrl,
+        role: formData.role,
       });
 
       if (error) {
@@ -92,7 +94,11 @@ export default function CreateProfile() {
       }
 
       toast.success("Profil créé !");
-      navigate("/");
+      if(formData.role == "client") {
+        navigate("/");
+      } else if(formData.role == "owner") {
+        navigate("/create-field");
+      }
     }
     catch (err) {
       console.error(err);
@@ -190,6 +196,46 @@ export default function CreateProfile() {
               <span className="text-red-500 text-xs">{errors.image}</span>
             )}
           </div>
+
+          {/* Role (client ou proprietaire) */}
+          <div className="flex flex-col gap-1">
+            <label className="text-text-secondary text-sm">
+              Êtes-vous un propriétaire ou un client ?
+            </label>
+
+            <div className="flex items-center gap-6">
+              {/* CLIENT */}
+              <label className="flex items-center gap-2 cursor-pointer text-white">
+                <input
+                  type="radio"
+                  name="role"
+                  value="client"
+                  checked={formData.role === "client"}
+                  onChange={handleInputChange}
+                  className="accent-cyan-400"
+                />
+                Client
+              </label>
+
+              {/* PROPRIETAIRE */}
+              <label className="flex items-center gap-2 cursor-pointer text-white">
+                <input
+                  type="radio"
+                  name="role"
+                  value="owner"
+                  checked={formData.role === "owner"}
+                  onChange={handleInputChange}
+                  className="accent-cyan-400"
+                />
+                Propriétaire
+              </label>
+            </div>
+
+            {errors.role && (
+              <span className="text-red-500 text-xs">{errors.role}</span>
+            )}
+          </div>
+
 
           <button
             type="submit"
