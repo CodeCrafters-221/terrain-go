@@ -13,26 +13,6 @@ import Register from "../pages/Auth/Register";
 import CreateProfile from "../components/CreateProfile";
 import CreateField from "../components/CreateField";
 
-// export const router = createBrowserRouter([
-//   {
-//     element: <AppLayout />,
-//     children: [{ path: "/", element: <Home /> }],
-//   },
-//   {
-//     element: <UserProfile/>,
-//     children: [{ path: "/user-profile", element: <UserProfile /> }],
-//   },
-//   {
-//     element: <TerrainDetails />,
-//     children: [{ path: "/terrain-details", element: <TerrainDetails /> }],
-//   },
-//   {
-//     element: <SearchPage/>,
-//     children: [{ path: "/search", element: <SearchPage /> }],
-//   },
-// ]);
-
-
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
