@@ -32,7 +32,7 @@ export default function AuthProvider({ children }) {
                 return;
             }
 
-            const { data, error } = await supabase.from("profiles")
+            const { data, error } = await supabase.from("profils")
                 .select("*")
                 .eq("id", user.id)
                 .maybeSingle();

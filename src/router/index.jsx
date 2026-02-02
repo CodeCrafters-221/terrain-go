@@ -11,6 +11,10 @@ import AuthLayout from "../layouts/AuthLayout";
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import CreateProfile from "../components/CreateProfile";
+import DashboardLayout from "../layouts/DashboardLayout";
+import Overview from "../pages/Dashboard/Overview";
+import MyTerrains from "../pages/Dashboard/MyTerrains";
+import Reservations from "../pages/Dashboard/Reservations";
 
 // export const router = createBrowserRouter([
 //   {
@@ -53,6 +57,16 @@ export const router = createBrowserRouter([
       //   path: "/booking",
       //   element: <ProtectedRoute> <BookingPage /> </ProtectedRoute>
       // }
+    ],
+  },
+  {
+    path: "/dashboard",
+    element: <DashboardLayout />,
+    children: [
+      { index: true, element: <Overview /> },
+      { path: "terrains", element: <MyTerrains /> },
+      { path: "reservations", element: <Reservations /> },
+      // Add more dashboard routes here
     ],
   },
   {

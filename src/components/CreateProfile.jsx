@@ -78,12 +78,12 @@ export default function CreateProfile() {
         avatarUrl = data.publicUrl;
       }
 
-      const { error } = await supabase.from("profiles").insert({
+      const { error } = await supabase.from("profils").insert({
         id: user.id,
-        name: formData.name,
-        phone: formData.phone,
-        ville: formData.ville,
-        image: avatarUrl,
+        nom_complet: formData.name,
+        telephone: formData.phone,
+        // ville: formData.ville, // Pas dans le schéma actuel
+        avatar_url: avatarUrl,
       });
 
       if (error) {

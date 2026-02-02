@@ -4,12 +4,12 @@
   --color-bg: rgb(255 255 255);
   --color-text: rgb(15 15 15);
   --color-primary: rgb(255 122 0);
-  --color-mainBg: rgb(36, 27, 16);
+  --color-mainBg: rgb(35, 26, 16); /* Updated to match #231a10 rgb(35, 26, 16) */
   --font-lexend: "lexend", sans-serif;
   --color-primary-new: #f27f0d;
   --color-background-light: #f8f7f5;
-  --color-background-dark: #221910;
-  --color-surface-dark: #2f2316;
+  --color-background-dark: #231a10;
+  --color-surface-dark: #2c241b;
   --color-surface-highlight: #493622;
   --color-text-secondary: #cbad90;
 }
