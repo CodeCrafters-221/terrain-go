@@ -4,18 +4,16 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
-export default function CreateField() {
-    const { profile } = useAuth();
+export default function CreateFieldDetails() {
+    const { profile, terrains } = useAuth();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
-        name: "",
-        proprietaire_id: profile?.id,
-        description: "",
-        adress: "",
-        pelouse: "",
-        capacity: 0,
-        price_per_hour: 0,
+        terrain_id: terrains?.id,
+        url_image: "",
+        jour_semaine: "",
+        heure_debut: "",
+        heure_fin: "",
     });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +69,7 @@ export default function CreateField() {
             }
 
             toast.success("Terrain créé !");
-            navigate("/create-field-details");
+            navigate("/");
         }
         catch (err) {
             console.error(err);
@@ -89,7 +87,7 @@ export default function CreateField() {
         <div className="bg-[#2e2318] rounded-2xl w-3xl shadow-2xl border border-surface-highlight">
             <div className="p-6 sm:p-8">
                 <h2 className="text-white text-2xl font-semibold text-center mb-6">
-                    Ajout de Terrain
+                    Renseigner les détails du terrain
                 </h2>
 
                 <form onSubmit={handleSubmit} method="POST" className="grid grid-cols-2 gap-5">

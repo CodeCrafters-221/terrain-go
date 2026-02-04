@@ -12,6 +12,7 @@ import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import CreateProfile from "../components/CreateProfile";
 import CreateField from "../components/CreateField";
+import CreateFieldDetails from "../components/CreateFieldDetails";
 
 // export const router = createBrowserRouter([
 //   {
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
       { path: "/register", element: <Register /> },
       { path: "/create-profile", element: <ProtectedRoute><CreateProfile /></ProtectedRoute> },
       { path: "/create-field", element: <ProtectedRoute><CreateField /></ProtectedRoute> },
+      { path: "/create-field-details", element: <ProtectedRoute><CreateFieldDetails /></ProtectedRoute> },
     ],
   }
 ]);
