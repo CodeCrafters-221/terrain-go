@@ -1,279 +1,221 @@
 import { useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
 export default function CreateFieldDetails() {
-    const { profile, terrains } = useAuth();
-    const navigate = useNavigate();
+    const { terrains } = useAuth();
+    const terrainId = terrains?.id;
 
-    const [formData, setFormData] = useState({
-        terrain_id: terrains?.id,
-        url_image: "",
-        jour_semaine: "",
-        heure_debut: "",
-        heure_fin: "",
-    });
-    const [errors, setErrors] = useState({});
+    // States
+    const [images, setImages] = useState([]);
+    const [disponibilites, setDisponibilites] = useState([
+        { jour: "", heure_debut: "", heure_fin: "" },
+    ]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-        // Effacer l'erreur du champ en cours de modification
-        if (errors[name]) {
-            setErrors({ ...errors, [name]: "" });
-        }
+
+    const addImage = (file) => {
+        if (!file) return;
+        setImages((prev) => [...prev, file]);
+    };
+
+    const removeImage = (index) => {
+        setImages(images.filter((_, i) => i !== index));
+    };
+
+    const addDisponibilite = () => {
+        setDisponibilites((prev) => [
+            ...prev,
+            { jour: "", heure_debut: "", heure_fin: "" },
+        ]);
+    };
+
+    const removeDisponibilite = (index) => {
+        setDisponibilites(disponibilites.filter((_, i) => i !== index));
+    };
+
+    const updateDisponibilite = (index, field, value) => {
+        const updated = [...disponibilites];
+        updated[index][field] = value;
+        setDisponibilites(updated);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const validationErrors = {};
-
-        if (
-            formData.name == "" ||
-            formData.description == "" ||
-            formData.pelouse == "" ||
-            formData.adress == "" ||
-            formData.capacity == "" ||
-            formData.price_per_hour == ""
-        ) {
-            validationErrors.name = "Ce champ est requis !"
+        if (images.length === 0 && disponibilites.length === 0) {
+            toast.error("Ajoutez au moins une image ou un horaire");
+            return;
         }
-
-        if (formData.capacity > 11 || formData.capacity < 6) {
-            validationErrors.capacity = "La capacité du terrain doit etre en 6 (6x6) et 11 (11x11)"
-        }
-
-        setErrors(validationErrors);
-        if (Object.keys(validationErrors).length > 0) return;
 
         try {
             setIsLoading(true);
 
-            const { error } = await supabase.from("fields").insert({
-                name: formData.name,
-                proprietaire_id: profile?.id,
-                description: formData.description,
-                adress: formData.adress,
-                pelouse: formData.pelouse,
-                capacity: formData.capacity,
-                price_per_hour: formData.price_per_hour,
-            });
+            /* 1️⃣ UPLOAD DES IMAGES */
+            for (const img of images) {
+                const filePath = `fields/${terrainId}/${Date.now()}-${img.name}`;
 
-            if (error) {
-                toast.error(error.message);
-                return;
+                const { error: uploadError } = await supabase.storage
+                    .from("fields")
+                    .upload(filePath, img);
+
+                if (uploadError) throw uploadError;
+
+                const { data } = supabase.storage
+                    .from("fields")
+                    .getPublicUrl(filePath);
+
+                await supabase.from("field_images").insert({
+                    field_id: terrainId,
+                    image_url: data.publicUrl,
+                });
             }
 
-            toast.success("Terrain créé !");
-            navigate("/");
-        }
-        catch (err) {
+            /* 2️⃣ ENREGISTREMENT DES HORAIRES */
+            const horairesValides = disponibilites.filter(
+                (d) => d.jour && d.heure_debut && d.heure_fin
+            );
+
+            if (horairesValides.length > 0) {
+                await supabase.from("field_availability").insert(
+                    horairesValides.map((h) => ({
+                        field_id: terrainId,
+                        jour: h.jour,
+                        heure_debut: h.heure_debut,
+                        heure_fin: h.heure_fin,
+                    }))
+                );
+            }
+
+            toast.success("Images et horaires ajoutés avec succès !");
+            setImages([]);
+            setDisponibilites([{ jour: "", heure_debut: "", heure_fin: "" }]);
+        } catch (err) {
             console.error(err);
-            toast.error("Erreur serveur, réessaie plus tard");
-        }
-        finally {
+            toast.error("Erreur lors de l'enregistrement");
+        } finally {
             setIsLoading(false);
         }
     };
 
-    // Classes communes pour les inputs pour garder le code propre
-    const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
+    const inputClasses =
+        "w-full px-4 py-3 rounded-lg border bg-transparent text-white focus:outline-none focus:border-primary";
 
     return (
-        <div className="bg-[#2e2318] rounded-2xl w-3xl shadow-2xl border border-surface-highlight">
-            <div className="p-6 sm:p-8">
-                <h2 className="text-white text-2xl font-semibold text-center mb-6">
-                    Renseigner les détails du terrain
-                </h2>
+        <div className="bg-[#2e2318] rounded-2xl max-w-4xl mx-auto p-8">
+            <h2 className="text-white text-xl font-semibold mb-6">
+                Images & Horaires du terrain
+            </h2>
 
-                <form onSubmit={handleSubmit} method="POST" className="grid grid-cols-2 gap-5">
-                    {/* Name */}
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="name" className="text-text-secondary text-sm">
-                            Nom du terrain
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            placeholder="Terrain DSC"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            className={`${inputClasses} ${errors.name ? "border-red-500" : "border-surface-highlight"}`}
-                        />
-                        {errors.name && (
-                            <span className="text-red-500 text-xs">{errors.name}</span>
-                        )}
-                    </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                {/* ================= IMAGES ================= */}
+                <div>
+                    <label className="text-white text-sm">Images du terrain</label>
 
-                    {/* description */}
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="description" className="text-text-secondary text-sm">
-                            Description
-                        </label>
-                        <textarea
-                            type="number"
-                            id="description"
-                            name="description"
-                            placeholder="Parlez nous de votre terrain..."
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            className={`${inputClasses} ${errors.description ? "border-red-500" : "border-surface-highlight"}`}
-                        />
-                        {errors.description && (
-                            <span className="text-red-500 text-xs">{errors.description}</span>
-                        )}
-                    </div>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => addImage(e.target.files[0])}
+                        className="mt-2 text-white"
+                    />
 
-                    {/* adress */}
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="adress" className="text-text-secondary text-sm">
-                            Adresse
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                id="adress"
-                                name="adress"
-                                placeholder="Dakar Sacré Coeur"
-                                value={formData.adress}
-                                onChange={handleInputChange}
-                                className={`${inputClasses} ${errors.adress ? "border-red-500" : "border-surface-highlight"}`}
-                            />
-                        </div>
-                        {errors.adress && (
-                            <span className="text-red-500 text-xs">{errors.adress}</span>
-                        )}
-                    </div>
-
-                    {/* pelouse */}
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="pelouse" className="text-text-secondary text-sm">
-                            Pelouse
-                        </label>
-
-                        <div className="relative">
-                            <select id="pelouse"
-                                name="pelouse"
-                                value={formData.pelouse}
-                                onChange={handleInputChange}
-                                className={`${inputClasses}
-                                    appearance-none
-                                    pr-10
-                                    ${errors.capacity ? "border-red-500" : "border-surface-highlight"}
-                                    bg-transparent
-                                `}
-                            >
-                                <option value="" className="text-black">Choisir le type de pelouse</option>
-                                <option value="synthetique" className="text-black">Synthétique</option>
-                                <option value="gazon" className="text-black">Gazon</option>
-                                <option value="hybride" className="text-black">Hybride (gazon - synthétique)</option>
-                            </select>
-
-                            {/* Icône custom (corrige le padding visuel) */}
-                            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-                                <svg
-                                    className="h-4 w-4"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
+                    <div className="flex gap-3 flex-wrap mt-3">
+                        {images.map((img, i) => (
+                            <div key={i} className="relative">
+                                <img
+                                    src={URL.createObjectURL(img)}
+                                    className="w-24 h-24 object-cover rounded"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => removeImage(i)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 rounded-full"
                                 >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
+                                    ✕
+                                </button>
                             </div>
-                        </div>
-
-                        {errors.pelouse && (
-                            <span className="text-red-500 text-xs">{errors.pelouse}</span>
-                        )}
+                        ))}
                     </div>
+                </div>
 
-                    {/* capacity */}
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="capacity" className="text-text-secondary text-sm">
-                            Capacité du terrain
-                        </label>
+                {/* ================= HORAIRES ================= */}
+                <div>
+                    <label className="text-white text-sm">
+                        Horaires de disponibilité
+                    </label>
 
-                        <div className="relative">
+                    {disponibilites.map((d, i) => (
+                        <div key={i} className="grid grid-cols-4 gap-3 mt-3">
                             <select
-                                id="capacity"
-                                name="capacity"
-                                value={formData.capacity}
-                                onChange={handleInputChange}
-                                className={`${inputClasses}
-                                    appearance-none
-                                    pr-10
-                                    ${errors.capacity ? "border-red-500" : "border-surface-highlight"}
-                                    bg-transparent
-                                `}
+                                value={d.jour}
+                                onChange={(e) =>
+                                    updateDisponibilite(i, "jour", e.target.value)
+                                }
+                                className={`${inputClasses} text-black`}
                             >
-                                <option value="">Choisir la capacité</option>
-                                <option value={5}>5 x 5</option>
-                                <option value={6}>6 x 6</option>
-                                <option value={7}>7 x 7</option>
-                                <option value={8}>8 x 8</option>
-                                <option value={9}>9 x 9</option>
-                                <option value={11}>11 x 11</option>
+                                <option value="">Jour</option>
+                                {[
+                                    "Lundi",
+                                    "Mardi",
+                                    "Mercredi",
+                                    "Jeudi",
+                                    "Vendredi",
+                                    "Samedi",
+                                    "Dimanche",
+                                ].map((day) => (
+                                    <option key={day} value={day}>
+                                        {day}
+                                    </option>
+                                ))}
                             </select>
 
-                            {/* Icône custom (corrige le padding visuel) */}
-                            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-                                <svg
-                                    className="h-4 w-4"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {errors.capacity && (
-                            <span className="text-red-500 text-xs">{errors.capacity}</span>
-                        )}
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="capacity" className="text-text-secondary text-sm">
-                            Prix / Heure
-                        </label>
-                        <div className="relative">
                             <input
-                                type="number"
-                                id="price_per_hour"
-                                name="price_per_hour"
-                                placeholder="Ex: 20000"
-                                onChange={handleInputChange}
-                                className={`${inputClasses} ${errors.price_per_hour ? "border-red-500" : "border-surface-highlight"}`}
+                                type="time"
+                                value={d.heure_debut}
+                                onChange={(e) =>
+                                    updateDisponibilite(i, "heure_debut", e.target.value)
+                                }
+                                className={inputClasses}
                             />
-                        </div>
-                        {errors.price_per_hour && (
-                            <span className="text-red-500 text-xs">{errors.price_per_hour}</span>
-                        )}
-                    </div>
 
-                    {/* Submit Button */}
+                            <input
+                                type="time"
+                                value={d.heure_fin}
+                                onChange={(e) =>
+                                    updateDisponibilite(i, "heure_fin", e.target.value)
+                                }
+                                className={inputClasses}
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => removeDisponibilite(i)}
+                                className="text-red-500"
+                            >
+                                Supprimer
+                            </button>
+                        </div>
+                    ))}
+
                     <button
-                        type="submit"
-                        className="w-1/3 mx-auto col-span-2 bg-primary text-black font-semibold py-3 rounded-lg hover:bg-primary/90 transition-opacity mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={isLoading}
+                        type="button"
+                        onClick={addDisponibilite}
+                        className="text-primary mt-3"
                     >
-                        {isLoading ? "Ajout..." : "Ajouter mon terrain"}
+                        + Ajouter un jour
                     </button>
-                </form>
-            </div>
+                </div>
+
+                {/* ================= SUBMIT ================= */}
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="bg-primary text-black py-3 rounded-lg font-semibold disabled:opacity-50"
+                >
+                    {isLoading ? "Enregistrement..." : "Enregistrer"}
+                </button>
+            </form>
         </div>
     );
 }
