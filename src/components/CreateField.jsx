@@ -6,6 +6,8 @@ import { useAuth } from "../context/AuthContext";
 
 export default function CreateField() {
     const { profile } = useAuth();
+    const navigate = useNavigate();
+
     const [formData, setFormData] = useState({
         name: "",
         proprietaire_id: profile?.id,
@@ -15,10 +17,8 @@ export default function CreateField() {
         capacity: 0,
         price_per_hour: 0,
     });
-
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
-    const navigate = useNavigate();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -71,7 +71,7 @@ export default function CreateField() {
             }
 
             toast.success("Terrain créé !");
-            navigate("/");
+            navigate("/create-field-details");
         }
         catch (err) {
             console.error(err);
@@ -81,7 +81,6 @@ export default function CreateField() {
             setIsLoading(false);
         }
     };
-
 
     // Classes communes pour les inputs pour garder le code propre
     const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
@@ -198,7 +197,6 @@ export default function CreateField() {
                         )}
                     </div>
 
-
                     {/* capacity */}
                     <div className="flex flex-col gap-1">
                         <label htmlFor="capacity" className="text-text-secondary text-sm">
@@ -248,7 +246,6 @@ export default function CreateField() {
                         )}
                     </div>
 
-
                     {/* Price */}
                     <div className="flex flex-col gap-1">
                         <label htmlFor="capacity" className="text-text-secondary text-sm">
@@ -278,7 +275,6 @@ export default function CreateField() {
                         {isLoading ? "Ajout..." : "Ajouter mon terrain"}
                     </button>
                 </form>
-
             </div>
         </div>
     );
