@@ -15,6 +15,8 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Overview from "../pages/Dashboard/Overview";
 import MyTerrains from "../pages/Dashboard/MyTerrains";
 import Reservations from "../pages/Dashboard/Reservations";
+import CreateField from "../components/CreateField";
+import CreateFieldDetails from "../components/CreateFieldDetails";
 
 // export const router = createBrowserRouter([
 //   {
@@ -35,7 +37,6 @@ import Reservations from "../pages/Dashboard/Reservations";
 //   },
 // ]);
 
-
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
@@ -43,7 +44,12 @@ export const router = createBrowserRouter([
       { path: "/", element: <Home /> },
       {
         path: "/profile",
-        element: <ProtectedRoute> <UserProfile /> </ProtectedRoute>,
+        element: (
+          <ProtectedRoute>
+            {" "}
+            <UserProfile />{" "}
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/terrain-details",
@@ -74,7 +80,30 @@ export const router = createBrowserRouter([
     children: [
       { path: "/login", element: <Login /> },
       { path: "/register", element: <Register /> },
-      { path: "/create-profile", element: <ProtectedRoute><CreateProfile /></ProtectedRoute> },
+      {
+        path: "/create-profile",
+        element: (
+          <ProtectedRoute>
+            <CreateProfile />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/create-field",
+        element: (
+          <ProtectedRoute>
+            <CreateField />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/create-field-details",
+        element: (
+          <ProtectedRoute>
+            <CreateFieldDetails />
+          </ProtectedRoute>
+        ),
+      },
     ],
-  }
+  },
 ]);

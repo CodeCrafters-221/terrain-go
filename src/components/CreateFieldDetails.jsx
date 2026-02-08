@@ -1,0 +1,221 @@
+import { useState } from "react";
+import { supabase } from "../services/supabaseClient";
+import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext";
+
+export default function CreateFieldDetails() {
+    const { terrains } = useAuth();
+    const terrainId = terrains?.id;
+
+    // States
+    const [images, setImages] = useState([]);
+    const [disponibilites, setDisponibilites] = useState([
+        { jour: "", heure_debut: "", heure_fin: "" },
+    ]);
+    const [isLoading, setIsLoading] = useState(false);
+
+
+    const addImage = (file) => {
+        if (!file) return;
+        setImages((prev) => [...prev, file]);
+    };
+
+    const removeImage = (index) => {
+        setImages(images.filter((_, i) => i !== index));
+    };
+
+    const addDisponibilite = () => {
+        setDisponibilites((prev) => [
+            ...prev,
+            { jour: "", heure_debut: "", heure_fin: "" },
+        ]);
+    };
+
+    const removeDisponibilite = (index) => {
+        setDisponibilites(disponibilites.filter((_, i) => i !== index));
+    };
+
+    const updateDisponibilite = (index, field, value) => {
+        const updated = [...disponibilites];
+        updated[index][field] = value;
+        setDisponibilites(updated);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (images.length === 0 && disponibilites.length === 0) {
+            toast.error("Ajoutez au moins une image ou un horaire");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+
+            /* 1️⃣ UPLOAD DES IMAGES */
+            for (const img of images) {
+                const filePath = `fields/${terrainId}/${Date.now()}-${img.name}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from("fields")
+                    .upload(filePath, img);
+
+                if (uploadError) throw uploadError;
+
+                const { data } = supabase.storage
+                    .from("fields")
+                    .getPublicUrl(filePath);
+
+                await supabase.from("field_images").insert({
+                    field_id: terrainId,
+                    image_url: data.publicUrl,
+                });
+            }
+
+            /* 2️⃣ ENREGISTREMENT DES HORAIRES */
+            const horairesValides = disponibilites.filter(
+                (d) => d.jour && d.heure_debut && d.heure_fin
+            );
+
+            if (horairesValides.length > 0) {
+                await supabase.from("field_availability").insert(
+                    horairesValides.map((h) => ({
+                        field_id: terrainId,
+                        jour: h.jour,
+                        heure_debut: h.heure_debut,
+                        heure_fin: h.heure_fin,
+                    }))
+                );
+            }
+
+            toast.success("Images et horaires ajoutés avec succès !");
+            setImages([]);
+            setDisponibilites([{ jour: "", heure_debut: "", heure_fin: "" }]);
+        } catch (err) {
+            console.error(err);
+            toast.error("Erreur lors de l'enregistrement");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const inputClasses =
+        "w-full px-4 py-3 rounded-lg border bg-transparent text-white focus:outline-none focus:border-primary";
+
+    return (
+        <div className="bg-[#2e2318] rounded-2xl max-w-4xl mx-auto p-8">
+            <h2 className="text-white text-xl font-semibold mb-6">
+                Images & Horaires du terrain
+            </h2>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                {/* ================= IMAGES ================= */}
+                <div>
+                    <label className="text-white text-sm">Images du terrain</label>
+
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => addImage(e.target.files[0])}
+                        className="mt-2 text-white"
+                    />
+
+                    <div className="flex gap-3 flex-wrap mt-3">
+                        {images.map((img, i) => (
+                            <div key={i} className="relative">
+                                <img
+                                    src={URL.createObjectURL(img)}
+                                    className="w-24 h-24 object-cover rounded"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => removeImage(i)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 rounded-full"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ================= HORAIRES ================= */}
+                <div>
+                    <label className="text-white text-sm">
+                        Horaires de disponibilité
+                    </label>
+
+                    {disponibilites.map((d, i) => (
+                        <div key={i} className="grid grid-cols-4 gap-3 mt-3">
+                            <select
+                                value={d.jour}
+                                onChange={(e) =>
+                                    updateDisponibilite(i, "jour", e.target.value)
+                                }
+                                className={`${inputClasses} text-black`}
+                            >
+                                <option value="">Jour</option>
+                                {[
+                                    "Lundi",
+                                    "Mardi",
+                                    "Mercredi",
+                                    "Jeudi",
+                                    "Vendredi",
+                                    "Samedi",
+                                    "Dimanche",
+                                ].map((day) => (
+                                    <option key={day} value={day}>
+                                        {day}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <input
+                                type="time"
+                                value={d.heure_debut}
+                                onChange={(e) =>
+                                    updateDisponibilite(i, "heure_debut", e.target.value)
+                                }
+                                className={inputClasses}
+                            />
+
+                            <input
+                                type="time"
+                                value={d.heure_fin}
+                                onChange={(e) =>
+                                    updateDisponibilite(i, "heure_fin", e.target.value)
+                                }
+                                className={inputClasses}
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => removeDisponibilite(i)}
+                                className="text-red-500"
+                            >
+                                Supprimer
+                            </button>
+                        </div>
+                    ))}
+
+                    <button
+                        type="button"
+                        onClick={addDisponibilite}
+                        className="text-primary mt-3"
+                    >
+                        + Ajouter un jour
+                    </button>
+                </div>
+
+                {/* ================= SUBMIT ================= */}
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="bg-primary text-black py-3 rounded-lg font-semibold disabled:opacity-50"
+                >
+                    {isLoading ? "Enregistrement..." : "Enregistrer"}
+                </button>
+            </form>
+        </div>
+    );
+}

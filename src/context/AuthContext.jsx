@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export default function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [terrains, setTerrains] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,8 +49,27 @@ export default function AuthProvider({ children }) {
         fetchProfiles();
     }, [user]);
 
+    useEffect(() => {
+        const fetchTerrains = async () => {
+            if(profile.role === "owner") {
+                const { data, error } = await supabase.from("fields")
+                .select("*")
+                .eq("proprietaire_id", profile.id);
+
+                if(!error) {
+                    setTerrains(data);
+                } else {
+                    console.error("Erreur récuperation terrain: ", error.message);
+                    setTerrains(null);
+                }
+            }
+        }
+
+        fetchTerrains();
+    }, [profile]);
+
     return (
-        <AuthContext.Provider value={{ user, loading, profile }}>
+        <AuthContext.Provider value={{ user, loading, profile, terrains }}>
             {children}
         </AuthContext.Provider>
     );
