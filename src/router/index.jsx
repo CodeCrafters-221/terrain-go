@@ -12,9 +12,9 @@ import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
 import CreateProfile from "../components/CreateProfile";
 import DashboardLayout from "../layouts/DashboardLayout";
-import Overview from "../pages/Dashboard/Overview";
-import MyTerrains from "../pages/Dashboard/MyTerrains";
-import Reservations from "../pages/Dashboard/Reservations";
+import Overview from "../sections/Dashboard/Overview";
+import MyTerrains from "../sections/Dashboard/MyTerrains";
+import Reservations from "../sections/Dashboard/Reservations";
 import CreateField from "../components/CreateField";
 import CreateFieldDetails from "../components/CreateFieldDetails";
 
