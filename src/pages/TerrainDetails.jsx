@@ -1,4 +1,22 @@
 import React from "react";
+import {
+  Trophy,
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  MapPin,
+  Star,
+  Share2,
+  Heart,
+  Shirt,
+  ShowerHead,
+  SquareParking,
+  Wifi,
+  Lightbulb,
+  Calendar,
+  Clock,
+  ArrowRight,
+} from "lucide-react";
 
 export default function TerrainDetails() {
   return (
@@ -11,11 +29,9 @@ export default function TerrainDetails() {
               className="flex items-center gap-3 text-white hover:opacity-80 transition-opacity"
               href="#"
             >
-              <span class="material-symbols-outlined text-3xl text-primary">
-                sports_soccer
-              </span>
+              <Trophy className="w-8 h-8 text-primary" strokeWidth={1.5} />
               <h2 className="text-white text-xl font-bold leading-tight tracking-tight">
-                 Footbooking
+                Footbooking
               </h2>
             </a>
             <div className="hidden md:flex items-center gap-8">
@@ -41,9 +57,7 @@ export default function TerrainDetails() {
           </div>
           <div className="flex items-center gap-6">
             <div className="hidden sm:flex items-center bg-surface-light rounded-full px-4 h-10 w-64 border border-b-surface-dark focus-within:border-primary/50 transition-all">
-              <span className="material-symbols-outlined text-text-secondary text-[20px]">
-                search
-              </span>
+              <Search className="text-text-secondary w-5 h-5" />
               <input
                 className="bg-transparent border-none text-white text-sm w-full outline-0 px-4 focus:ring-0 placeholder:text-text-secondary/70"
                 placeholder="Rechercher un terrain..."
@@ -66,18 +80,14 @@ export default function TerrainDetails() {
           >
             Accueil
           </a>
-          <span className="material-symbols-outlined text-text-secondary text-[14px]">
-            chevron_right
-          </span>
+          <ChevronRight className="text-text-secondary w-3.5 h-3.5" />
           <a
             className="text-text-secondary hover:text-primary transition-colors"
             href="#"
           >
             Terrains
           </a>
-          <span className="material-symbols-outlined text-text-secondary text-[14px]">
-            chevron_right
-          </span>
+          <ChevronRight className="text-text-secondary w-3.5 h-3.5" />
           <span className="text-white font-medium">Sacré-Cœur 1</span>
         </div>
 
@@ -89,16 +99,12 @@ export default function TerrainDetails() {
             </h1>
             <div className="flex items-center gap-4 text-text-secondary text-sm md:text-base">
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-primary text-[20px]">
-                  location_on
-                </span>
+                <MapPin className="text-primary w-5 h-5" />
                 Liberté 6, Dakar
               </span>
               <span className="w-1 h-1 rounded-full bg-text-secondary"></span>
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-primary text-[20px] fill-1">
-                  star
-                </span>
+                <Star className="text-primary w-5 h-5 fill-current" />
                 <span className="text-white font-semibold">4.8</span>
                 <span>(120 avis)</span>
               </span>
@@ -106,15 +112,11 @@ export default function TerrainDetails() {
           </div>
           <div className="flex gap-3">
             <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-surface-light bg-surface-dark hover:bg-surface-light text-white text-sm font-medium transition-colors">
-              <span className="material-symbols-outlined text-[18px]">
-                share
-              </span>
+              <Share2 className="w-[18px] h-[18px]" />
               Partager
             </button>
             <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-surface-light bg-surface-dark hover:bg-surface-light text-white text-sm font-medium transition-colors">
-              <span className="material-symbols-outlined text-[18px]">
-                favorite
-              </span>
+              <Heart className="w-[18px] h-[18px]" />
               Sauvegarder
             </button>
           </div>
@@ -212,49 +214,37 @@ export default function TerrainDetails() {
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <span className="material-symbols-outlined text-primary">
-                    checkroom
-                  </span>
+                  <Shirt className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Vestiaires
                   </span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <span className="material-symbols-outlined text-primary">
-                    shower
-                  </span>
+                  <ShowerHead className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Douches
                   </span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <span className="material-symbols-outlined text-primary">
-                    local_parking
-                  </span>
+                  <SquareParking className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Parking
                   </span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <span className="material-symbols-outlined text-primary">
-                    wifi
-                  </span>
+                  <Wifi className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Wi-Fi Gratuit
                   </span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <span className="material-symbols-outlined text-primary">
-                    light_mode
-                  </span>
+                  <Lightbulb className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Éclairage LED
                   </span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <span className="material-symbols-outlined text-primary">
-                    sports_soccer
-                  </span>
+                  <Trophy className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Ballons fournis
                   </span>
@@ -271,17 +261,13 @@ export default function TerrainDetails() {
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-6">
                   <button className="p-2 hover:bg-surface-light rounded-full text-text-secondary transition-colors">
-                    <span className="material-symbols-outlined">
-                      chevron_left
-                    </span>
+                    <ChevronLeft className="w-6 h-6" />
                   </button>
                   <h4 className="text-lg font-semibold text-white">
                     Octobre 2023
                   </h4>
                   <button className="p-2 hover:bg-surface-light rounded-full text-text-secondary transition-colors">
-                    <span className="material-symbols-outlined">
-                      chevron_right
-                    </span>
+                    <ChevronRight className="w-6 h-6" />
                   </button>
                 </div>
 
@@ -386,9 +372,7 @@ export default function TerrainDetails() {
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">Avis (120)</h3>
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary fill-1">
-                    star
-                  </span>
+                  <Star className="text-primary w-5 h-5 fill-current" />
                   <span className="text-xl font-bold text-white">4.8</span>
                 </div>
               </div>
@@ -414,22 +398,13 @@ export default function TerrainDetails() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-0.5 text-primary text-[14px]">
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
+                    <div className="flex gap-0.5 text-primary">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star
+                          key={i}
+                          className="w-[14px] h-[14px] fill-current"
+                        />
+                      ))}
                     </div>
                   </div>
                   <p className="text-text-secondary text-sm">
@@ -459,20 +434,14 @@ export default function TerrainDetails() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-0.5 text-primary text-[14px]">
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined fill-1">
-                        star
-                      </span>
-                      <span className="material-symbols-outlined">star</span>
+                    <div className="flex gap-0.5 text-primary">
+                      {[1, 2, 3, 4].map((i) => (
+                        <Star
+                          key={i}
+                          className="w-[14px] h-[14px] fill-current"
+                        />
+                      ))}
+                      <Star className="w-[14px] h-[14px]" />
                     </div>
                   </div>
                   <p className="text-text-secondary text-sm">
@@ -502,9 +471,7 @@ export default function TerrainDetails() {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-white p-2 rounded-full shadow-xl">
                     <div className="bg-primary p-2 rounded-full text-[#231a10]">
-                      <span className="material-symbols-outlined block">
-                        sports_soccer
-                      </span>
+                      <Trophy className="w-6 h-6" strokeWidth={2} />
                     </div>
                   </div>
                 </div>
@@ -526,9 +493,7 @@ export default function TerrainDetails() {
                   <span className="text-text-secondary text-sm">par heure</span>
                 </div>
                 <div className="flex items-center gap-1 bg-surface-light px-2 py-1 rounded-md">
-                  <span className="material-symbols-outlined text-primary text-[16px] fill-1">
-                    star
-                  </span>
+                  <Star className="text-primary w-4 h-4 fill-current" />
                   <span className="text-white font-bold text-sm">4.8</span>
                 </div>
               </div>
@@ -543,9 +508,7 @@ export default function TerrainDetails() {
                       5 Octobre 2023
                     </span>
                   </div>
-                  <span className="material-symbols-outlined text-primary">
-                    calendar_month
-                  </span>
+                  <Calendar className="text-primary w-5 h-5" />
                 </div>
                 <div className="bg-[#231a10] rounded-xl p-4 border border-surface-light/50 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors">
                   <div className="flex flex-col">
@@ -556,9 +519,7 @@ export default function TerrainDetails() {
                       19:00 - 20:00
                     </span>
                   </div>
-                  <span className="material-symbols-outlined text-primary">
-                    schedule
-                  </span>
+                  <Clock className="text-primary w-5 h-5" />
                 </div>
               </div>
               {/* Breakdown */}
@@ -580,9 +541,7 @@ export default function TerrainDetails() {
               {/* CTA */}
               <button className="w-full bg-primary hover:bg-primary-hover text-[#231a10] font-bold text-lg py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group">
                 Réserver ce terrain
-                <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
-                  arrow_forward
-                </span>
+                <ArrowRight className="transition-transform group-hover:translate-x-1 w-5 h-5" />
               </button>
               <p className="text-center text-xs text-text-secondary mt-4">
                 Aucun débit immédiat. Annulation gratuite jusqu'à 24h avant.

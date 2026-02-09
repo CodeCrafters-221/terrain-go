@@ -1,18 +1,49 @@
-import React from "react";
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
+
 import Home from "../pages/Home";
-import UserProfile from "../components/UserProfile";
-import TerrainDetails from "../pages/TerrainDetails";
 import SearchPage from "../pages/SearchPage";
+import UserProfile from "../pages/UserProfile";
+import TerrainDetails from "../pages/TerrainDetails";
+import ProtectedRoute from "../components/ProtectedRoute";
+import BookingPage from "../pages/BookingPage";
+import AuthLayout from "../layouts/AuthLayout";
+import Login from "../pages/Auth/Login";
+import Register from "../pages/Auth/Register";
+import CreateProfile from "../components/CreateProfile";
+import CreateField from "../components/CreateField";
+import CreateFieldDetails from "../components/CreateFieldDetails";
 
 export const router = createBrowserRouter([
   {
     element: <AppLayout />,
-    children: [{ path: "/", element: <Home /> }],
+    children: [
+      { path: "/", element: <Home /> },
+      {
+        path: "/profile",
+        element: (
+          <ProtectedRoute>
+            {" "}
+            <UserProfile />{" "}
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/terrain-details",
+        element: <TerrainDetails />,
+      },
+      {
+        path: "/search",
+        element: <SearchPage />,
+      },
+      // {
+      //   path: "/booking",
+      //   element: <ProtectedRoute> <BookingPage /> </ProtectedRoute>
+      // }
+    ],
   },
   {
-    element: <UserProfile/>,
+    element: <UserProfile />,
     children: [{ path: "/user-profile", element: <UserProfile /> }],
   },
   {
@@ -20,7 +51,7 @@ export const router = createBrowserRouter([
     children: [{ path: "/terrain-details", element: <TerrainDetails /> }],
   },
   {
-    element: <SearchPage/>,
+    element: <SearchPage />,
     children: [{ path: "/search", element: <SearchPage /> }],
   },
 ]);

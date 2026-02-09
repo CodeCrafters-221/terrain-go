@@ -1,6 +1,5 @@
 
-## - router/index.jsx
-#  all routes (/, /user-profile, /terrain-details, /search
+
 # ⚽ FOOTBOOKING — Plateforme de Réservation de Terrains de Foot
 
 FOOTBOOKING est une application web de réservation de terrains de football.
@@ -236,4 +235,8 @@ origin/dev
 
 
 - router/index.jsx
+<<<<<<< HEAD
 ## : Merged all routes (/, /user-profile, /terrain-details, /search)
+=======
+## : Merged all routes (/, /user-profile, /terrain-details, /search)
+>>>>>>> 339495c2b854d0d02b02cc417db40cccbc2e8850

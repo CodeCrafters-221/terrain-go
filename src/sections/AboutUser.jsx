@@ -1,5 +1,6 @@
 import React from "react";
 import TabNavigation from "../sections/TabNavigation";
+import { MapPin, Pencil } from "lucide-react";
 
 export default function AboutUser() {
   return (
@@ -13,9 +14,7 @@ export default function AboutUser() {
                 User Name
               </h1>
               <div className="flex items-center gap-2 text-orange-300">
-                <span className="material-symbols-outlined text-[18px]">
-                  location_on
-                </span>
+                <MapPin className="w-[18px] h-[18px]" />
                 <p className="text-base font-normal">Dakar, Sénégal</p>
               </div>
               <div className="flex items-center gap-2 mt-2">
@@ -31,8 +30,8 @@ export default function AboutUser() {
         </div>
         <div className="">
           <button className="flex items-center justify-center gap-2 rounded-full h-10 px-6 bg-[#4a3723] hover:bg-[#5a432b] text-white text-sm font-bold transition-all w-full md:w-auto cursor-pointer">
-            <span className="material-symbols-outlined text-[18px]">edit</span>
-            Modifier le rofile
+            <Pencil className="w-[18px] h-[18px]" />
+            Modifier le profil
           </button>
         </div>
       </div>

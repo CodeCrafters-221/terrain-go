@@ -15,7 +15,7 @@
 }
 
 .header {
-  @apply fixed top-0 z-50 w-full border-b border-[#493622] bg-mainBg backdrop-blur-sm px-5 md:px-10 lg:px-40 flex justify-around py-3;
+  @apply fixed top-0 z-50 w-full border-b border-surface-highlight bg-mainBg backdrop-blur-sm px-5 md:px-10 lg:px-40 flex justify-around py-3;
 }
 
 .navigation {
@@ -54,4 +54,13 @@
 .userBgImg {
   @apply bg-cover bg-center bg-no-repeat rounded-full
   bg-[url(/public/userpng.png)];
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
