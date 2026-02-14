@@ -16,7 +16,7 @@ export default function CreateProfile() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -79,7 +79,7 @@ export default function CreateProfile() {
         avatarUrl = data.publicUrl;
       }
 
-      const { error } = await supabase.from("profils").insert({
+      const { error } = await supabase.from("profiles").insert({
         id: user.id,
         name: formData.name,
         phone: formData.phone,
@@ -94,10 +94,11 @@ export default function CreateProfile() {
       }
 
       toast.success("Profil créé !");
+      await refreshProfile();
       if (formData.role == "client") {
         navigate("/");
       } else if (formData.role == "owner") {
-        navigate("/create-field");
+        navigate("/dashboard");
       }
     } catch (err) {
       console.error(err);

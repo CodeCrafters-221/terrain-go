@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, X, Star, Lock, LogIn, UserPlus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../services/supabaseClient";
+import { toast } from "react-toastify";
 
 export default function ReservationModal({
   isOpen,
@@ -28,29 +30,15 @@ export default function ReservationModal({
     if (user) {
       setFormData((prev) => ({
         ...prev,
-        playerName: profile?.name,
-        phone: profile?.phone,
+        playerName: profile?.name || "",
+        phone: profile?.phone || "",
         email: user.email || "",
       }));
     }
   }, [user, profile]);
 
   const timeSlots = [
-    "08:00",
-    "09:00",
-    "10:00",
-    "11:00",
-    "12:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-    "17:00",
-    "18:00",
-    "19:00",
-    "20:00",
-    "21:00",
-    "22:00",
+    "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00",
   ];
 
   const durations = [
@@ -70,46 +58,118 @@ export default function ReservationModal({
     return stadium.price * parseFloat(formData.duration);
   };
 
+  const calculateEndTime = (startTime, durationHours) => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    date.setTime(date.getTime() + durationHours * 60 * 60 * 1000);
+    return date.toTimeString().split(' ')[0].substring(0, 5);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
     try {
-      if (
-        !formData.date ||
-        !formData.timeSlot ||
-        !formData.playerName ||
-        !formData.phone
-      ) {
+      if (!formData.date || !formData.timeSlot || !formData.playerName || !formData.phone) {
         throw new Error("Veuillez remplir les champs obligatoires (*)");
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Check if it's a demo terrain
+      if (stadium.id.toString().startsWith("default-")) {
+        throw new Error("Ce terrain est un exemple de démonstration. Pour effectuer une vraie réservation, veuillez choisir un terrain dans la page 'Trouver un terrain'.");
+      }
 
-      console.log("Réservation:", {
-        stadium: stadium.city,
-        user_id: user?.id,
-        ...formData,
-        total: calculateTotal(),
-      });
+      const endTime = calculateEndTime(formData.timeSlot, parseFloat(formData.duration));
 
-      alert(
-        `Réservation confirmée !\nTotal: ${calculateTotal().toLocaleString()} FCFA`,
-      );
+      const reservationData = {
+        utilisateur_id: user?.id,
+        terrain_id: stadium.id,
+        date: formData.date,
+        heure_debut: formData.timeSlot,
+        heure_fin: endTime,
+        prix_total: calculateTotal(),
+        nom_client: formData.playerName,
+        telephone_client: formData.phone,
+        statut: 'En attente de paiement'
+      };
+
+      console.log("SENDING RESERVATION:", reservationData);
+
+      const { data: insertedData, error: insertError } = await supabase
+        .from('reservations')
+        .insert([reservationData])
+        .select();
+
+      if (insertError) {
+        console.error("DETAILED INSERT ERROR:", insertError);
+        throw insertError;
+      }
+
+      console.log("INSERT SUCCESSFUL, RECEIVED DATA:", insertedData);
+
+      toast.success("Réservation confirmée !");
+
       onClose();
       setFormData((prev) => ({ ...prev, date: "", timeSlot: "" }));
     } catch (err) {
-      setError(err.message);
+      console.error("Erreur réservation:", err);
+      // Special handling for the bigint error just in case
+      if (err.message?.includes("invalid input syntax for type bigint")) {
+        setError("Impossible de réserver ce terrain d'exemple. Veuillez utiliser la recherche pour trouver un vrai terrain.");
+      } else {
+        setError(err.message || "Une erreur est survenue lors de la réservation.");
+      }
     } finally {
       setIsSubmitting(false);
     }
+
   };
 
   if (!isOpen || !stadium) return null;
 
+  // --- CAS PROPRIÉTAIRE : NE PEUT PAS RÉSERVER ---
+  if (user && profile?.role === "owner") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-[#2e2318] rounded-2xl max-w-md w-full border border-[#493622] shadow-2xl relative overflow-hidden">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors p-1"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          <div className="p-6 sm:p-8 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mb-6">
+              <Lock className="w-8 h-8 text-orange-500" />
+            </div>
+
+            <h2 className="text-white text-2xl font-bold mb-3">
+              Action non autorisée
+            </h2>
+            <p className="text-[#cbad90] text-base mb-8 leading-relaxed">
+              En tant que <span className="text-white font-semibold">propriétaire</span>,
+              vous ne pouvez pas effectuer de réservation sur la plateforme.
+              Cette fonctionnalité est réservée aux clients.
+            </p>
+
+            <button
+              onClick={onClose}
+              className="w-full bg-[#342618] text-white font-bold py-3.5 rounded-xl hover:bg-[#3d2d1d] border border-[#493622] transition-all"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // --- CAS 1 : NON CONNECTÉ ---
   if (!user) {
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
         <div className="bg-[#2e2318] rounded-2xl max-w-md w-full border border-[#493622] shadow-2xl relative overflow-hidden">
@@ -207,7 +267,7 @@ export default function ReservationModal({
               </div>
               <div className="text-right flex gap-1 items-center">
                 <p className="text-primary text-lg sm:text-2xl font-bold">
-                  {stadium.price.toLocaleString()} CFA
+                  {(stadium.price || 0).toLocaleString()} CFA
                 </p>
                 <p className="text-gray-400 text-[10px] sm:text-sm">/h</p>
               </div>
@@ -266,11 +326,10 @@ export default function ReservationModal({
                     onClick={() =>
                       setFormData((prev) => ({ ...prev, duration: dur.value }))
                     }
-                    className={`py-2 sm:py-3 px-1 sm:px-4 rounded-lg font-semibold text-xs sm:text-base transition-all border ${
-                      formData.duration === dur.value
-                        ? "bg-primary text-black border-primary"
-                        : "bg-[#342618] text-white border-[#493622] hover:border-primary/50"
-                    }`}
+                    className={`py-2 sm:py-3 px-1 sm:px-4 rounded-lg font-semibold text-xs sm:text-base transition-all border ${formData.duration === dur.value
+                      ? "bg-primary text-black border-primary"
+                      : "bg-[#342618] text-white border-[#493622] hover:border-primary/50"
+                      }`}
                   >
                     {dur.label}
                   </button>
@@ -348,7 +407,7 @@ export default function ReservationModal({
               <div className="flex justify-between items-center">
                 <span className="text-white text-base sm:text-lg">Total</span>
                 <span className="text-primary text-2xl sm:text-3xl font-bold">
-                  {calculateTotal().toLocaleString()} F
+                  {(calculateTotal() || 0).toLocaleString()} F
                 </span>
               </div>
 

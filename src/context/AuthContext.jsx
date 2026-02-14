@@ -8,6 +8,7 @@ export default function AuthProvider({ children }) {
     const [profile, setProfile] = useState(null);
     const [terrains, setTerrains] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [profileLoading, setProfileLoading] = useState(true);
 
     useEffect(() => {
         const initSession = async () => {
@@ -26,37 +27,42 @@ export default function AuthProvider({ children }) {
         return () => subscription.unsubscribe();
     }, []);
 
-    useEffect(() => {
-        const fetchProfiles = async () => {
-            if (!user) {
-                setProfile(null);
-                return;
-            }
-
-            const { data, error } = await supabase.from("profils")
-                .select("*")
-                .eq("id", user.id)
-                .maybeSingle();
-
-            if (!error) {
-                setProfile(data);
-            } else {
-                console.error("Erreur Profil: ", error.message);
-                setProfile(null);
-            }
+    const refreshProfile = async () => {
+        if (!user) {
+            setProfile(null);
+            setProfileLoading(false);
+            return;
         }
 
-        fetchProfiles();
+        setProfileLoading(true);
+        const { data, error } = await supabase.from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (!error) {
+            setProfile(data);
+        } else {
+            console.error("Erreur Profil: ", error.message);
+            setProfile(null);
+        }
+        setProfileLoading(false);
+    };
+
+    useEffect(() => {
+        refreshProfile();
     }, [user]);
 
     useEffect(() => {
         const fetchTerrains = async () => {
-            if(profile.role === "owner") {
-                const { data, error } = await supabase.from("fields")
-                .select("*")
-                .eq("proprietaire_id", profile.id);
+            if (!profile) return;
 
-                if(!error) {
+            if (profile.role === "owner") {
+                const { data, error } = await supabase.from("fields")
+                    .select("*")
+                    .eq("proprietaire_id", profile.id);
+
+                if (!error) {
                     setTerrains(data);
                 } else {
                     console.error("Erreur récuperation terrain: ", error.message);
@@ -69,7 +75,7 @@ export default function AuthProvider({ children }) {
     }, [profile]);
 
     return (
-        <AuthContext.Provider value={{ user, loading, profile, terrains }}>
+        <AuthContext.Provider value={{ user, loading, profile, profileLoading, terrains, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     );

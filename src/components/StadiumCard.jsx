@@ -47,7 +47,7 @@ export default function StadiumCard({
        4. bg-[#2e2318] : Ajouté ici pour que toute la carte ait le fond, pas juste le texte
        5. rounded-2xl et overflow-hidden : Appliqués au conteneur principal
     */
-    <div className="w-full max-w-[350px] md:max-w-none mx-auto flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] hover:border-primary/50 transition-all duration-300">
+    <div className="w-full h-full flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] hover:border-primary/50 transition-all duration-300">
       {/* Image : Hauteur adaptative (h-48 sur mobile, h-60 sur desktop) */}
       <figure className="relative h-48 sm:h-56 md:h-60 flex-shrink-0">
         <img
@@ -64,9 +64,8 @@ export default function StadiumCard({
           aria-label="Ajouter aux favoris"
         >
           <Heart
-            className={`w-5 h-5 transition-colors ${
-              isFavorite ? "fill-white text-white" : "text-white"
-            }`}
+            className={`w-5 h-5 transition-colors ${isFavorite ? "fill-white text-white" : "text-white"
+              }`}
           />
         </button>
       </figure>

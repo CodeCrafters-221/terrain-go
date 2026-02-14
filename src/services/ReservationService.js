@@ -7,19 +7,17 @@ export const ReservationService = {
         if (!user) throw new Error("Non connecté");
 
         // Fetch reservations linked to terrains owned by this user
-        // NOTE: Removed 'profils' join to avoid relationship errors if FK is missing or not configured
-        // We rely on 'nom_client' for manual entries and 'utilisateur_id' existence logic
         const { data, error } = await supabase
             .from("reservations")
             .select(`
         *,
-        terrains!inner (
+        fields!inner (
           id, 
-          nom, 
+          name, 
           proprietaire_id
         )
       `)
-            .eq("terrains.proprietaire_id", user.id)
+            .eq("fields.proprietaire_id", user.id)
             .order("date", { ascending: false })
             .order("heure_debut", { ascending: true });
 
@@ -32,12 +30,56 @@ export const ReservationService = {
             endTime: r.heure_fin,
             price: r.prix_total,
             status: r.statut || "Confirmé",
-            terrainName: r.terrains?.nom || "Terrain Inconnu",
+            terrainName: r.fields?.name || "Terrain Inconnu",
             // Fallback logic for client name
             clientName: r.nom_client || (r.utilisateur_id ? "Client App" : "Client Inconnu"),
             clientPhone: r.telephone_client || "-",
             isManual: !r.utilisateur_id // True if not linked to a user account
         }));
+    },
+
+    // --- FETCH ALL (CLIENT VIEW) ---
+    async getUserReservations() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Non connecté");
+
+        // Requête simplifiée : on récupère d'abord les réservations
+        const { data, error } = await supabase
+            .from("reservations")
+            .select(`
+                *,
+                fields (
+                    id,
+                    name,
+                    adress,
+                    field_images (url_image)
+                )
+            `)
+            .eq("utilisateur_id", user.id)
+            .order("date", { ascending: false });
+
+        if (error) {
+            console.error("Supabase Error (UserReservations):", error);
+            throw error;
+        }
+
+        return data.map(r => {
+            // Sécurité : on vérifie si fields existe, sinon on met des valeurs par défaut
+            const terrain = r.fields || {};
+            const images = terrain.field_images || [];
+
+            return {
+                id: r.id,
+                date: r.date,
+                startTime: r.heure_debut,
+                endTime: r.heure_fin,
+                price: r.prix_total,
+                status: r.statut || "En attente de paiement",
+                terrainName: terrain.name || "Terrain inconnu",
+                location: terrain.adress || "Lieu non renseigné",
+                image: images.length > 0 ? images[0].url_image : null
+            };
+        });
     },
 
     // --- CREATE (MANUAL BY OWNER) ---
@@ -73,3 +115,4 @@ export const ReservationService = {
         if (error) throw error;
     }
 };
+

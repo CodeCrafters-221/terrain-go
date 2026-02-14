@@ -1,4 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { supabase } from "../services/supabaseClient";
+import ReservationModal from "../components/ReservationModal";
 import {
   Trophy,
   Search,
@@ -19,6 +22,64 @@ import {
 } from "lucide-react";
 
 export default function TerrainDetails() {
+  const { id } = useParams();
+  const [terrain, setTerrain] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isReservationOpen, setIsReservationOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchTerrain = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("fields")
+          .select(`
+            *,
+            field_images (url_image)
+          `)
+          .eq("id", id)
+          .single();
+
+        if (error) throw error;
+        setTerrain(data);
+      } catch (err) {
+        console.error("Error fetching terrain:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTerrain();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-background-dark min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!terrain) {
+    return (
+      <div className="bg-background-dark min-h-screen flex flex-col items-center justify-center text-white">
+        <h2 className="text-2xl font-bold mb-4">Terrain non trouvé</h2>
+        <Link to="/" className="text-primary hover:underline">Retour à l'accueil</Link>
+      </div>
+    );
+  }
+
+  const stadiumDataForModal = {
+    id: terrain.id,
+    city: terrain.name,
+    price: terrain.price,
+    location: terrain.adress,
+    totalPlayers: terrain.pelouse,
+    fieldStadium: terrain.pelouse,
+    notes: "4.8",
+    image: terrain.field_images?.[0]?.url_image || "https://placehold.co/600x400?text=No+Image"
+  };
   return (
     <div className="bg-background-dark relative  text-text-main font-display antialiased overflow-x-hidden selection:bg-primary selection:text-white min-h-screen">
       {/* Navigation */}
@@ -95,12 +156,12 @@ export default function TerrainDetails() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-              Terrain Sacré-Cœur 1
+              {terrain.name}
             </h1>
             <div className="flex items-center gap-4 text-text-secondary text-sm md:text-base">
               <span className="flex items-center gap-1">
                 <MapPin className="text-primary w-5 h-5" />
-                Liberté 6, Dakar
+                {terrain.adress}
               </span>
               <span className="w-1 h-1 rounded-full bg-text-secondary"></span>
               <span className="flex items-center gap-1">
@@ -128,10 +189,8 @@ export default function TerrainDetails() {
           <div className="md:col-span-2 md:row-span-2 relative group cursor-pointer">
             <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              data-alt="Wide angle shot of a pristine green football pitch with floodlights at night"
               style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB9G-smcDI7_ZY4O3l7M_igoEFvDPPll4HogrwugRMV7gC5IRDh3rbiIm7W9AO5sD84wwlykw686_oYOoAh9paDHRSHQuoQ6v0OYlkBuZSsCRZqJ4YYVXLuSLfM4qfbk8mfgGklcI8sB3UZ2JLhB6X44bIiSoCBU7dz2kSPrrJik0Pr8Fw8QCuBKBOEvNT93xuMNZAC3oKzHDw_otwK4ZGgUjcdS9kzW9I8COecQPeLYfuzfE1upC0sVVpnMXpVLhB1TAEVba_EsQ')",
+                backgroundImage: `url('${terrain.field_images?.[0]?.url_image || "https://placehold.co/600x400?text=No+Image"}')`,
               }}
             ></div>
             <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
@@ -192,18 +251,7 @@ export default function TerrainDetails() {
                 À propos de ce terrain
               </h3>
               <div className="text-text-secondary leading-relaxed space-y-4">
-                <p>
-                  Situé au cœur de Dakar, le terrain Sacré-Cœur 1 offre une
-                  pelouse synthétique de dernière génération homologuée FIFA.
-                  Idéal pour les matchs de 5x5 ou 7x7, ce complexe est
-                  parfaitement éclairé pour vos sessions nocturnes.
-                </p>
-                <p>
-                  Nous accueillons aussi bien les groupes d'amis que les
-                  tournois d'entreprise. Profitez d'un espace sécurisé avec un
-                  parking surveillé et une buvette pour vous rafraîchir après
-                  l'effort.
-                </p>
+                <p>{terrain.description || "Aucune description disponible pour ce terrain."}</p>
               </div>
             </section>
 
@@ -488,7 +536,7 @@ export default function TerrainDetails() {
               <div className="flex justify-between items-start mb-6 border-b border-surface-light pb-6">
                 <div>
                   <span className="text-2xl font-bold text-white block">
-                    25 000 FCFA
+                    {(terrain.price || 0).toLocaleString()} FCFA
                   </span>
                   <span className="text-text-secondary text-sm">par heure</span>
                 </div>
@@ -539,7 +587,10 @@ export default function TerrainDetails() {
                 </div>
               </div>
               {/* CTA */}
-              <button className="w-full bg-primary hover:bg-primary-hover text-[#231a10] font-bold text-lg py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group">
+              <button
+                onClick={() => setIsReservationOpen(true)}
+                className="w-full bg-primary hover:bg-primary-hover text-[#231a10] font-bold text-lg py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group"
+              >
                 Réserver ce terrain
                 <ArrowRight className="transition-transform group-hover:translate-x-1 w-5 h-5" />
               </button>
@@ -550,6 +601,11 @@ export default function TerrainDetails() {
           </div>
         </div>
       </main>
+      <ReservationModal
+        isOpen={isReservationOpen}
+        onClose={() => setIsReservationOpen(false)}
+        stadium={stadiumDataForModal}
+      />
     </div>
   );
 }

@@ -9,52 +9,107 @@ import firstStadiumCard from "../assets/features3.png";
 import secondStadiumCard from "../assets/features4.png";
 import thirdStadiumCard from "../assets/features5.png";
 
+import { supabase } from "../services/supabaseClient";
+
 export default function Features() {
   const [searchParams] = useSearchParams();
   const [favorites, setFavorites] = useState([]);
+  const [stadiums, setStadiums] = useState([]);
   const [filteredStadiums, setFilteredStadiums] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // États Modales
   const [isReservationOpen, setIsReservationOpen] = useState(false);
   const [selectedStadium, setSelectedStadium] = useState(null);
 
-  // États d'authentification (Connectés à Supabase)
+  // --- FETCH REAL STADIUMS FOR HOME PAGE (LIMIT 3) ---
+  useEffect(() => {
+    const fetchHomeStadiums = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("fields")
+          .select(`
+            *,
+            field_images (url_image)
+          `)
+          .limit(3)
+          .order("created_at", { ascending: false });
 
-  const stadiums = [
-    {
-      id: 1,
-      city: "Dakar Sacré-Cœur",
-      price: 25000,
-      location: "Sacré-Cœur 3, Dakar",
-      totalPlayers: "5 vs 5",
-      fieldStadium: "Synthétique",
-      notes: "4.8",
-      image: firstStadiumCard,
-    },
-    {
-      id: 2,
-      city: "Temple Du Foot",
-      price: 30000,
-      location: "Point E, Dakar",
-      totalPlayers: "7 vs 7",
-      fieldStadium: "Gazon",
-      notes: "4.9",
-      image: secondStadiumCard,
-    },
-    {
-      id: 3,
-      city: "Terrain Jaraf",
-      price: 35000,
-      location: "Medina, Dakar",
-      totalPlayers: "8 vs 8",
-      fieldStadium: "Synthétique",
-      notes: "4.8",
-      image: thirdStadiumCard,
-    },
-  ];
+        if (error) throw error;
+
+        if (data) {
+          const mapped = data.map((f) => ({
+            id: f.id,
+            city: f.name,
+            price: f.price_per_hour || f.price || 0,
+            location: f.adress,
+            totalPlayers: "5 vs 5",
+            fieldStadium: f.pelouse || "Synthétique",
+            notes: "4.8",
+            image: f.field_images?.[0]?.url_image || firstStadiumCard
+          }));
+
+          // Si on a moins de 3 terrains en base, on complète avec des terrains statiques
+          // pour toujours remplir la grille (3 colonnes) sur l'accueil
+          const finalStadiums = [...mapped];
+          const placeholders = [
+            {
+              id: "p1",
+              city: "Terrain Mermoz Pro",
+              price: 25000,
+              location: "Dakar, Mermoz",
+              totalPlayers: "5 vs 5",
+              fieldStadium: "Synthétique",
+              notes: "4.9",
+              image: secondStadiumCard
+            },
+            {
+              id: "p2",
+              city: "Galaxy Foot",
+              price: 30000,
+              location: "Dakar, Almadies",
+              totalPlayers: "7 vs 7",
+              fieldStadium: "Gazon Naturel",
+              notes: "4.7",
+              image: thirdStadiumCard
+            },
+            {
+              id: "p3",
+              city: "Almadies Turf",
+              price: 20000,
+              location: "Dakar, Ngor",
+              totalPlayers: "5 vs 5",
+              fieldStadium: "Synthétique",
+              notes: "4.6",
+              image: firstStadiumCard
+            }
+          ];
+
+          while (finalStadiums.length < 3 && placeholders.length > 0) {
+            finalStadiums.push(placeholders.shift());
+          }
+
+          setStadiums(finalStadiums);
+          setFilteredStadiums(finalStadiums);
+        }
+
+      } catch (err) {
+        console.error("Error fetching home stadiums:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHomeStadiums();
+  }, []);
+
+
 
   // --- LOGIQUE DE FILTRAGE ---
   useEffect(() => {
+    if (stadiums.length === 0) return;
+
     const query = searchParams.get("q")?.toLowerCase() || "";
     const city = searchParams.get("city") || "";
 
@@ -67,7 +122,7 @@ export default function Features() {
     });
 
     setFilteredStadiums(results);
-  }, [searchParams]);
+  }, [searchParams, stadiums]);
 
   // --- HANDLERS ---
   const handleReserve = (stadiumId) => {
@@ -123,21 +178,24 @@ export default function Features() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStadiums.length > 0 ? (
             filteredStadiums.map((stadium) => (
-              <StadiumCard
-                key={stadium.id}
-                id={stadium.id}
-                city={stadium.city}
-                price={stadium.price}
-                location={stadium.location}
-                totalPlayers={stadium.totalPlayers}
-                fieldStadium={stadium.fieldStadium}
-                notes={stadium.notes}
-                image={stadium.image}
-                onReserve={handleReserve}
-                onFavorite={handleFavorite}
-                isFavorite={favorites.includes(stadium.id)}
-              />
+              <div key={stadium.id} className="relative group h-full">
+                <StadiumCard
+                  id={stadium.id}
+                  city={stadium.city}
+                  price={stadium.price}
+                  location={stadium.location}
+                  totalPlayers={stadium.totalPlayers}
+                  fieldStadium={stadium.fieldStadium}
+                  notes={stadium.notes}
+                  image={stadium.image}
+                  onReserve={handleReserve}
+                  onFavorite={handleFavorite}
+                  isFavorite={favorites.includes(stadium.id)}
+                />
+              </div>
             ))
+
+
           ) : (
             <div className="w-full text-center py-12 bg-[#2e2318] rounded-2xl border border-[#493622] col-span-full">
               <span className="material-symbols-outlined text-4xl text-gray-500 mb-2">

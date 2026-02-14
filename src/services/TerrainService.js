@@ -6,22 +6,22 @@ export const TerrainService = {
         const { data: { user } } = await supabase.auth.getUser();
 
         const { data, error } = await supabase
-            .from("terrains")
+            .from("fields")
             .select(`
         *,
-        images_terrain (url_image)
+        field_images (url_image)
       `)
-            .order("date_creation", { ascending: false });
+            .order("created_at", { ascending: false });
 
         if (error) throw error;
 
         return data.map(t => ({
             id: t.id,
-            name: t.nom,
-            location: t.localisation,
-            price: t.prix_par_heure,
+            name: t.name,
+            location: t.adress,
+            price: t.price_per_hour,
             ...parseDescription(t.description),
-            image: t.images_terrain?.[0]?.url_image || null,
+            image: t.field_images?.[0]?.url_image || null,
             status: t.actif ? "Disponible" : "Inactif",
             proprietaire_id: t.proprietaire_id
         }));
@@ -47,21 +47,18 @@ export const TerrainService = {
         }
 
         // 2. Insert Terrain
-        const descriptionJson = JSON.stringify({
-            type: terrainData.type,
-            surface: terrainData.surface,
-            hours: terrainData.hours
-        });
+        const descriptionJson = terrainData.description || "";
 
         // Check if profile exists implicitly by catching FK error
         const { data: terrain, error } = await supabase
-            .from("terrains")
+            .from("fields")
             .insert({
-                nom: terrainData.name,
-                localisation: terrainData.location,
-                prix_par_heure: parseFloat(terrainData.price),
+                name: terrainData.name,
+                adress: terrainData.location,
+                price_per_hour: parseFloat(terrainData.price),
                 description: descriptionJson,
-                actif: terrainData.status === "Disponible",
+                pelouse: terrainData.type,
+                capacity: terrainData.capacity,
                 proprietaire_id: user.id
             })
             .select()
@@ -83,7 +80,7 @@ export const TerrainService = {
         // 3. Insert Image Record
         if (imageUrl) {
             const { error: imgError } = await supabase
-                .from("images_terrain")
+                .from("field_images")
                 .insert({
                     terrain_id: terrain.id,
                     url_image: imageUrl
@@ -107,20 +104,15 @@ export const TerrainService = {
         }
 
         // 2. Update Terrain
-        const descriptionJson = JSON.stringify({
-            type: terrainData.type,
-            surface: terrainData.surface,
-            hours: terrainData.hours
-        });
-
         const { error } = await supabase
-            .from("terrains")
+            .from("fields")
             .update({
-                nom: terrainData.name,
-                localisation: terrainData.location,
-                prix_par_heure: parseFloat(terrainData.price),
-                description: descriptionJson,
-                actif: terrainData.status === "Disponible"
+                name: terrainData.name,
+                adress: terrainData.location,
+                price_per_hour: parseFloat(terrainData.price),
+                description: terrainData.description,
+                pelouse: terrainData.type,
+                capacity: terrainData.capacity
             })
             .eq("id", id)
             .eq("proprietaire_id", user.id);
@@ -129,8 +121,8 @@ export const TerrainService = {
 
         // 3. Update Image
         if (imageUrl) {
-            await supabase.from("images_terrain").delete().eq("terrain_id", id);
-            await supabase.from("images_terrain").insert({
+            await supabase.from("field_images").delete().eq("terrain_id", id);
+            await supabase.from("field_images").insert({
                 terrain_id: id,
                 url_image: imageUrl
             });
@@ -141,7 +133,7 @@ export const TerrainService = {
     async deleteTerrain(id) {
         const { data: { user } } = await supabase.auth.getUser();
         const { error } = await supabase
-            .from("terrains")
+            .from("fields")
             .delete()
             .eq("id", id)
             .eq("proprietaire_id", user?.id);
@@ -170,9 +162,10 @@ async function uploadTerrainImage(file) {
 
 function parseDescription(desc) {
     try {
-        const parsed = typeof desc === 'string' ? JSON.parse(desc) : desc;
+        const parsed = typeof desc === 'string' && desc.startsWith('{') ? JSON.parse(desc) : { desc };
         return parsed || { type: "N/A", surface: "N/A", hours: "N/A" };
     } catch (e) {
         return { type: "N/A", surface: "N/A", hours: "N/A" };
     }
 }
+
