@@ -83,4 +83,7 @@ erDiagram
     TERRAINS ||--o{ PLAGES_DISPONIBILITE : "définit"
 
     RESERVATIONS ||--|| PAIEMENTS : "génère"
+
+
+    plage horaire disponible dans le formulaire
 ```

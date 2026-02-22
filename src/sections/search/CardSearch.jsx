@@ -1,6 +1,6 @@
 import { SearchX, Zap, Heart, MapPin, Star, ArrowRight } from "lucide-react";
 
-const CardSearch = ({ terrains }) => {
+const CardSearch = ({ terrains, onReserve }) => {
   if (terrains.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in-up">
@@ -90,7 +90,10 @@ const CardSearch = ({ terrains }) => {
                     <span className="text-sm font-bold text-primary">F</span>
                   </div>
                 </div>
-                <button className="relative overflow-hidden px-6 py-2.5 bg-white text-background-dark hover:text-white rounded-full text-sm font-bold transition-all duration-300 group/btn shadow-lg shadow-white/5 hover:shadow-primary/30 z-0">
+                <button
+                  onClick={() => onReserve(terrain)}
+                  className="relative overflow-hidden px-6 py-2.5 bg-white text-background-dark hover:text-white rounded-full text-sm font-bold transition-all duration-300 group/btn shadow-lg shadow-white/5 hover:shadow-primary/30 z-0"
+                >
                   <span className="absolute inset-0 bg-primary opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 -z-10 ease-out"></span>
                   <span className="relative z-10 flex items-center gap-2">
                     Réserver

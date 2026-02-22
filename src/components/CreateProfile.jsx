@@ -16,7 +16,7 @@ export default function CreateProfile() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,15 +33,15 @@ export default function CreateProfile() {
     const validationErrors = {};
 
     if (formData.name == "") {
-      validationErrors.name = "Le champ nom est requis !"
+      validationErrors.name = "Le champ nom est requis !";
     }
 
-    if(!formData.role) {
-      validationErrors.role = "Veuillez choisir un role !"
+    if (!formData.role) {
+      validationErrors.role = "Veuillez choisir un role !";
     }
 
     if (formData.ville == "") {
-      validationErrors.ville = "Le champ ville est requis !"
+      validationErrors.ville = "Le champ ville est requis !";
     }
 
     const phoneRegex = /^(221|00221|\+221)?(77|78|75|70|76)[0-9]{7}$/;
@@ -94,21 +94,19 @@ export default function CreateProfile() {
       }
 
       toast.success("Profil créé !");
-      if(formData.role == "client") {
+      await refreshProfile();
+      if (formData.role == "client") {
         navigate("/");
-      } else if(formData.role == "owner") {
-        navigate("/create-field");
+      } else if (formData.role == "owner") {
+        navigate("/dashboard");
       }
-    }
-    catch (err) {
+    } catch (err) {
       console.error(err);
       toast.error("Erreur serveur, réessaie plus tard");
-    }
-    finally {
+    } finally {
       setIsLoading(false);
     }
   };
-
 
   // Classes communes pour les inputs pour garder le code propre
   const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
@@ -236,7 +234,6 @@ export default function CreateProfile() {
             )}
           </div>
 
-
           <button
             type="submit"
             className="w-full bg-primary text-black font-semibold py-3 rounded-lg hover:bg-primary/90 transition-opacity mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -245,7 +242,6 @@ export default function CreateProfile() {
             {isLoading ? "Création..." : "Créer mon profil"}
           </button>
         </form>
-
       </div>
     </div>
   );

@@ -2,11 +2,13 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../services/supabaseClient";
 
 const AuthContext = createContext(null);
+
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [terrains, setTerrains] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     const initSession = async () => {
@@ -26,32 +28,37 @@ export default function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const refreshProfile = async () => {
+    if (!user) {
+      setProfile(null);
+      setProfileLoading(false);
+      return;
+    }
+
+    setProfileLoading(true);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!error) {
+      setProfile(data);
+    } else {
+      console.error("Erreur Profil: ", error.message);
+      setProfile(null);
+    }
+    setProfileLoading(false);
+  };
+
   useEffect(() => {
-    const fetchProfiles = async () => {
-      if (!user) {
-        setProfile(null);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!error) {
-        setProfile(data);
-      } else {
-        console.error("Erreur Profil: ", error.message);
-        setProfile(null);
-      }
-    };
-
-    fetchProfiles();
+    refreshProfile();
   }, [user]);
 
   useEffect(() => {
     const fetchTerrains = async () => {
+      if (!profile) return;
+
       if (profile.role === "owner") {
         const { data, error } = await supabase
           .from("fields")
@@ -71,7 +78,16 @@ export default function AuthProvider({ children }) {
   }, [profile]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, profile, terrains }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        profile,
+        profileLoading,
+        terrains,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

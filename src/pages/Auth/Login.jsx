@@ -50,26 +50,45 @@ export default function Login() {
 
     try {
       setIsLoading(true);
-      console.log("Données de connexion:", formData);
 
       // Connecter l'user
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
       if (error) {
-        toast.error(error);
+        toast.error(error.message);
         return;
       }
 
-      toast.success("Ravi de vous revoir😀 !");
-      if(!error) navigate("/");
+      // Vérifier si le profil existe et récupérer le rôle
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      toast.success("Ravi de vous revoir 😀 !");
+
+      if (!profileData) {
+        // Rediriger vers la création de profil si inexistant
+        navigate("/create-profile");
+      } else {
+        // Redirection basée sur le rôle
+        if (profileData.role === "owner") {
+          navigate("/dashboard");
+        } else {
+          navigate("/");
+        }
+      }
     } catch (error) {
       console.error(error);
+      toast.error("Une erreur est survenue lors de la connexion.");
     } finally {
       setIsLoading(false);
     }
+
   };
 
   // Classes communes pour les inputs pour garder le code propre
