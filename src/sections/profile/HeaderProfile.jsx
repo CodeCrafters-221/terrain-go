@@ -33,7 +33,6 @@ const HeaderProfile = () => {
     }
   };
 
-
   return (
     <>
       <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-surface-highlight bg-[#231a10] px-4 py-3 lg:px-10  w-full top-0 z-50 transition-all duration-300">
@@ -91,7 +90,7 @@ const HeaderProfile = () => {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </a>
           </nav>
-          {/* LogOut */}
+
           <button
             onClick={handleLogout}
             className="text-text-secondary hover:text-white transition-colors"
@@ -102,7 +101,6 @@ const HeaderProfile = () => {
           {/* <button className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-[#d96f0b] transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-[0_0_15px_rgba(242,127,13,0.3)] hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] active:scale-95">
             <span className="truncate">Réserver</span>
           </button> */}
-
           {/* Mobile Menu Toggle */}
           <button
             className="lg:hidden text-white p-2 rounded-full hover:bg-white/10 transition-colors z-1000 relative"
@@ -118,10 +116,11 @@ const HeaderProfile = () => {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
+          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${
+            isMenuOpen
               ? "opacity-100 visible"
               : "opacity-0 invisible pointer-events-none"
-            }`}
+          }`}
         >
           {/* Mobile Search */}
           <div className="flex w-full items-center rounded-xl h-12 bg-surface-highlight border border-transparent focus-within:border-primary transition-colors">
