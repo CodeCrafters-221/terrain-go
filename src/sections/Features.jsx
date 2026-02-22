@@ -47,7 +47,8 @@ export default function Features() {
             totalPlayers: "5 vs 5",
             fieldStadium: f.pelouse || "Synthétique",
             notes: "4.8",
-            image: f.field_images?.[0]?.url_image || firstStadiumCard
+            image: f.field_images?.[0]?.url_image || firstStadiumCard,
+            proprietaire_id: f.proprietaire_id
           }));
 
           // Si on a moins de 3 terrains en base, on complète avec des terrains statiques
@@ -191,6 +192,7 @@ export default function Features() {
                   onReserve={handleReserve}
                   onFavorite={handleFavorite}
                   isFavorite={favorites.includes(stadium.id)}
+                  isPlaceholder={stadium.id.toString().startsWith('p')}
                 />
               </div>
             ))

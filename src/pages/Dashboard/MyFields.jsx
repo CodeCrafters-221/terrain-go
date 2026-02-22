@@ -3,7 +3,7 @@ import { useDashboard } from '../../context/DashboardContext';
 import { Link } from 'react-router-dom';
 
 const MyFields = () => {
-    const { fields, deleteField, openCreateModal, openEditModal } = useDashboard();
+    const { fields, deleteField, openCreateModal, openEditModal, toggleFieldStatus } = useDashboard();
 
     return (
         <div className="flex flex-col gap-8">
@@ -19,9 +19,12 @@ const MyFields = () => {
                 {fields.map((field) => (
                     <div key={field.id} className="bg-[#2c241b] rounded-2xl overflow-hidden group border border-[#493622] hover:border-[#f27f0d] transition-all">
                         <div className="h-48 bg-cover bg-center relative" style={{ backgroundImage: `url('${field.image}')` }}>
-                            <div className={`absolute top-3 right-3 text-[#231a10] text-xs font-bold px-3 py-1 rounded-full shadow-sm ${field.status === 'Disponible' ? 'bg-[#0bda16]' : 'bg-[#f27f0d]'}`}>
+                            <button
+                                onClick={() => toggleFieldStatus(field.id, field.status)}
+                                className={`absolute top-3 right-3 text-[#231a10] text-xs font-bold px-3 py-1 rounded-full shadow-sm transition-all hover:scale-110 active:scale-95 ${field.status === 'Disponible' ? 'bg-[#0bda16]' : 'bg-[#f27f0d]'}`}
+                            >
                                 {field.status}
-                            </div>
+                            </button>
                             <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-lg flex items-center gap-1">
                                 <span className="material-symbols-outlined text-[14px]">location_on</span>
                                 {field.location}
