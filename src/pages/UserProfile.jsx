@@ -1,26 +1,51 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import Avis from "../sections/profile/Avis";
 import HeaderProfile from "../sections/profile/HeaderProfile";
 import Parametre from "../sections/profile/Parametre";
+import { ReservationService } from "../services/ReservationService";
+import { generateTicket } from "../utils/ticketGenerator";
 import {
   MapPin,
   Edit2,
-  CalendarCheck, // for reservations
+  CalendarCheck,
   Star,
   Settings,
   Calendar,
   Clock,
   QrCode,
   MessageSquarePlus,
+  Loader2,
 } from "lucide-react";
 
 const UserProfile = () => {
-  const { user, loading, profile } = useAuth();
+  const { user, loading: authLoading, profile } = useAuth();
+  const [reservations, setReservations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (loading) {
+  useEffect(() => {
+    const fetchReservations = async () => {
+      if (!user) return;
+      try {
+        const data = await ReservationService.getUserReservations();
+        setReservations(data);
+      } catch (err) {
+        console.error("Error fetching reservations:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+
+    if (user) {
+      fetchReservations();
+    }
+  }, [user]);
+
+  if (authLoading || isLoading) {
     return (
       <div className="bg-[#231a10] min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <Loader2 className="animate-spin h-12 w-12 text-primary" />
       </div>
     );
   }
@@ -33,16 +58,31 @@ const UserProfile = () => {
     );
   }
 
+  // Séparer les réservations à venir des passées avec précision
+  const now = new Date();
+
+  const upcomingReservations = [];
+  const pastReservations = [];
+
+  reservations.forEach(r => {
+    // Création d'un objet Date propre pour la comparaison
+    // On assume r.date est YYYY-MM-DD et r.startTime est HH:mm:ss
+    const resDateTime = new Date(`${r.date}T${r.startTime}`);
+
+    if (isNaN(resDateTime.getTime()) || resDateTime >= now) {
+      upcomingReservations.push(r);
+    } else {
+      pastReservations.push(r);
+    }
+  });
+
   return (
     <div className="bg-[#231a10] min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-white selection:bg-primary selection:text-white font-display">
-      {/* Top Navigation Bar */}
       <HeaderProfile />
 
-      {/* Main Content Area */}
-      <main className="layout-container flex h-full grow flex-col w-full max-w-300 mx-auto px-4 md:px-10 py-8 lg:py-12 pt-24 md:pt-28">
-        {/* Profile Header */}
+      <main className="layout-container flex h-full grow flex-col w-full max-w-5xl mx-auto px-4 md:px-10 py-8 lg:py-12 pt-24 md:pt-28">
+        {/* Profile Header (Original Big Size) */}
         <section className="flex flex-col md:flex-row gap-6 items-center md:items-center justify-between p-6 md:p-8 bg-surface-dark rounded-3xl mb-8 border border-surface-highlight shadow-2xl relative overflow-hidden group">
-          {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
           <div className="flex flex-col md:flex-row gap-6 items-center w-full md:w-auto text-center md:text-left z-10">
@@ -51,18 +91,15 @@ const UserProfile = () => {
             />
             <div className="flex flex-col justify-center gap-2">
               <h1 className="text-white text-2xl md:text-[32px] font-bold leading-tight tracking-tight">
-                {profile?.name}
+                {profile?.name || "Utilisateur"}
               </h1>
               <div className="flex items-center justify-center md:justify-start gap-2 text-text-secondary">
                 <MapPin className="w-5 h-5 text-primary" />
-                <p className="text-base font-medium">{profile?.ville}, Sénégal</p>
+                <p className="text-base font-medium">{profile?.ville || "Sénégal"}</p>
               </div>
               <div className="flex items-center justify-center md:justify-start gap-3 mt-2 flex-wrap">
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary ring-1 ring-inset ring-primary/20 uppercase tracking-wider">
-                  Joueur Régulier
-                </span>
-                <span className="inline-flex items-center rounded-full bg-surface-highlight px-3 py-1 text-xs font-bold text-text-secondary ring-1 ring-inset ring-white/10 uppercase tracking-wider">
-                  15 Matchs joués
+                  {profile?.role === "owner" ? "Propriétaire" : "Client"}
                 </span>
               </div>
             </div>
@@ -77,163 +114,166 @@ const UserProfile = () => {
         {/* Tabs Navigation */}
         <div className="sticky top-18.25 z-40 bg-[#231a10]/95 backdrop-blur-md pt-2 pb-2 mb-8 border-b border-surface-highlight w-full -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-8 overflow-x-auto hide-scrollbar snap-x">
-            <a
-              className="flex flex-col items-center justify-center border-b-[3px] border-primary text-white pb-3 px-2 min-w-fit cursor-pointer group snap-start transition-all"
-              href="#reservations"
-            >
+            <a className="flex flex-col items-center justify-center border-b-[3px] border-primary text-white pb-3 px-2 min-w-fit cursor-pointer group snap-start transition-all" href="#reservations">
               <div className="flex items-center gap-2">
                 <CalendarCheck className="w-5 h-5 group-hover:text-primary transition-colors" />
-                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
-                  Mes Réservations
-                </p>
+                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">Mes Réservations</p>
               </div>
             </a>
-            <a
-              className="flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-surface-highlight text-text-secondary hover:text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start"
-              href="#avis"
-            >
+            <a className="flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-surface-highlight text-text-secondary hover:text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start" href="#avis">
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5" />
-                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
-                  Mes Avis
-                </p>
+                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">Mes Avis</p>
               </div>
             </a>
-            <a
-              className="flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-surface-highlight text-text-secondary hover:text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start"
-              href="#parametres"
-            >
+            <a className="flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-surface-highlight text-text-secondary hover:text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start" href="#parametres">
               <div className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">
-                  Paramètres
-                </p>
+                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">Paramètres</p>
               </div>
             </a>
           </div>
         </div>
 
+
         <div className="flex flex-col gap-12">
           {/* SECTION: Reservations */}
-          <div
-            className="flex flex-col gap-6 animate-fade-in"
-            id="reservations"
-          >
+          <div className="flex flex-col gap-6 animate-fade-in" id="reservations">
             <div className="flex items-center justify-between">
               <h2 className="text-white text-2xl font-bold leading-tight tracking-tight">
                 Prochaines Réservations
               </h2>
-              <a
-                className="text-primary text-sm font-bold hover:text-white transition-colors"
-                href="#"
-              >
-                Voir tout
-              </a>
+              <p className="text-primary text-sm font-bold">({upcomingReservations.length})</p>
             </div>
 
-            {/* Upcoming Reservation Card */}
-            <div className="flex flex-col md:flex-row items-stretch justify-between gap-6 rounded-2xl bg-surface-dark p-1 border border-surface-highlight/50 hover:border-primary/50 transition-all shadow-lg hover:shadow-2xl hover:shadow-primary/5 group">
-              <div
-                className="w-full md:w-2/5 lg:w-1/3 bg-center bg-no-repeat aspect-video md:aspect-auto bg-cover rounded-xl relative overflow-hidden"
-                style={{
-                  backgroundImage:
-                    "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfvL2_8pRKWRbrv-YGlw1NSKeHQNaJEuj6VtESuN1gmd1mt1KtP8MuLoWO16foom1n3B9JxuMC8gaItZiz21Y1GPG-maspRNz7nNmq0vjoOet1F7ZYxl5TkJdoDlr_0UeS25yq0PoU-w4qQsdXl-ciFMXW0Wp-UW-dSTem4rtDG6WpvEiWLXivFSpqt8IPjh1WsSfWpU7I1hxWQvJO9SnWlIPxYZfKtiP2bVoY8PzaxRIZpVpYhXiGJNADKIlTO1q-L4CeT6vsbQ')",
-                }}
-              >
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500" />
-              </div>
+            {upcomingReservations.length > 0 ? (
+              upcomingReservations.map((res) => (
+                <div key={res.id} className="flex flex-col md:flex-row items-stretch justify-between gap-6 rounded-2xl bg-surface-dark p-1 border border-surface-highlight/50 hover:border-primary/50 transition-all shadow-lg hover:shadow-2xl group">
+                  <div
+                    className="w-full md:w-2/5 lg:w-1/3 bg-center bg-no-repeat aspect-video md:aspect-auto bg-cover rounded-xl relative overflow-hidden"
+                    style={{ backgroundImage: `url(${res.image || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80'})` }}
+                  >
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500" />
+                  </div>
 
-              <div className="flex flex-1 flex-col justify-between gap-4 p-4 md:py-4 md:pr-4">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col-reverse sm:flex-row justify-between items-start gap-2">
-                    <div>
-                      <h3 className="text-white text-xl font-bold leading-tight group-hover:text-primary transition-colors">
-                        Match 5x5 - Terrain Mermoz
-                      </h3>
-                      <div className="flex items-center gap-1.5 text-text-secondary text-sm mt-1.5 font-medium">
-                        <MapPin className="w-[18px] h-[18px] text-primary" />
-                        <span>Mermoz, Dakar</span>
+                  <div className="flex flex-1 flex-col justify-between gap-4 p-4 md:py-4 md:pr-4">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col-reverse sm:flex-row justify-between items-start gap-2">
+                        <div>
+                          <h3 className="text-white text-xl font-bold leading-tight group-hover:text-primary transition-colors">
+                            {res.terrainName}
+                          </h3>
+                          <div className="flex items-center gap-1.5 text-text-secondary text-sm mt-1.5 font-medium">
+                            <MapPin className="w-[18px] h-[18px] text-primary" />
+                            <span>{res.location}</span>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset uppercase tracking-wide ${res.status === 'Confirmé' ? 'bg-green-500/10 text-green-500 ring-green-500/20' : 'bg-orange-500/10 text-orange-500 ring-orange-500/20'
+                          }`}>
+                          {res.status}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 mt-2">
+                        <div className="flex items-center gap-2 bg-background-dark/50 px-3 py-2 rounded-lg border border-surface-highlight/50">
+                          <Calendar className="text-primary w-5 h-5" />
+                          <span className="text-white text-sm font-bold">{new Date(res.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-background-dark/50 px-3 py-2 rounded-lg border border-surface-highlight/50">
+                          <Clock className="text-primary w-5 h-5" />
+                          <span className="text-white text-sm font-bold">{res.startTime.substring(0, 5)}</span>
+                        </div>
                       </div>
                     </div>
-                    <span className="inline-flex items-center rounded-full bg-green-500/10 px-3 py-1 text-xs font-bold text-green-500 ring-1 ring-inset ring-green-500/20 uppercase tracking-wide">
-                      Confirmé
-                    </span>
-                  </div>
 
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    <div className="flex items-center gap-2 bg-background-dark/50 px-3 py-2 rounded-lg border border-surface-highlight/50">
-                      <Calendar className="text-primary w-5 h-5" />
-                      <span className="text-white text-sm font-bold">
-                        14 Oct
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 bg-background-dark/50 px-3 py-2 rounded-lg border border-surface-highlight/50">
-                      <Clock className="text-primary w-5 h-5" />
-                      <span className="text-white text-sm font-bold">
-                        18:00 - 19:00
-                      </span>
+                    <div className="flex gap-3 mt-4 pt-4 border-t border-white/5">
+                      {(res.status === 'Payé' || res.status === 'Confirmé') ? (
+                        <button
+                          onClick={() => {
+                            try {
+                              // Sécurité pour les heures qui peuvent être absentes ou mal formatées
+                              const startTime = res.startTime ? (res.startTime.includes(':') ? res.startTime.substring(0, 5) : res.startTime) : "00:00";
+                              const endTime = res.endTime ? (res.endTime.includes(':') ? res.endTime.substring(0, 5) : res.endTime) : "00:00";
+
+                              generateTicket({
+                                id: res.id,
+                                clientName: profile?.name || "Joueur",
+                                clientPhone: profile?.phone || profile?.telephone || "Non renseigné",
+                                fieldName: res.terrainName || "Terrain",
+                                date: res.date || "Date inconnue",
+                                time: `${startTime} - ${endTime}`,
+                                status: res.status,
+                                paymentMethod: "Mobile Money"
+                              });
+                            } catch (err) {
+                              console.error("Erreur lors de la génération du ticket:", err);
+                              alert("Une erreur est survenue lors de la génération du ticket. Veuillez réessayer.");
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-primary text-background-dark text-sm font-bold hover:bg-white hover:text-primary transition-all shadow-lg flex-1 md:flex-none md:min-w-[140px]"
+                        >
+                          <QrCode className="w-5 h-5" />
+                          <span>Télécharger Ticket</span>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2 text-[#cbad90] text-xs font-medium bg-white/5 px-4 py-2 rounded-xl border border-white/5 italic">
+                          <Clock className="w-4 h-4 animate-pulse text-orange-500" />
+                          En attente de validation du propriétaire...
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-
-                <div className="flex gap-3 mt-4 pt-4 border-t border-white/5">
-                  <button className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-primary text-background-dark text-sm font-bold hover:bg-white hover:text-primary transition-all shadow-lg shadow-primary/20 flex-1 md:flex-none md:min-w-[140px] transform active:scale-95">
-                    <QrCode className="w-5 h-5" />
-                    <span>Ticket</span>
-                  </button>
-                  <button className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-surface-highlight text-white text-sm font-bold hover:bg-surface-highlight/80 transition-all flex-1 md:flex-none hover:text-white/90">
-                    <Edit2 className="w-5 h-5" />
-                    <span>Modifier</span>
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-10 bg-surface-dark/50 rounded-2xl border border-dashed border-surface-highlight">
+                <p className="text-text-secondary">Aucune réservation à venir.</p>
               </div>
-            </div>
+            )}
 
-            <div className="mt-8 flex items-center justify-between">
+            <div className="mt-8">
               <h2 className="text-white text-xl font-bold leading-tight opacity-90 tracking-tight">
                 Historique récent
               </h2>
             </div>
 
-            {/* Past Reservation Card */}
-            <div className="flex flex-col md:flex-row items-stretch justify-between gap-4 rounded-2xl bg-surface-dark p-3 border border-surface-highlight/30 opacity-80 hover:opacity-100 transition-all group hover:border-surface-highlight">
-              <div
-                className="w-full md:w-1/3 lg:w-1/4 bg-center bg-no-repeat aspect-video md:aspect-auto bg-cover rounded-xl grayscale group-hover:grayscale-0 transition-all duration-500"
-                data-alt="Sunny day soccer field view from corner flag"
-                style={{
-                  backgroundImage:
-                    "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnPO3vq4klSgMv97bZ7tnlOfluatwNhZT2fo3BHrG31Xa5ijeu4FVnIYSHO27rxnG9DoenYIwIhS5zhvtBS95Xmb8-cPGbV5GWPuvSt8vdxCmmDK1LbhXPcBEf98zY0WGDcKeJVn4-1oYuuKkzgfIhfsThZsfFG2fm72ZwHXqedKxicOCN0DWqV53xPGBDJZxhZQjGHN5LhR4I12wN3VaEOWjB1bXwYFs93GidUd17IMpqpAqNQuWS_t_zJy4LE0B1Z8t-x1FRcA')",
-                }}
-              ></div>
-              <div className="flex flex-1 flex-col justify-between gap-3 p-2">
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between items-start flex-wrap gap-2">
-                    <h3 className="text-white text-lg font-bold leading-tight">
-                      Match 7x7 - Dakar Sacré-Cœur
-                    </h3>
-                    <span className="inline-flex items-center rounded-full bg-gray-500/10 px-2.5 py-0.5 text-xs font-bold text-gray-400 ring-1 ring-inset ring-gray-500/20 uppercase tracking-wide">
-                      Terminé
-                    </span>
+            {pastReservations.length > 0 ? (
+              pastReservations.map((res) => (
+                <div key={res.id} className="flex flex-col md:flex-row items-stretch justify-between gap-4 rounded-2xl bg-surface-dark p-3 border border-surface-highlight/30 opacity-80 hover:opacity-100 transition-all group">
+                  <div
+                    className="w-full md:w-1/3 lg:w-1/4 bg-center bg-no-repeat aspect-video md:aspect-auto bg-cover rounded-xl grayscale group-hover:grayscale-0 transition-all duration-500"
+                    style={{ backgroundImage: `url(${res.image || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80'})` }}
+                  ></div>
+                  <div className="flex flex-1 flex-col justify-between gap-3 p-2">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex justify-between items-start flex-wrap gap-2">
+                        <h3 className="text-white text-lg font-bold leading-tight">{res.terrainName}</h3>
+                        <span className="inline-flex items-center rounded-full bg-gray-500/10 px-2.5 py-0.5 text-xs font-bold text-gray-400 ring-1 ring-inset ring-gray-500/20 uppercase tracking-wide">Terminé</span>
+                      </div>
+                      <p className="text-text-secondary text-sm font-medium flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(res.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, {res.startTime.substring(0, 5)} • {res.location}
+                      </p>
+                    </div>
+                    <button className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn">
+                      <MessageSquarePlus className="w-[18px] h-[18px] group-hover/btn:scale-110 transition-transform" />
+                      <span>Laisser un avis</span>
+                    </button>
                   </div>
-                  <p className="text-text-secondary text-sm font-medium flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    10 Oct, 20:00 • Sacré-Cœur, Dakar
-                  </p>
                 </div>
-                <button className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn">
-                  <MessageSquarePlus className="w-[18px] h-[18px] group-hover/btn:scale-110 transition-transform" />
-                  <span>Laisser un avis</span>
-                </button>
-              </div>
-            </div>
+              ))
+            ) : (
+              <p className="text-text-secondary text-center py-4">Pas d'historique de matchs.</p>
+            )}
           </div>
 
-          {/* SECTION: Reviews */}
+
+
+
           <div id="avis" className="animate-fade-in-up">
             <Avis />
           </div>
 
-          {/* SECTION: Settings */}
           <div id="parametres" className="animate-fade-in-up">
             <Parametre />
           </div>
@@ -244,3 +284,4 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+
