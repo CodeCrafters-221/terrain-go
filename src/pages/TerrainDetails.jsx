@@ -78,7 +78,8 @@ export default function TerrainDetails() {
     totalPlayers: terrain.pelouse,
     fieldStadium: terrain.pelouse,
     notes: "4.8",
-    image: terrain.field_images?.[0]?.url_image || "https://placehold.co/600x400?text=No+Image"
+    image: terrain.field_images?.[0]?.url_image || "https://placehold.co/600x400?text=No+Image",
+    proprietaire_id: terrain.proprietaire_id
   };
   return (
     <div className="bg-background-dark relative  text-text-main font-display antialiased overflow-x-hidden selection:bg-primary selection:text-white min-h-screen">

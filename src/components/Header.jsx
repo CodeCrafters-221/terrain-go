@@ -93,13 +93,6 @@ export default function Header() {
                     />
                     <span>{profile?.name || "Sans Nom"}</span>
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="p-2 text-white/70 hover:text-primary transition-colors bg-white/5 rounded-full hover:bg-white/10"
-                    title="Déconnexion"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
                 </div>
               ) : (
                 <Link
@@ -177,13 +170,6 @@ export default function Header() {
                   <UserIcon className="w-6 h-6" />
                   {profile?.name || "Profil"}
                 </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-lg h-14 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-red-500/20"
-                >
-                  <LogOut className="w-6 h-6" />
-                  Se déconnecter
-                </button>
               </>
             ) : (
               <Link

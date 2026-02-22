@@ -55,6 +55,7 @@ const SearchPage = () => {
           reviews: 120,
           image: f.field_images?.[0]?.url_image || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80",
           isAvailable: true,
+          proprietaire_id: f.proprietaire_id
         }));
 
         setStadiums(mapped);
@@ -101,6 +102,7 @@ const SearchPage = () => {
       fieldStadium: terrain.type,
       notes: terrain.rating.toString(),
       image: terrain.image,
+      proprietaire_id: terrain.proprietaire_id
     });
     setIsReservationOpen(true);
   };

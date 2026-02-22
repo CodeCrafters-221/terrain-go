@@ -4,19 +4,21 @@ import { useDashboard } from '../context/DashboardContext';
 import { toast } from 'react-toastify';
 import { supabase } from '../services/supabaseClient';
 
+const initialFormState = {
+    name: "",
+    type: "",
+    location: "",
+    price: "",
+    description: "",
+    hours: "08:00 - 00:00",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnNGA34sSndyAJAfENjmbZRG81TkS1IJSCHEAHafu1htOaj2cazf9VkAzI4xERiSDtxWleAt9uDNrVFcRvfQi2e-ZpTSJYfagli4b3vXbzcv-rH7Q5Hg_1kWirsvM-dr52fv7Qh2gJkNCmn1sXhB7fAXoinUFHJS8fJreTbxZNS322Vr3gPJfaiK-kkfmRlO9tuQrnujBbkoXIQGn-vRNGKl3Nfod6xatgMQk7J7RS2Mq-SVffZwiNQfZH1tY4ghFAAs5v8BYF1w"
+};
+
 const CreateFieldModal = () => {
     const { addField, closeCreateModal, isCreateModalOpen } = useDashboard();
 
     // Form State
-    const [formData, setFormData] = useState({
-        name: "",
-        type: "",
-        location: "",
-        price: "",
-        description: "",
-        hours: "08:00 - 00:00", // Default value
-        image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnNGA34sSndyAJAfENjmbZRG81TkS1IJSCHEAHafu1htOaj2cazf9VkAzI4xERiSDtxWleAt9uDNrVFcRvfQi2e-ZpTSJYfagli4b3vXbzcv-rH7Q5Hg_1kWirsvM-dr52fv7Qh2gJkNCmn1sXhB7fAXoinUFHJS8fJreTbxZNS322Vr3gPJfaiK-kkfmRlO9tuQrnujBbkoXIQGn-vRNGKl3Nfod6xatgMQk7J7RS2Mq-SVffZwiNQfZH1tY4ghFAAs5v8BYF1w" // Default Placeholder
-    });
+    const [formData, setFormData] = useState(initialFormState);
 
     const [isLoading, setIsLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -37,7 +39,7 @@ const CreateFieldModal = () => {
             const filePath = `${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('terrain-images') // Correct bucket name per user
+                .from('terrain-images')
                 .upload(filePath, file);
 
             if (uploadError) {
@@ -62,16 +64,13 @@ const CreateFieldModal = () => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simple validation
         if (!formData.name || !formData.price || !formData.location) {
             toast.error("Veuillez remplir les champs obligatoires");
             setIsLoading(false);
             return;
         }
 
-        // Simulate API delay
         setTimeout(() => {
-            // Format data for Context
             const newField = {
                 ...formData,
                 price: `${formData.price} CFA / h`,
@@ -80,7 +79,9 @@ const CreateFieldModal = () => {
 
             addField(newField);
             toast.success("Terrain créé avec succès !");
+            setFormData(initialFormState); // Reset form data
             closeCreateModal();
+            setIsLoading(false);
         }, 1000);
     };
 

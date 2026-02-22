@@ -38,7 +38,8 @@ export const DashboardProvider = ({ children }) => {
                     location: field.adress,
                     image: mainImage || "https://placehold.co/600x400?text=No+Image",
                     price: field.price ? `${field.price} CFA/h` : "0 CFA/h",
-                    hours: field.opening_hours || "08:00 - 00:00"
+                    hours: field.opening_hours || "08:00 - 00:00",
+                    status: field.actif ? 'Disponible' : 'Indisponible'
                 };
             });
 
@@ -76,6 +77,7 @@ export const DashboardProvider = ({ children }) => {
                 time: `${r.heure_debut.substring(0, 5)} - ${r.heure_fin.substring(0, 5)}`,
                 status: r.statut,
                 amount: r.prix_total,
+                paymentMethod: r.methode_paiement,
                 initials: (r.nom_client || "CI").split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
             }));
 
@@ -183,6 +185,45 @@ export const DashboardProvider = ({ children }) => {
         }
     };
 
+    const addManualReservation = async (data) => {
+        try {
+            const { error } = await supabase
+                .from('reservations')
+                .insert({
+                    terrain_id: data.fieldId,
+                    date: data.date,
+                    heure_debut: data.startTime,
+                    heure_fin: data.endTime,
+                    prix_total: data.amount || 0,
+                    nom_client: data.clientName || "Réservation Manuelle",
+                    telephone_client: data.clientPhone || "-",
+                    statut: 'Confirmé'
+                });
+
+            if (error) throw error;
+            await fetchReservations();
+            return true;
+        } catch (error) {
+            console.error("Error adding manual reservation:", error.message);
+            throw error;
+        }
+    };
+
+    const toggleFieldStatus = async (fieldId, currentStatus) => {
+        try {
+            const newStatus = currentStatus === 'Disponible' ? false : true;
+            const { error } = await supabase
+                .from('fields')
+                .update({ actif: newStatus })
+                .eq('id', fieldId);
+
+            if (error) throw error;
+            await fetchFields();
+        } catch (error) {
+            console.error("Error toggling field status:", error.message);
+        }
+    };
+
     // --- MODAL STATE ---
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -193,13 +234,73 @@ export const DashboardProvider = ({ children }) => {
     const openEditModal = (field) => { setEditingField(field); setIsEditModalOpen(true); };
     const closeEditModal = () => { setEditingField(null); setIsEditModalOpen(false); };
 
-    // --- STATS ---
-    const stats = {
-        totalFields: fields.length,
-        activeReservations: reservations.filter(r => r.status !== 'Annulé').length,
-        weeklyRevenue: reservations.reduce((acc, curr) => acc + (curr.status === 'Payé' || curr.status === 'Confirmé' ? curr.amount : 0), 0),
-        occupancyRate: "85%"
+    // --- STATS & DATA PROCESSING ---
+    const getStats = () => {
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Lundi
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        // 1. Attendance Data (7 derniers jours)
+        const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        const attendanceData = days.map((day, index) => {
+            const dayDate = new Date(startOfWeek);
+            dayDate.setDate(startOfWeek.getDate() + index);
+            const dateStr = dayDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            const count = reservations.filter(r =>
+                r.date === dateStr && r.status !== 'Annulé'
+            ).length;
+
+            return { name: day, players: count * 10 }; // On estime 10 joueurs par réservation
+        });
+
+        // 2. Revenue Data (4 dernières semaines)
+        const weeklyRevenueData = [4, 3, 2, 1].map(weeksAgo => {
+            const start = new Date();
+            start.setDate(now.getDate() - (weeksAgo * 7));
+            const end = new Date();
+            end.setDate(now.getDate() - ((weeksAgo - 1) * 7));
+
+            const weeklyTotal = reservations.reduce((acc, r) => {
+                const rDate = new Date(r.date.split(' ').reverse().join('-')); // Simple conversion pour le calcul
+                if (rDate >= start && rDate < end && (r.status === 'Payé' || r.status === 'Confirmé')) {
+                    return acc + (r.amount || 0);
+                }
+                return acc;
+            }, 0);
+
+            return { name: `Sem ${5 - weeksAgo}`, revenue: weeklyTotal };
+        });
+
+        // 3. Field Distribution (Pie Chart)
+        const distribution = fields.map(f => {
+            const count = reservations.filter(r => r.fieldId === f.id).length;
+            return { name: f.name, value: count };
+        }).filter(d => d.value > 0);
+
+        // 4. Hourly Affluence
+        const hours = ['16h', '17h', '18h', '19h', '20h', '21h', '22h'];
+        const hourlyData = hours.map(h => {
+            const count = reservations.filter(r =>
+                r.time.startsWith(h.substring(0, 2)) && r.status !== 'Annulé'
+            ).length;
+            return { hour: h, count: count };
+        });
+
+        return {
+            totalFields: fields.length,
+            activeReservations: reservations.filter(r => r.status !== 'Annulé').length,
+            weeklyRevenue: reservations.reduce((acc, curr) => acc + (curr.status === 'Payé' || curr.status === 'Confirmé' ? curr.amount : 0), 0),
+            occupancyRate: fields.length > 0 ? `${Math.min(100, Math.round((reservations.length / (fields.length * 5)) * 100))}%` : "0%",
+            attendanceData,
+            weeklyRevenueData,
+            fieldDistributionData: distribution,
+            hourlyAffluenceData: hourlyData
+        };
     };
+
+    const stats = getStats();
 
     const value = {
         fields,
@@ -218,6 +319,8 @@ export const DashboardProvider = ({ children }) => {
         deleteField,
         updateField,
         updateReservationStatus,
+        addManualReservation,
+        toggleFieldStatus,
         fetchFields,
         fetchReservations
     };

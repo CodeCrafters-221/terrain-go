@@ -4,6 +4,7 @@ import Avis from "../sections/profile/Avis";
 import HeaderProfile from "../sections/profile/HeaderProfile";
 import Parametre from "../sections/profile/Parametre";
 import { ReservationService } from "../services/ReservationService";
+import { generateTicket } from "../utils/ticketGenerator";
 import {
   MapPin,
   Edit2,
@@ -186,10 +187,40 @@ const UserProfile = () => {
                     </div>
 
                     <div className="flex gap-3 mt-4 pt-4 border-t border-white/5">
-                      <button className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-primary text-background-dark text-sm font-bold hover:bg-white hover:text-primary transition-all shadow-lg flex-1 md:flex-none md:min-w-[140px]">
-                        <QrCode className="w-5 h-5" />
-                        <span>Ticket</span>
-                      </button>
+                      {(res.status === 'Payé' || res.status === 'Confirmé') ? (
+                        <button
+                          onClick={() => {
+                            try {
+                              // Sécurité pour les heures qui peuvent être absentes ou mal formatées
+                              const startTime = res.startTime ? (res.startTime.includes(':') ? res.startTime.substring(0, 5) : res.startTime) : "00:00";
+                              const endTime = res.endTime ? (res.endTime.includes(':') ? res.endTime.substring(0, 5) : res.endTime) : "00:00";
+
+                              generateTicket({
+                                id: res.id,
+                                clientName: profile?.name || "Joueur",
+                                clientPhone: profile?.phone || profile?.telephone || "Non renseigné",
+                                fieldName: res.terrainName || "Terrain",
+                                date: res.date || "Date inconnue",
+                                time: `${startTime} - ${endTime}`,
+                                status: res.status,
+                                paymentMethod: "Mobile Money"
+                              });
+                            } catch (err) {
+                              console.error("Erreur lors de la génération du ticket:", err);
+                              alert("Une erreur est survenue lors de la génération du ticket. Veuillez réessayer.");
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 rounded-full h-11 px-6 bg-primary text-background-dark text-sm font-bold hover:bg-white hover:text-primary transition-all shadow-lg flex-1 md:flex-none md:min-w-[140px]"
+                        >
+                          <QrCode className="w-5 h-5" />
+                          <span>Télécharger Ticket</span>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2 text-[#cbad90] text-xs font-medium bg-white/5 px-4 py-2 rounded-xl border border-white/5 italic">
+                          <Clock className="w-4 h-4 animate-pulse text-orange-500" />
+                          En attente de validation du propriétaire...
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
+import { generateTicket } from '../../utils/ticketGenerator';
 
 const MyReservations = () => {
     const { reservations, updateReservationStatus } = useDashboard();
@@ -8,6 +9,10 @@ const MyReservations = () => {
     const filteredReservations = filter === 'Tous les terrains'
         ? reservations
         : reservations.filter(r => r.fieldName === filter);
+
+    const handleDownloadTicket = (booking) => {
+        generateTicket(booking);
+    };
 
     return (
         <div className="flex flex-col gap-8">
@@ -49,6 +54,11 @@ const MyReservations = () => {
                                 <div>
                                     <h4 className="text-white font-medium">{booking.clientName}</h4>
                                     <p className="text-[#cbad90] text-xs">{booking.clientPhone}</p>
+                                    {booking.paymentMethod && (
+                                        <span className="text-[10px] bg-white/5 text-primary border border-primary/20 px-1.5 py-0.5 rounded mt-1 inline-block font-bold">
+                                            {booking.paymentMethod}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className="text-white text-sm">{booking.fieldName}</div>
@@ -77,6 +87,15 @@ const MyReservations = () => {
                                         Confirmer
                                     </button>
                                 )}
+                                {(booking.status === 'Payé' || booking.status === 'Confirmé') && (
+                                    <button
+                                        onClick={() => handleDownloadTicket(booking)}
+                                        className="size-8 flex items-center justify-center rounded-lg hover:bg-primary/20 text-primary transition-colors"
+                                        title="Télécharger le ticket"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">download</span>
+                                    </button>
+                                )}
                                 <button className="size-8 flex items-center justify-center rounded-lg hover:bg-[#493622] text-[#cbad90] transition-colors">
                                     <span className="material-symbols-outlined text-[20px]">visibility</span>
                                 </button>
@@ -101,3 +120,4 @@ const MyReservations = () => {
 };
 
 export default MyReservations;
+
