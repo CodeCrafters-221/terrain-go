@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import ReservationModal from "../components/ReservationModal";
+import { ReviewService } from "../services/ReviewService";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 import {
   Trophy,
   Search,
@@ -26,6 +29,11 @@ export default function TerrainDetails() {
   const [terrain, setTerrain] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReservationOpen, setIsReservationOpen] = useState(false);
+  const { user, profile } = useAuth();
+  const [reviews, setReviews] = useState([]);
+  const [ratingStats, setRatingStats] = useState({ average: 0, count: 0 });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [newReview, setNewReview] = useState({ note: 5, commentaire: "" });
 
   useEffect(() => {
     const fetchTerrain = async () => {
@@ -50,8 +58,60 @@ export default function TerrainDetails() {
       }
     };
 
+    const fetchReviews = async () => {
+      if (!id) return;
+      try {
+        const [reviewsData, stats] = await Promise.all([
+          ReviewService.getTerrainReviews(id),
+          ReviewService.getAverageRating(id),
+        ]);
+        setReviews(reviewsData);
+        setRatingStats(stats);
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+      }
+    };
+
     fetchTerrain();
+    fetchReviews();
   }, [id]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error("Veuillez vous connecter pour laisser un avis");
+      return;
+    }
+
+    if (!newReview.commentaire.trim()) {
+      toast.error("Veuillez ajouter un commentaire");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      await ReviewService.addReview({
+        utilisateur_id: user.id,
+        terrain_id: id,
+        note: newReview.note,
+        commentaire: newReview.commentaire,
+      });
+      toast.success("Merci pour votre avis !");
+      setNewReview({ note: 5, commentaire: "" });
+      // Refresh reviews
+      const [reviewsData, stats] = await Promise.all([
+        ReviewService.getTerrainReviews(id),
+        ReviewService.getAverageRating(id),
+      ]);
+      setReviews(reviewsData);
+      setRatingStats(stats);
+    } catch (err) {
+      console.error("Error submitting review:", err);
+      toast.error("Erreur lors de l'ajout de l'avis");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -73,7 +133,7 @@ export default function TerrainDetails() {
   const stadiumDataForModal = {
     id: terrain.id,
     city: terrain.name,
-    price: terrain.price,
+    price: terrain.price_per_hour || terrain.price || 0,
     location: terrain.adress,
     totalPlayers: terrain.pelouse,
     fieldStadium: terrain.pelouse,
@@ -150,7 +210,7 @@ export default function TerrainDetails() {
             Terrains
           </a>
           <ChevronRight className="text-text-secondary w-3.5 h-3.5" />
-          <span className="text-white font-medium">Sacré-Cœur 1</span>
+          <span className="text-white font-medium">{terrain.name}</span>
         </div>
 
         {/* Header Info */}
@@ -167,8 +227,8 @@ export default function TerrainDetails() {
               <span className="w-1 h-1 rounded-full bg-text-secondary"></span>
               <span className="flex items-center gap-1">
                 <Star className="text-primary w-5 h-5 fill-current" />
-                <span className="text-white font-semibold">4.8</span>
-                <span>(120 avis)</span>
+                <span className="text-white font-semibold">{ratingStats.average}</span>
+                <span>({ratingStats.count} avis)</span>
               </span>
             </div>
           </div>
@@ -197,49 +257,38 @@ export default function TerrainDetails() {
             <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
           </div>
           {/* Secondary Images */}
-          <div className="relative group cursor-pointer hidden md:block">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              data-alt="Close up of artificial turf texture"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuA6u_asUgmafEf1oLRvX64CHAs8b9sKCs8WDeV2wSHqJ99y0_SbQNhGEfav7I7EvFA_iejco5yPWCdmk8YRSeNaaS-Z8p1cOxgKXXDWt8sOxqXYOQt8AJT_KMuW-PsaY54uijdszi8W0-UZmRHffguD2Y0EOAixf38TiO9V85YKjyS7Ez_GiiRsj7c9X56W6c5o683SP6gyzUcmiOJv1Uf1TbH_SiNC8K2_fDVEISzdm0H-4rb9pOJ6VM9UD_GnjVPBh8SjEwA98A')",
-              }}
-            ></div>
-          </div>
-          <div className="relative group cursor-pointer hidden md:block">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              data-alt="Night view of goal post and net"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCEQM3yuMAUbMYT0vPfvPKIvfpjkh3bRUmdg3v7B4u_A5b479O-rFoUXv5Y-_7VEs0anORXKSxfj29aRb7esDxk-AaifsfAzds9qtEQXeWgPpbdGrhUUNSC0s4-YRultRgAYIuETmDF-7SHXBgxjn8NwH9cvcpEFo5iNYTH_IPBwngiOlTBmgeX2jPdft1IAYVyOSFdqfNWMSK1zyP0Tiobke_E8vFds_NwHke5a32Btg3lLP6xpTuekGK5ogRaEIGDCkPqWpyQRw')",
-              }}
-            ></div>
-          </div>
-          <div className="relative group cursor-pointer hidden md:block">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              data-alt="Locker room with benches"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCRnPnQmIloorEyH82C-iaQFI2Fp9S-37zs6ZVArvLc24rQkhMc5L6U_Picl7L-MSMBTwOKn4QmomFaiDXVW4_bWqG-X_iyhaQXU3lwbumZE_E-sY6vAKnTu2idePUGH5Ip3v-b8iV5xZaCIe9l64kRT7TtA8sYvxaSLdZsuHPB8_QuK7uMcOxm-xRLqxfivDIa1aS4_oIOro_p3asy_yeMch8w_oaUv0xIeLv524iIrpJsxJJ8-jACw9Fkj6B0JlWl1hvxFuKg5g')",
-              }}
-            ></div>
-          </div>
-          <div className="relative group cursor-pointer hidden md:block">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-              data-alt="Action shot of players during a match"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCRsu2Vjgq9bTgKlzlYPZpV6HQGlMc6c4ojgsjW9N7fiLtmEFQXpq1zRrntQ_uZdeP7yPEeHO36_N5_vOJL28STHRg_bmAgvcQVtiDt5Q4vpadVmbKdERFnlCiLBdc85f8nzz8ecNCMHLkWdQcyR1QmdQhKitNXdEu2pdQtdZgSe138C8hX0gsDeyKkRPQiSePEh8_NCvbYVFFvlpxAF3r4tsuIEeksXca_OTrzBP-CyM6eqR-nPbjilr2l1Bc6m-jBdz0c0hby8w')",
-              }}
-            ></div>
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 hover:bg-black/40 transition-colors">
-              <span className="text-white font-bold text-lg">+5 Photos</span>
+          {/* Secondary Images - Mapping real images */}
+          {terrain.field_images?.slice(1, 4).map((img, idx) => (
+            <div key={idx} className="relative group cursor-pointer hidden md:block">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{ backgroundImage: `url('${img.url_image}')` }}
+              ></div>
             </div>
-          </div>
+          ))}
+
+          {/* Fallback if less than 5 images */}
+          {(!terrain.field_images || terrain.field_images.length < 5) &&
+            Array.from({ length: Math.max(0, 4 - (terrain.field_images?.length || 1)) }).map((_, idx) => (
+              <div key={`empty-${idx}`} className="relative group cursor-pointer hidden md:block bg-surface-dark/50 flex items-center justify-center border border-dashed border-surface-highlight">
+                <Search className="w-8 h-8 text-surface-highlight opacity-20" />
+              </div>
+            ))
+          }
+
+          {terrain.field_images?.length >= 5 && (
+            <div className="relative group cursor-pointer hidden md:block">
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{ backgroundImage: `url('${terrain.field_images[4].url_image}')` }}
+              ></div>
+              {terrain.field_images.length > 5 && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 hover:bg-black/40 transition-colors">
+                  <span className="text-white font-bold text-lg">+{terrain.field_images.length - 5} Photos</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content Layout */}
@@ -419,89 +468,101 @@ export default function TerrainDetails() {
             {/* Reviews */}
             <section className="border-t border-surface-light pt-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Avis (120)</h3>
+                <h3 className="text-xl font-bold text-white">Avis ({ratingStats.count})</h3>
                 <div className="flex items-center gap-2">
                   <Star className="text-primary w-5 h-5 fill-current" />
-                  <span className="text-xl font-bold text-white">4.8</span>
+                  <span className="text-xl font-bold text-white">{ratingStats.average}</span>
                 </div>
               </div>
+
+              {/* Add Review Form */}
+              {user && (
+                <div className="mb-8 p-6 rounded-2xl bg-surface-dark border border-surface-light">
+                  <h4 className="text-white font-bold mb-4">Laisser un avis</h4>
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm text-text-secondary mr-2">Votre note :</span>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setNewReview({ ...newReview, note: star })}
+                          className="focus:outline-none transition-transform hover:scale-110"
+                        >
+                          <Star
+                            className={`w-6 h-6 ${star <= newReview.note
+                              ? "text-primary fill-current"
+                              : "text-text-secondary"
+                              }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={newReview.commentaire}
+                      onChange={(e) => setNewReview({ ...newReview, commentaire: e.target.value })}
+                      placeholder="Partagez votre expérience sur ce terrain..."
+                      className="w-full bg-[#231a10] border border-surface-light rounded-xl p-4 text-white text-sm focus:border-primary outline-none transition-colors min-h-[100px]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSubmittingReview}
+                      className="px-6 py-2 bg-primary text-[#231a10] font-bold rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                    >
+                      {isSubmittingReview ? "Envoi..." : "Publier l'avis"}
+                    </button>
+                  </form>
+                </div>
+              )}
+
               <div className="grid gap-6">
-                {/* Review Card 1 */}
-                <div className="bg-surface-dark p-6 rounded-2xl border border-surface-light">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="size-10 rounded-full bg-cover bg-center"
-                        data-alt="User avatar 1"
-                        style={{
-                          backgroundImage:
-                            "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAMkDB6v9rySbpKOHzFEvxwEUCsGbTql0WGgsGQ18Lf_k4UAlXWCiD9yzMdzAihGZZP4U443bg5_jKWBcUeNRG0XjvIng_O715WAMowdmQHWPiUBFHLGbap9MCJOlWUg8dw1ctxBqvUB3QYD28-6-kPVRmoHD802af9W2chmqJvhlz7agLIYBCMLkxLs8_syDp4Mv1WyJOPuaPY1xZJpn3Td1iPbiv5YuNW4Ya5TrOqGdvXTsZSTK4zbNMQyhKrpAWS_6fDhNJKGA')",
-                        }}
-                      ></div>
-                      <div>
-                        <p className="font-bold text-white text-sm">
-                          Moussa Diop
-                        </p>
-                        <p className="text-xs text-text-secondary">
-                          Il y a 2 jours
-                        </p>
+                {reviews.length === 0 ? (
+                  <p className="text-text-secondary italic text-center py-4">Aucun avis pour le moment.</p>
+                ) : (
+                  reviews.map((rev) => (
+                    <div key={rev.id} className="bg-surface-dark p-6 rounded-2xl border border-surface-light">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="size-10 rounded-full bg-cover bg-center bg-[#493622]"
+                            style={rev.profiles?.image ? { backgroundImage: `url('${rev.profiles.image}')` } : {}}
+                          >
+                            {!rev.profiles?.image && (
+                              <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold uppercase">
+                                {rev.profiles?.name?.substring(0, 2) || "??"}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-white text-sm">
+                              {rev.profiles?.name || "Anonyme"}
+                            </p>
+                            <p className="text-xs text-text-secondary">
+                              {new Date(rev.created_at).toLocaleDateString("fr-FR", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5 text-primary">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <Star
+                              key={i}
+                              className={`w-[14px] h-[14px] ${i <= rev.note ? "fill-current" : "opacity-30"
+                                }`}
+                            />
+                          ))}
+                        </div>
                       </div>
+                      <p className="text-text-secondary text-sm">
+                        {rev.commentaire}
+                      </p>
                     </div>
-                    <div className="flex gap-0.5 text-primary">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Star
-                          key={i}
-                          className="w-[14px] h-[14px] fill-current"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-text-secondary text-sm">
-                    Très bon terrain, la pelouse est neuve et l'éclairage est
-                    top pour jouer le soir. Juste un peu difficile de trouver
-                    une place de parking le week-end.
-                  </p>
-                </div>
-                {/* Review Card 2 */}
-                <div className="bg-surface-dark p-6 rounded-2xl border border-surface-light">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="size-10 rounded-full bg-cover bg-center"
-                        data-alt="User avatar 2"
-                        style={{
-                          backgroundImage:
-                            "url('https://lh3.googleusercontent.com/aida-public/AB6AXuA-ymGU1LzJ1fUa493_EdfSpUPaiArrxn3aes-g1H320HFm6Yq7vT-bknPkk8oUui_lnXuOgH5jOxGq69xokTZcUHFwFCUiErF4CmN8Myb7GPwe6vmUy3aagrD0kN5vX3pF_dyA9uJufGR4REIc5jB28xiMOAJ-UlHXMhDDGC5KrFVgMbiL4qF5Zf3OMsIuWdF3JnBSclM8rEH4pgCvp7sRZV_wGUazQo3i7EY5whlnKwcfE83OJnBSqGUSUpFrnIwGd6HpwhWssA')",
-                        }}
-                      ></div>
-                      <div>
-                        <p className="font-bold text-white text-sm">
-                          Aminata Sow
-                        </p>
-                        <p className="text-xs text-text-secondary">
-                          Il y a 1 semaine
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-0.5 text-primary">
-                      {[1, 2, 3, 4].map((i) => (
-                        <Star
-                          key={i}
-                          className="w-[14px] h-[14px] fill-current"
-                        />
-                      ))}
-                      <Star className="w-[14px] h-[14px]" />
-                    </div>
-                  </div>
-                  <p className="text-text-secondary text-sm">
-                    Super ambiance, les vestiaires sont propres. Je recommande
-                    pour les tournois entre collègues.
-                  </p>
-                </div>
+                  ))
+                )}
               </div>
-              <button className="mt-6 w-full py-3 rounded-xl border border-surface-light text-white font-medium hover:bg-surface-light transition-colors text-sm">
-                Voir les 118 autres avis
-              </button>
             </section>
 
             {/* Map */}
@@ -543,7 +604,7 @@ export default function TerrainDetails() {
                 </div>
                 <div className="flex items-center gap-1 bg-surface-light px-2 py-1 rounded-md">
                   <Star className="text-primary w-4 h-4 fill-current" />
-                  <span className="text-white font-bold text-sm">4.8</span>
+                  <span className="text-white font-bold text-sm">{ratingStats.average}</span>
                 </div>
               </div>
               <div className="space-y-4 mb-6">

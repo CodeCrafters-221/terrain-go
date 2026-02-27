@@ -81,7 +81,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "/terrain-details",
+        path: "/terrain-details/:id",
         element: <TerrainDetails />,
       },
       {

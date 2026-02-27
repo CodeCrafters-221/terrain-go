@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import Avis from "../sections/profile/Avis";
+import Avis, { ReviewModal } from "../sections/profile/Avis";
 import HeaderProfile from "../sections/profile/HeaderProfile";
 import Parametre from "../sections/profile/Parametre";
 import { ReservationService } from "../services/ReservationService";
@@ -22,6 +22,9 @@ const UserProfile = () => {
   const { user, loading: authLoading, profile } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTerrainForReview, setSelectedTerrainForReview] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [refreshReviewsCounter, setRefreshReviewsCounter] = useState(0);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -255,7 +258,13 @@ const UserProfile = () => {
                         {new Date(res.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, {res.startTime.substring(0, 5)} • {res.location}
                       </p>
                     </div>
-                    <button className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn">
+                    <button
+                      onClick={() => {
+                        setSelectedTerrainForReview(res);
+                        setIsReviewModalOpen(true);
+                      }}
+                      className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn"
+                    >
                       <MessageSquarePlus className="w-[18px] h-[18px] group-hover/btn:scale-110 transition-transform" />
                       <span>Laisser un avis</span>
                     </button>
@@ -267,11 +276,8 @@ const UserProfile = () => {
             )}
           </div>
 
-
-
-
           <div id="avis" className="animate-fade-in-up">
-            <Avis />
+            <Avis key={refreshReviewsCounter} />
           </div>
 
           <div id="parametres" className="animate-fade-in-up">
@@ -279,9 +285,25 @@ const UserProfile = () => {
           </div>
         </div>
       </main>
+
+      {selectedTerrainForReview && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedTerrainForReview(null);
+          }}
+          terrain={selectedTerrainForReview}
+          onReviewed={() => {
+            setRefreshReviewsCounter(prev => prev + 1);
+            // On pourrait aussi marquer la réservation comme "avis donné" si on avait un champ en BD
+          }}
+        />
+      )}
     </div>
   );
 };
+
 
 export default UserProfile;
 

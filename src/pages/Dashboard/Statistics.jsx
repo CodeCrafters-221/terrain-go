@@ -23,8 +23,8 @@ const Statistics = () => {
     return (
         <div className="flex flex-col gap-10">
             <div className="flex flex-col">
-                <h2 className="text-white text-3xl font-black tracking-tight">Analyse Approfondie</h2>
-                <p className="text-[#cbad90] text-sm mt-1">Gérez la croissance de votre complexe sportif</p>
+                <h2 className="text-white text-2xl md:text-3xl font-black tracking-tight leading-tight">Analyse Approfondie</h2>
+                <p className="text-[#cbad90] text-xs md:text-sm mt-1">Gérez la croissance de votre complexe sportif</p>
             </div>
 
             {/* Top Cards */}

@@ -19,22 +19,21 @@ export const ReservationService = {
       `)
             .eq("fields.proprietaire_id", user.id)
             .order("date", { ascending: false })
-            .order("heure_debut", { ascending: true });
+            .order("start_time", { ascending: true });
 
         if (error) throw error;
 
         return data.map(r => ({
             id: r.id,
             date: r.date,
-            startTime: r.heure_debut,
-            endTime: r.heure_fin,
-            price: r.prix_total,
-            status: r.statut || "Confirmé",
+            startTime: r.start_time,
+            endTime: r.end_time,
+            price: r.total_price,
+            status: r.status || "Confirmé",
             terrainName: r.fields?.name || "Terrain Inconnu",
-            // Fallback logic for client name
-            clientName: r.nom_client || (r.utilisateur_id ? "Client App" : "Client Inconnu"),
-            clientPhone: r.telephone_client || "-",
-            isManual: !r.utilisateur_id // True if not linked to a user account
+            clientName: "Client App",
+            clientPhone: "-",
+            isManual: !r.user_id
         }));
     },
 
@@ -55,7 +54,7 @@ export const ReservationService = {
                     field_images (url_image)
                 )
             `)
-            .eq("utilisateur_id", user.id)
+            .eq("user_id", user.id)
             .order("date", { ascending: false });
 
         if (error) {
@@ -64,20 +63,20 @@ export const ReservationService = {
         }
 
         return data.map(r => {
-            // Sécurité : on vérifie si fields existe, sinon on met des valeurs par défaut
             const terrain = r.fields || {};
             const images = terrain.field_images || [];
-
             return {
                 id: r.id,
+                field_id: r.field_id,
                 date: r.date,
-                startTime: r.heure_debut,
-                endTime: r.heure_fin,
-                price: r.prix_total,
-                status: r.statut || "En attente de paiement",
+                startTime: r.start_time,
+                endTime: r.end_time,
+                price: r.total_price,
+                status: r.status || "En attente de paiement",
                 terrainName: terrain.name || "Terrain inconnu",
                 location: terrain.adress || "Lieu non renseigné",
-                image: images.length > 0 ? images[0].url_image : null
+                image: images.length > 0 ? images[0].url_image : null,
+                fields: terrain
             };
         });
     },
@@ -91,15 +90,12 @@ export const ReservationService = {
         const { error } = await supabase
             .from("reservations")
             .insert({
-                terrain_id: data.terrainId,
+                field_id: data.terrainId,
                 date: data.date,
-                heure_debut: data.startTime,
-                heure_fin: data.endTime,
-                prix_total: data.price,
-                statut: "Confirmé", // Manuel = Confirmé direct
-                nom_client: data.clientName,
-                telephone_client: data.clientPhone
-                // utilisateur_id is NULL for manual entries
+                start_time: data.startTime,
+                end_time: data.endTime,
+                total_price: data.price,
+                status: "Confirmé"
             });
 
         if (error) throw error;

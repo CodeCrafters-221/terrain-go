@@ -119,8 +119,8 @@ const HeaderProfile = () => {
         {/* Mobile Menu Overlay */}
         <div
           className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
-              ? "opacity-100 visible"
-              : "opacity-0 invisible pointer-events-none"
+            ? "opacity-100 visible"
+            : "opacity-0 invisible pointer-events-none"
             }`}
         >
           {/* Mobile Search */}

@@ -64,7 +64,7 @@ const NavSearch = () => {
               </Link>
             ) : (
               <Link
-                to="/auth/login"
+                to="/login"
                 className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-lg shadow-primary/20"
               >
                 <span className="truncate">Connexion</span>
@@ -121,7 +121,7 @@ const NavSearch = () => {
 
             {!user && (
               <Link
-                to="/auth/login"
+                to="/login"
                 className="w-full flex items-center justify-center h-14 bg-primary text-background-dark text-lg font-bold rounded-xl shadow-xl shadow-primary/20 mt-4 active:scale-95 transition-transform"
                 onClick={() => setIsMenuOpen(false)}
               >

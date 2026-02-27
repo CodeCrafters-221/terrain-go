@@ -53,7 +53,7 @@ const DashboardCharts = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
                             <span className="text-[#cbad90] text-xs font-bold uppercase tracking-wider">Fréquentation</span>
-                            <h4 className="text-white text-3xl font-black mt-1">245 <span className="text-sm font-medium text-[#cbad90]">joueurs</span></h4>
+                            <h4 className="text-white text-2xl md:text-3xl font-black mt-1">245 <span className="text-sm font-medium text-[#cbad90]">joueurs</span></h4>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0bda16]/10 border border-[#0bda16]/20 rounded-full">
                             <span className="material-symbols-outlined text-[16px] text-[#0bda16]">trending_up</span>
@@ -61,8 +61,8 @@ const DashboardCharts = () => {
                         </div>
                     </div>
 
-                    <div className="h-[220px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-[220px] w-full min-h-[220px]">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <BarChart data={attendanceData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#493622" />
                                 <XAxis
@@ -95,7 +95,7 @@ const DashboardCharts = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
                             <span className="text-[#cbad90] text-xs font-bold uppercase tracking-wider">Revenus Estimés</span>
-                            <h4 className="text-white text-3xl font-black mt-1">{(weeklyTotal / 1000).toFixed(0)}K <span className="text-sm font-medium text-[#cbad90]">CFA</span></h4>
+                            <h4 className="text-white text-2xl md:text-3xl font-black mt-1">{(weeklyTotal / 1000).toFixed(0)}K <span className="text-sm font-medium text-[#cbad90]">CFA</span></h4>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0bda16]/10 border border-[#0bda16]/20 rounded-full">
                             <span className="material-symbols-outlined text-[16px] text-[#0bda16]">trending_up</span>
@@ -103,8 +103,8 @@ const DashboardCharts = () => {
                         </div>
                     </div>
 
-                    <div className="h-[220px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-[220px] w-full min-h-[220px]">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <AreaChart data={revenueData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">

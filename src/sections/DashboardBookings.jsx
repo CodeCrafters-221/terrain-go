@@ -1,17 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDashboard } from '../context/DashboardContext';
 
 const DashboardBookings = () => {
     const { reservations } = useDashboard();
+    const [filterStatus, setFilterStatus] = useState('All'); // All, Pending, Confirmed
 
-    // Show only first 4 reservations
-    const displayReservations = reservations.slice(0, 4);
+    const getFilteredReservations = () => {
+        let filtered = reservations;
+        if (filterStatus === 'Pending') {
+            filtered = reservations.filter(r => r.status === 'En attente de paiement');
+        } else if (filterStatus === 'Confirmed') {
+            filtered = reservations.filter(r => r.status === 'Confirmé' || r.status === 'Payé');
+        }
+        return filtered.slice(0, 5);
+    };
+
+    const displayReservations = getFilteredReservations();
+
+    const cycleFilter = () => {
+        const statuses = ['All', 'Pending', 'Confirmed'];
+        const currentIndex = statuses.indexOf(filterStatus);
+        setFilterStatus(statuses[(currentIndex + 1) % statuses.length]);
+    };
 
     return (
         <div className="bg-[#2c241b] rounded-2xl border border-[#493622] h-full flex flex-col">
             <div className="p-6 border-b border-[#493622] flex items-center justify-between">
-                <h3 className="text-white text-lg font-bold">Prochaines Réservations</h3>
-                <button className="size-8 flex items-center justify-center rounded-full hover:bg-[#493622] text-[#cbad90] transition-colors">
+                <div className="flex flex-col">
+                    <h3 className="text-white text-lg font-bold">Prochaines Réservations</h3>
+                    <span className="text-[10px] text-[#f27f0d] font-bold uppercase tracking-wider">Filtre : {filterStatus}</span>
+                </div>
+                <button
+                    onClick={cycleFilter}
+                    className={`size-8 flex items-center justify-center rounded-full transition-all ${filterStatus !== 'All' ? 'bg-[#f27f0d] text-[#231a10]' : 'hover:bg-[#493622] text-[#cbad90]'}`}
+                    title="Changer le filtre"
+                >
                     <span className="material-symbols-outlined">filter_list</span>
                 </button>
             </div>
@@ -27,7 +50,7 @@ const DashboardBookings = () => {
                             <div className="flex flex-col flex-1 gap-1">
                                 <div className="flex justify-between items-start">
                                     <h4 className="text-white font-medium text-sm">{booking.clientName}</h4>
-                                    <span className="text-[#f27f0d] text-xs font-bold px-2 py-0.5 rounded bg-[#f27f0d]/10">{booking.time.split(' - ')[0]}</span>
+                                    <span className="text-[#f27f0d] text-xs font-bold px-2 py-0.5 rounded bg-[#f27f0d]/10">{booking.time}</span>
                                 </div>
                                 <p className="text-[#cbad90] text-xs">{booking.fieldName}</p>
                                 <div className="flex items-center gap-2 mt-1">
