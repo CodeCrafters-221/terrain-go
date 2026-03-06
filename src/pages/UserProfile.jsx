@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import Avis from "../sections/profile/Avis";
+import Avis, { ReviewModal } from "../sections/profile/Avis";
 import HeaderProfile from "../sections/profile/HeaderProfile";
 import Parametre from "../sections/profile/Parametre";
 import { ReservationService } from "../services/ReservationService";
@@ -22,6 +22,9 @@ const UserProfile = () => {
   const { user, loading: authLoading, profile } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTerrainForReview, setSelectedTerrainForReview] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [refreshReviewsCounter, setRefreshReviewsCounter] = useState(0);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -68,11 +71,18 @@ const UserProfile = () => {
     // Création d'un objet Date propre pour la comparaison
     // On assume r.date est YYYY-MM-DD et r.startTime est HH:mm:ss
     const resDateTime = new Date(`${r.date}T${r.startTime}`);
+    // Utiliser endTime pour la fin du match, sinon considérer startTime
+    const resEndDateTime = r.endTime ? new Date(`${r.date}T${r.endTime}`) : resDateTime;
 
     if (isNaN(resDateTime.getTime()) || resDateTime >= now) {
       upcomingReservations.push(r);
     } else {
-      pastReservations.push(r);
+      // Pour l'historique RÉCENT, on ne garde que ce qui s'est fini il y a moins de 15 minutes
+      // pour éviter d'avoir une liste trop longue comme demandé par le client
+      const fifteenMinutesInMs = 15 * 60 * 1000;
+      if (now - resEndDateTime < fifteenMinutesInMs) {
+        pastReservations.push(r);
+      }
     }
   });
 
@@ -107,16 +117,22 @@ const UserProfile = () => {
 
           <button className="flex items-center justify-center gap-2 rounded-full h-12 px-8 bg-surface-highlight hover:bg-white hover:text-background-dark text-white text-sm font-bold transition-all w-full md:w-auto shadow-lg hover:shadow-xl z-10 group/btn">
             <Edit2 className="w-5 h-5 transition-transform group-hover/btn:-rotate-12" />
-            <a href="#parametres">Modifier le profil</a>
+            <a href="#mes-informations">Mes Informations</a>
           </button>
         </section>
 
         {/* Tabs Navigation */}
         <div className="sticky top-18.25 z-40 bg-[#231a10]/95 backdrop-blur-md pt-2 pb-2 mb-8 border-b border-surface-highlight w-full -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-8 overflow-x-auto hide-scrollbar snap-x">
-            <a className="flex flex-col items-center justify-center border-b-[3px] border-primary text-white pb-3 px-2 min-w-fit cursor-pointer group snap-start transition-all" href="#reservations">
+            <a className="flex flex-col items-center justify-center border-b-[3px] border-primary text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start" href="#mes-informations">
               <div className="flex items-center gap-2">
-                <CalendarCheck className="w-5 h-5 group-hover:text-primary transition-colors" />
+                <Settings className="w-5 h-5" />
+                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">Mes Informations</p>
+              </div>
+            </a>
+            <a className="flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-surface-highlight text-text-secondary hover:text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start" href="#reservations">
+              <div className="flex items-center gap-2">
+                <CalendarCheck className="w-5 h-5" />
                 <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">Mes Réservations</p>
               </div>
             </a>
@@ -126,17 +142,15 @@ const UserProfile = () => {
                 <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">Mes Avis</p>
               </div>
             </a>
-            <a className="flex flex-col items-center justify-center border-b-[3px] border-transparent hover:border-surface-highlight text-text-secondary hover:text-white pb-3 px-2 min-w-fit cursor-pointer transition-all snap-start" href="#parametres">
-              <div className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                <p className="text-sm font-bold leading-normal tracking-wide whitespace-nowrap">Paramètres</p>
-              </div>
-            </a>
           </div>
         </div>
 
 
         <div className="flex flex-col gap-12">
+          <div id="mes-informations" className="animate-fade-in-up">
+            <Parametre />
+          </div>
+
           {/* SECTION: Reservations */}
           <div className="flex flex-col gap-6 animate-fade-in" id="reservations">
             <div className="flex items-center justify-between">
@@ -255,7 +269,13 @@ const UserProfile = () => {
                         {new Date(res.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, {res.startTime.substring(0, 5)} • {res.location}
                       </p>
                     </div>
-                    <button className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn">
+                    <button
+                      onClick={() => {
+                        setSelectedTerrainForReview(res);
+                        setIsReviewModalOpen(true);
+                      }}
+                      className="flex w-fit items-center justify-center gap-2 rounded-full h-9 px-4 bg-surface-highlight/50 text-text-secondary text-sm font-bold hover:text-white hover:bg-primary transition-all mt-2 group/btn"
+                    >
                       <MessageSquarePlus className="w-[18px] h-[18px] group-hover/btn:scale-110 transition-transform" />
                       <span>Laisser un avis</span>
                     </button>
@@ -267,21 +287,32 @@ const UserProfile = () => {
             )}
           </div>
 
-
-
-
           <div id="avis" className="animate-fade-in-up">
-            <Avis />
+            <Avis key={refreshReviewsCounter} />
           </div>
 
-          <div id="parametres" className="animate-fade-in-up">
-            <Parametre />
-          </div>
+
         </div>
       </main>
+
+      {selectedTerrainForReview && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedTerrainForReview(null);
+          }}
+          terrain={selectedTerrainForReview}
+          onReviewed={() => {
+            setRefreshReviewsCounter(prev => prev + 1);
+            // On pourrait aussi marquer la réservation comme "avis donné" si on avait un champ en BD
+          }}
+        />
+      )}
     </div>
   );
 };
+
 
 export default UserProfile;
 

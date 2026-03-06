@@ -38,23 +38,42 @@ const NavSearch = () => {
             </a>
             <Link
               className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
-              to="/profile#reservations"
+              to="/compte#reservations"
             >
               Mes Réservations
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </Link>
-            <a
-              className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
-              href="#"
-            >
-              Devenir Partenaire
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
-            </a>
+            {user ? (
+              profile?.role === "owner" ? (
+                <Link
+                  className="text-white font-bold bg-primary/20 border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary hover:text-black transition-all text-sm"
+                  to="/dashboard"
+                >
+                  Mon Dashboard
+                </Link>
+              ) : (
+                <Link
+                  className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
+                  to="/owners"
+                >
+                  Devenir Partenaire
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
+                </Link>
+              )
+            ) : (
+              <Link
+                className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
+                to="/owners"
+              >
+                Pour les propriétaires
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-4">
             {user ? (
-              <Link to={profile?.role === "owner" ? "/dashboard" : "/profile"}>
+              <Link to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}>
                 <div
                   className="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-surface-highlight hover:border-primary transition-colors cursor-pointer"
                   style={{
@@ -64,7 +83,7 @@ const NavSearch = () => {
               </Link>
             ) : (
               <Link
-                to="/auth/login"
+                to="/login"
                 className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-lg shadow-primary/20"
               >
                 <span className="truncate">Connexion</span>
@@ -104,24 +123,46 @@ const NavSearch = () => {
             </a>
             <Link
               className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
-              to="/profile#reservations"
+              to="/compte#reservations"
               onClick={() => setIsMenuOpen(false)}
             >
               <Calendar className="w-6 h-6" />
               Mes Réservations
             </Link>
-            <a
-              className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
-              href="#"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <Handshake className="w-6 h-6" />
-              Devenir Partenaire
-            </a>
+            {user ? (
+              profile?.role === "owner" ? (
+                <Link
+                  className="text-primary text-xl font-medium transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
+                  to="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Handshake className="w-6 h-6" />
+                  Mon Dashboard
+                </Link>
+              ) : (
+                <Link
+                  className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
+                  to="/owners"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Handshake className="w-6 h-6" />
+                  Devenir Partenaire
+                </Link>
+              )
+            ) : (
+              <Link
+                className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
+                to="/owners"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Handshake className="w-6 h-6" />
+                Pour les propriétaires
+              </Link>
+            )}
 
             {!user && (
               <Link
-                to="/auth/login"
+                to="/login"
                 className="w-full flex items-center justify-center h-14 bg-primary text-background-dark text-lg font-bold rounded-xl shadow-xl shadow-primary/20 mt-4 active:scale-95 transition-transform"
                 onClick={() => setIsMenuOpen(false)}
               >

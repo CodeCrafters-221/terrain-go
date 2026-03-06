@@ -218,11 +218,10 @@ const SearchPage = () => {
                     <Map className="w-10 h-10 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">
-                    Vue Carte en cours d'intégration
+                    Bientôt Disponible : Vue Carte
                   </h3>
                   <p className="text-text-secondary text-base leading-relaxed mb-6">
-                    Nous préparons une expérience interactive pour vous aider à
-                    localiser les terrains les plus proches de vous.
+                    Nous finalisons l'intégration de la carte interactive pour vous permettre de localiser les terrains en temps réel autour de vous.
                   </p>
                   <button
                     onClick={() => setViewMode("grid")}

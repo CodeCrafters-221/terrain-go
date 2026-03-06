@@ -117,7 +117,7 @@ const Parametre = () => {
         id="parametres"
       >
         <h2 className="text-white text-2xl font-bold leading-tight">
-          Paramètres du compte
+          Mes Informations
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Personal Info Form */}
@@ -213,31 +213,7 @@ const Parametre = () => {
                 Se déconnecter
               </button>
             </div>
-            {/* Notifications */}
-            <div className="bg-surface-dark p-6 rounded-2xl border border-surface-highlight flex-1">
-              <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                <Bell className="w-5 h-5 text-primary" />
-                Notifications
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-text-secondary text-sm">
-                    Rappels SMS
-                  </span>
-                  <button className="w-11 h-6 bg-primary rounded-full relative transition-colors focus:outline-none ring-2 ring-offset-2 ring-offset-background-dark ring-primary">
-                    <span className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"></span>
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-secondary text-sm">
-                    Emails Promo
-                  </span>
-                  <button className="w-11 h-6 bg-surface-highlight rounded-full relative transition-colors focus:outline-none ring-2 ring-offset-2 ring-offset-background-dark ring-transparent">
-                    <span className="absolute left-1 top-1 bg-gray-400 w-4 h-4 rounded-full transition-transform"></span>
-                  </button>
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>

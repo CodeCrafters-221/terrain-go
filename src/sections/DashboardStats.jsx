@@ -13,7 +13,7 @@ const DashboardStats = () => {
                     <span className="material-symbols-outlined text-[#f27f0d]">stadium</span>
                 </div>
                 <div className="flex items-end gap-2">
-                    <p className="text-white text-3xl font-bold">{stats.totalFields}</p>
+                    <p className="text-white text-2xl md:text-3xl font-bold">{stats.totalFields}</p>
                     <p className="text-[#0bda16] text-xs font-medium mb-1.5 flex items-center">
                         <span className="material-symbols-outlined text-[14px]">trending_up</span>
                         +1 ce mois
@@ -28,7 +28,7 @@ const DashboardStats = () => {
                     <span className="material-symbols-outlined text-[#f27f0d]">event_available</span>
                 </div>
                 <div className="flex items-end gap-2">
-                    <p className="text-white text-3xl font-bold">{stats.activeReservations}</p>
+                    <p className="text-white text-2xl md:text-3xl font-bold">{stats.activeReservations}</p>
                     <p className="text-[#0bda16] text-xs font-medium mb-1.5 flex items-center">
                         <span className="material-symbols-outlined text-[14px]">trending_up</span>
                         +15% sem.
@@ -43,7 +43,7 @@ const DashboardStats = () => {
                     <span className="material-symbols-outlined text-[#f27f0d]">account_balance_wallet</span>
                 </div>
                 <div className="flex items-end gap-2">
-                    <p className="text-white text-3xl font-bold">{(stats.weeklyRevenue / 1000).toFixed(0)}k <span className="text-lg font-normal text-[#cbad90]">CFA</span></p>
+                    <p className="text-white text-2xl md:text-3xl font-bold">{(stats.weeklyRevenue / 1000).toFixed(0)}k <span className="text-base md:text-lg font-normal text-[#cbad90]">CFA</span></p>
                     <p className="text-[#0bda16] text-xs font-medium mb-1.5 flex items-center">
                         <span className="material-symbols-outlined text-[14px]">trending_up</span>
                         +8%
@@ -58,7 +58,7 @@ const DashboardStats = () => {
                     <span className="material-symbols-outlined text-[#f27f0d]">monitoring</span>
                 </div>
                 <div className="flex items-end gap-2">
-                    <p className="text-white text-3xl font-bold">{stats.occupancyRate}</p>
+                    <p className="text-white text-2xl md:text-3xl font-bold">{stats.occupancyRate}</p>
                     <p className="text-[#cbad90] text-xs font-medium mb-1.5">Stable</p>
                 </div>
             </div>

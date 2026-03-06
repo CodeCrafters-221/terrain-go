@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDashboard } from '../../context/DashboardContext';
 import { toast } from 'react-toastify';
+import { AvailabilityService } from '../../services/AvailabilityService';
+
+const DAYS = [
+    { value: 1, label: "Lundi" },
+    { value: 2, label: "Mardi" },
+    { value: 3, label: "Mercredi" },
+    { value: 4, label: "Jeudi" },
+    { value: 5, label: "Vendredi" },
+    { value: 6, label: "Samedi" },
+    { value: 0, label: "Dimanche" },
+];
 
 const EditFieldPage = () => {
     const { id } = useParams();
@@ -19,19 +30,64 @@ const EditFieldPage = () => {
         image: ""
     });
 
+    // Availability schedule state
+    const [schedule, setSchedule] = useState(
+        DAYS.map(d => ({
+            day_of_week: d.value,
+            label: d.label,
+            enabled: false,
+            start_time: "08:00",
+            end_time: "22:00",
+        }))
+    );
+
     const [isLoading, setIsLoading] = useState(false);
+
+    const updateScheduleDay = (index, field, value) => {
+        setSchedule(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+            return updated;
+        });
+    };
 
     // Initialize form with existing data
     useEffect(() => {
         const fieldToEdit = fields.find(f => f.id === parseInt(id) || f.id === id);
         if (fieldToEdit) {
-            // Extract numeric price for input
-            const priceValue = fieldToEdit.price.replace(/[^0-9]/g, '');
+            let priceValue = fieldToEdit.price;
+            if (typeof fieldToEdit.price === 'string') {
+                priceValue = fieldToEdit.price.replace(/[^0-9]/g, '');
+            }
+
             setFormData({
                 ...fieldToEdit,
                 price: priceValue
             });
-        } else {
+
+            // Fetch existing availability
+            const fetchAvailability = async () => {
+                try {
+                    const availabilities = await AvailabilityService.getFieldAvailability(fieldToEdit.id);
+                    setSchedule(prev => prev.map(day => {
+                        const found = availabilities.find(a => a.day_of_week === day.day_of_week);
+                        if (found) {
+                            return {
+                                ...day,
+                                enabled: true,
+                                start_time: found.start_time.substring(0, 5),
+                                end_time: found.end_time.substring(0, 5)
+                            };
+                        }
+                        return { ...day, enabled: false };
+                    }));
+                } catch (error) {
+                    console.error("Erreur chargement disponibilités:", error);
+                }
+            };
+
+            fetchAvailability();
+        } else if (fields.length > 0) {
             toast.error("Terrain non trouvé");
             navigate('/dashboard/terrains');
         }
@@ -46,32 +102,58 @@ const EditFieldPage = () => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simple validation
         if (!formData.name || !formData.price || !formData.location) {
             toast.error("Veuillez remplir les champs obligatoires");
             setIsLoading(false);
             return;
         }
 
-        // Simulate API delay
-        setTimeout(() => {
-            // Format data for Context
+        const enabledDays = schedule.filter(d => d.enabled);
+        if (enabledDays.length === 0) {
+            toast.error("Veuillez activer au moins un jour de disponibilité.");
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            // Générer un résumé des horaires
+            let hoursSummary = "Fermé";
+            if (enabledDays.length > 0) {
+                hoursSummary = `${enabledDays[0].start_time} - ${enabledDays[0].end_time}`;
+            }
+
             const updatedField = {
                 ...formData,
-                price: `${formData.price} CFA/h` // Re-format price
+                hours: hoursSummary,
+                price: `${formData.price} CFA/h`
             };
 
-            updateField(id, updatedField);
+            await updateField(id, updatedField);
+
+            // Update availabilities
+            const availabilities = enabledDays.map(d => ({
+                day_of_week: d.day_of_week,
+                start_time: d.start_time,
+                end_time: d.end_time,
+            }));
+
+            await AvailabilityService.setFieldAvailability(id, availabilities);
+
             toast.success("Terrain modifié avec succès !");
             navigate('/dashboard/terrains');
-        }, 1000);
+        } catch (error) {
+            console.error("Erreur modification:", error);
+            toast.error("Une erreur est survenue.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const inputClasses = "w-full px-4 py-3 rounded-lg border border-[#493622] bg-[#231a10] text-[#cbad90] placeholder-[#5d452b] focus:outline-none focus:border-[#f27f0d] transition-colors";
     const labelClasses = "text-white text-sm font-medium mb-1 block";
 
     return (
-        <div className="flex flex-col gap-8 max-w-3xl mx-auto w-full">
+        <div className="flex flex-col gap-8 max-w-3xl mx-auto w-full pb-20">
             <h2 className="text-white text-3xl font-bold">Modifier le Terrain</h2>
 
             <div className="bg-[#2c241b] rounded-2xl border border-[#493622] p-8">
@@ -155,8 +237,59 @@ const EditFieldPage = () => {
                         />
                     </div>
 
+                    {/* ═══ SECTION DISPONIBILITÉS ═══ */}
+                    <div className="border-t border-[#493622] pt-6">
+                        <h3 className="text-white text-lg font-bold mb-1">📅 Disponibilités</h3>
+                        <p className="text-[#cbad90] text-xs mb-4">Définissez les jours et heures d'ouverture du terrain.</p>
+
+                        <div className="space-y-3">
+                            {schedule.map((day, index) => (
+                                <div
+                                    key={day.day_of_week}
+                                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.enabled
+                                        ? "bg-[#231a10] border-[#f27f0d]/40"
+                                        : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
+                                        }`}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
+                                        className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-[#f27f0d]' : 'bg-[#493622]'
+                                            }`}
+                                    >
+                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'
+                                            }`} />
+                                    </button>
+
+                                    <span className={`text-sm font-semibold w-20 flex-shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
+                                        }`}>
+                                        {day.label}
+                                    </span>
+
+                                    {day.enabled && (
+                                        <div className="flex items-center gap-2 flex-1">
+                                            <input
+                                                type="time"
+                                                value={day.start_time}
+                                                onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
+                                                className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                            />
+                                            <span className="text-[#cbad90] text-xs">à</span>
+                                            <input
+                                                type="time"
+                                                value={day.end_time}
+                                                onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
+                                                className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Submit Button */}
-                    <div className="flex justify-end gap-4 mt-4">
+                    <div className="flex justify-end gap-4 mt-6 pt-6 border-t border-[#493622]">
                         <button
                             type="button"
                             onClick={() => navigate('/dashboard/terrains')}
@@ -179,3 +312,4 @@ const EditFieldPage = () => {
 };
 
 export default EditFieldPage;
+

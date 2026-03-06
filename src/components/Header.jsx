@@ -60,17 +60,27 @@ export default function Header() {
                 Trouver un terrain
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
               </Link>
-              {profile?.role === "owner" ? (
-                <Link
-                  className="text-white font-bold bg-primary/20 border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary hover:text-black transition-all text-sm"
-                  to="/dashboard"
-                >
-                  Mon Dashboard
-                </Link>
+              {user ? (
+                profile?.role === "owner" ? (
+                  <Link
+                    className="text-white font-bold bg-primary/20 border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary hover:text-black transition-all text-sm"
+                    to="/dashboard"
+                  >
+                    Mon Dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
+                    to="/owners"
+                  >
+                    Devenir partenaire
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                  </Link>
+                )
               ) : (
                 <Link
                   className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
-                  to="/dashboard"
+                  to="/owners"
                 >
                   Pour les propriétaires
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
@@ -83,7 +93,7 @@ export default function Header() {
               {user ? (
                 <div className="flex items-center gap-4">
                   <Link
-                    to={profile?.role === "owner" ? "/dashboard" : "/profile"}
+                    to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}
                     className="flex items-center gap-2 text-white hover:text-primary transition-colors font-medium border border-white/10 rounded-full pl-1 pr-4 py-1 hover:bg-white/5"
                   >
                     <img
@@ -143,18 +153,28 @@ export default function Header() {
             >
               Trouver un terrain
             </Link>
-            {profile?.role === "owner" ? (
-              <Link
-                className="text-primary text-2xl font-bold transition-colors flex items-center gap-3 w-full justify-center p-2"
-                to="/dashboard"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Mon Dashboard
-              </Link>
+            {user ? (
+              profile?.role === "owner" ? (
+                <Link
+                  className="text-primary text-2xl font-bold transition-colors flex items-center gap-3 w-full justify-center p-2"
+                  to="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Mon Dashboard
+                </Link>
+              ) : (
+                <Link
+                  className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
+                  to="/owners"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Devenir partenaire
+                </Link>
+              )
             ) : (
               <Link
                 className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
-                to="/dashboard"
+                to="/owners"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pour les propriétaires
@@ -166,12 +186,12 @@ export default function Header() {
             {user ? (
               <>
                 <Link
-                  to={profile?.role === "owner" ? "/dashboard" : "/profile"}
+                  to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}
                   className="w-full bg-surface-highlight hover:bg-surface-highlight/80 text-white font-bold text-lg h-14 rounded-2xl flex items-center justify-center gap-2 transition-all"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <UserIcon className="w-6 h-6" />
-                  {profile?.name || "Profil"}
+                  {profile?.name || "Compte"}
                 </Link>
               </>
             ) : (

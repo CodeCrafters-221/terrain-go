@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "./AuthContext";
+import { toast } from "react-toastify";
 
 const DashboardContext = createContext();
 
@@ -12,6 +13,12 @@ export const DashboardProvider = ({ children }) => {
   const [reservations, setReservations] = useState([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
   const [isLoadingReservations, setIsLoadingReservations] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingField, setEditingField] = useState(null);
+  const [archivedIds, setArchivedIds] = useState([]);
 
   // --- FETCH FIELDS ---
   const fetchFields = async () => {
@@ -22,9 +29,9 @@ export const DashboardProvider = ({ children }) => {
         .from("fields")
         .select(
           `
-                    *,
-                    field_images (url_image)
-                `,
+          *,
+          field_images (url_image)
+        `,
         )
         .eq("proprietaire_id", user.id);
 
@@ -40,9 +47,11 @@ export const DashboardProvider = ({ children }) => {
           type: field.pelouse,
           location: field.adress,
           image: mainImage || "https://placehold.co/600x400?text=No+Image",
-          price: field.price ? `${field.price} CFA/h` : "0 CFA/h",
+          price: field.price_per_hour
+            ? `${field.price_per_hour} CFA/h`
+            : "0 CFA/h",
           hours: field.opening_hours || "08:00 - 00:00",
-          status: field.actif ? "Disponible" : "Indisponible",
+          status: "Disponible",
         };
       });
 
@@ -54,6 +63,27 @@ export const DashboardProvider = ({ children }) => {
     }
   };
 
+  // --- NOTIFICATIONS ---
+  const processNotifications = (reservs) => {
+    const activeNotifs = reservs
+      .filter(
+        (r) => r.status === "En attente de paiement" || r.status === "Payé",
+      )
+      .map((r) => ({
+        id: r.id,
+        title: "Nouvelle réservation",
+        message: `${r.clientName} a réservé ${r.fieldName}`,
+        time: r.time,
+        date: r.date,
+        status: r.status,
+        type: "reservation",
+        original: r,
+      }));
+
+    setNotifications(activeNotifs);
+    setUnreadCount(activeNotifs.length);
+  };
+
   // --- FETCH RESERVATIONS ---
   const fetchReservations = async () => {
     if (!user) return;
@@ -63,45 +93,80 @@ export const DashboardProvider = ({ children }) => {
         .from("reservations")
         .select(
           `
-                    *,
-                    fields!inner (name, proprietaire_id)
-                `,
+          *,
+          fields!inner (name, proprietaire_id)
+        `,
         )
         .eq("fields.proprietaire_id", user.id)
-        .order("date", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const mappedReservations = data.map((r) => ({
-        id: r.id,
-        clientName: r.nom_client || "Client Inconnu",
-        clientPhone: r.telephone_client || "Non renseigné",
-        fieldId: r.terrain_id,
-        fieldName: r.fields?.name || "Terrain inconnu",
-        date: new Date(r.date).toLocaleDateString("fr-FR", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }),
-        time: `${r.heure_debut.substring(0, 5)} - ${r.heure_fin.substring(0, 5)}`,
-        status: r.statut,
-        amount: r.prix_total,
-        paymentMethod: r.methode_paiement,
-        initials: (r.nom_client || "CI")
+      const mappedReservations = data.map((r) => {
+        const clientName = r.client_name || "Client Inconnu";
+        const clientPhone = r.client_phone || "-";
+        const initials = clientName
           .split(" ")
           .map((n) => n[0])
           .join("")
           .substring(0, 2)
-          .toUpperCase(),
-      }));
+          .toUpperCase();
+        return {
+          id: r.id,
+          clientName,
+          clientPhone,
+          fieldId: r.field_id,
+          fieldName: r.fields?.name || "Terrain inconnu",
+          date: new Date(r.date).toLocaleDateString("fr-FR", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+          time: `${(r.start_time || "").substring(0, 5)} - ${(r.end_time || "").substring(0, 5)}`,
+          status: r.status,
+          amount: r.total_price,
+          paymentMethod: r.payment_method || "Non spécifié",
+          initials,
+          createdAt: r.created_at,
+        };
+      });
 
       setReservations(mappedReservations);
+      processNotifications(mappedReservations);
     } catch (error) {
       console.error("Error fetching reservations:", error.message);
     } finally {
       setIsLoadingReservations(false);
     }
   };
+
+  // --- REALTIME SUBSCRIPTION ---
+  useEffect(() => {
+    if (!user) return;
+
+    const subscription = supabase
+      .channel("reservations-owner-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reservations",
+        },
+        async (payload) => {
+          console.log("Realtime change detected:", payload);
+          await fetchReservations();
+          if (payload.eventType === "INSERT") {
+            toast.info("Une nouvelle réservation vient d'arriver !");
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -114,26 +179,26 @@ export const DashboardProvider = ({ children }) => {
   const addField = async (newFieldData) => {
     try {
       const numericPrice =
-        parseInt(newFieldData.price.replace(/[^0-9]/g, "")) || 0;
+        parseInt(String(newFieldData.price).replace(/[^0-9]/g, "")) || 0;
+      const insertPayload = {
+        proprietaire_id: user.id,
+        name: newFieldData.name,
+        description: newFieldData.description,
+        adress: newFieldData.location,
+        pelouse: newFieldData.type,
+        opening_hours: newFieldData.hours,
+        price_per_hour: numericPrice,
+      };
+
       const { data: fieldData, error: fieldError } = await supabase
         .from("fields")
-        .insert([
-          {
-            proprietaire_id: user.id,
-            name: newFieldData.name,
-            description: newFieldData.description,
-            adress: newFieldData.location,
-            pelouse: newFieldData.type,
-            price: numericPrice,
-            opening_hours: newFieldData.hours,
-          },
-        ])
+        .insert([insertPayload])
         .select()
         .single();
 
       if (fieldError) throw fieldError;
 
-      if (newFieldData.image) {
+      if (newFieldData.image && fieldData?.id) {
         await supabase.from("field_images").insert([
           {
             terrain_id: fieldData.id,
@@ -143,7 +208,7 @@ export const DashboardProvider = ({ children }) => {
       }
 
       await fetchFields();
-      return true;
+      return fieldData;
     } catch (error) {
       console.error("Error adding field:", error.message);
       throw error;
@@ -202,29 +267,42 @@ export const DashboardProvider = ({ children }) => {
   // --- RESERVATION ACTIONS ---
   const updateReservationStatus = async (id, status) => {
     try {
-      const { error } = await supabase
+      console.log(`Updating reservation ${id} to status: ${status}`);
+      const { data, error } = await supabase
         .from("reservations")
-        .update({ statut: status })
-        .eq("id", id);
+        .update({ status: status })
+        .eq("id", id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error details:", JSON.stringify(error));
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("No rows were updated. This may be a RLS policy issue.");
+        throw new Error(
+          "La mise à jour a échoué. Vérifiez les permissions (RLS).",
+        );
+      }
+
       await fetchReservations();
+      return true;
     } catch (error) {
       console.error("Error updating reservation status:", error.message);
+      throw error;
     }
   };
 
   const addManualReservation = async (data) => {
     try {
       const { error } = await supabase.from("reservations").insert({
-        terrain_id: data.fieldId,
+        field_id: data.fieldId,
         date: data.date,
-        heure_debut: data.startTime,
-        heure_fin: data.endTime,
-        prix_total: data.amount || 0,
-        nom_client: data.clientName || "Réservation Manuelle",
-        telephone_client: data.clientPhone || "-",
-        statut: "Confirmé",
+        start_time: data.startTime,
+        end_time: data.endTime,
+        total_price: data.amount || 0,
+        status: "Confirmé",
       });
 
       if (error) throw error;
@@ -236,26 +314,14 @@ export const DashboardProvider = ({ children }) => {
     }
   };
 
-  const toggleFieldStatus = async (fieldId, currentStatus) => {
-    try {
-      const newStatus = currentStatus === "Disponible" ? false : true;
-      const { error } = await supabase
-        .from("fields")
-        .update({ actif: newStatus })
-        .eq("id", fieldId);
-
-      if (error) throw error;
-      await fetchFields();
-    } catch (error) {
-      console.error("Error toggling field status:", error.message);
-    }
+  const toggleFieldStatus = async (fieldId) => {
+    console.warn(
+      "La fonctionnalité de désactivation n'est pas encore disponible en base de données.",
+    );
+    toast.info("La désactivation des terrains sera bientôt disponible.");
   };
 
-  // --- MODAL STATE ---
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingField, setEditingField] = useState(null);
-
+  // --- MODAL FUNCTIONS ---
   const openCreateModal = () => setIsCreateModalOpen(true);
   const closeCreateModal = () => setIsCreateModalOpen(false);
   const openEditModal = (field) => {
@@ -273,10 +339,9 @@ export const DashboardProvider = ({ children }) => {
     const startOfWeek = new Date(now);
     startOfWeek.setDate(
       now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1),
-    ); // Lundi
+    );
     startOfWeek.setHours(0, 0, 0, 0);
 
-    // 1. Attendance Data (7 derniers jours)
     const days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
     const attendanceData = days.map((day, index) => {
       const dayDate = new Date(startOfWeek);
@@ -291,10 +356,9 @@ export const DashboardProvider = ({ children }) => {
         (r) => r.date === dateStr && r.status !== "Annulé",
       ).length;
 
-      return { name: day, players: count * 10 }; // On estime 10 joueurs par réservation
+      return { name: day, players: count * 10 };
     });
 
-    // 2. Revenue Data (4 dernières semaines)
     const weeklyRevenueData = [4, 3, 2, 1].map((weeksAgo) => {
       const start = new Date();
       start.setDate(now.getDate() - weeksAgo * 7);
@@ -302,7 +366,7 @@ export const DashboardProvider = ({ children }) => {
       end.setDate(now.getDate() - (weeksAgo - 1) * 7);
 
       const weeklyTotal = reservations.reduce((acc, r) => {
-        const rDate = new Date(r.date.split(" ").reverse().join("-")); // Simple conversion pour le calcul
+        const rDate = new Date(r.date.split(" ").reverse().join("-"));
         if (
           rDate >= start &&
           rDate < end &&
@@ -316,7 +380,6 @@ export const DashboardProvider = ({ children }) => {
       return { name: `Sem ${5 - weeksAgo}`, revenue: weeklyTotal };
     });
 
-    // 3. Field Distribution (Pie Chart)
     const distribution = fields
       .map((f) => {
         const count = reservations.filter((r) => r.fieldId === f.id).length;
@@ -324,7 +387,6 @@ export const DashboardProvider = ({ children }) => {
       })
       .filter((d) => d.value > 0);
 
-    // 4. Hourly Affluence
     const hours = ["16h", "17h", "18h", "19h", "20h", "21h", "22h"];
     const hourlyData = hours.map((h) => {
       const count = reservations.filter(
@@ -356,12 +418,50 @@ export const DashboardProvider = ({ children }) => {
     };
   };
 
+  // --- PERSISTENT ARCHIVING ---
+  useEffect(() => {
+    if (user) {
+      const storageKey = `archived_reservations_${user.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          setArchivedIds(JSON.parse(saved).map((id) => String(id)));
+        } catch (e) {
+          setArchivedIds([]);
+        }
+      } else {
+        setArchivedIds([]);
+      }
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      const storageKey = `archived_reservations_${user.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(archivedIds));
+    }
+  }, [archivedIds, user]);
+
+  const toggleArchiveReservation = (id) => {
+    const idStr = String(id);
+    setArchivedIds((prev) => {
+      const isArchived = prev.includes(idStr);
+      return isArchived
+        ? prev.filter((hid) => String(hid) !== idStr)
+        : [...prev, idStr];
+    });
+  };
+
   const stats = getStats();
 
-  const value = {
+  const Value = {
     fields,
     reservations,
     stats,
+    notifications,
+    unreadCount,
+    archivedIds,
+    toggleArchiveReservation,
     isLoadingFields,
     isLoadingReservations,
     isCreateModalOpen,
@@ -382,7 +482,7 @@ export const DashboardProvider = ({ children }) => {
   };
 
   return (
-    <DashboardContext.Provider value={value}>
+    <DashboardContext.Provider value={Value}>
       {children}
     </DashboardContext.Provider>
   );
