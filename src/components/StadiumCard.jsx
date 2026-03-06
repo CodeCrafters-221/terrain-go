@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Heart, MapPin, Star } from "lucide-react";
-// import PropTypes from "prop-types";
+import { Heart, MapPin, Star, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function StadiumCard({
   id,
@@ -14,11 +14,17 @@ export default function StadiumCard({
   onReserve,
   onFavorite,
   isFavorite = false,
+  isPlaceholder = false,
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleReserve = async () => {
+    if (isPlaceholder) {
+      navigate("/search");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -40,41 +46,33 @@ export default function StadiumCard({
   };
 
   return (
-    /* CHANGEMENTS ICI : 
-       1. w-full : Prend toute la largeur de la colonne parente
-       2. max-w-... : Empêche la carte d'être trop large sur mobile
-       3. suppression de 'grid' : On utilise flex-col pour une carte verticale standard
-       4. bg-[#2e2318] : Ajouté ici pour que toute la carte ait le fond, pas juste le texte
-       5. rounded-2xl et overflow-hidden : Appliqués au conteneur principal
-    */
-    <div className="w-full max-w-[350px] md:max-w-none mx-auto flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] hover:border-primary/50 transition-all duration-300">
-      {/* Image : Hauteur adaptative (h-48 sur mobile, h-60 sur desktop) */}
-      <figure className="relative h-48 sm:h-56 md:h-60 flex-shrink-0">
+    <div className={`w-full h-full flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] transition-all duration-300 hover:border-primary/50`}>
+      {/* Image Container */}
+      <figure className="relative h-44 sm:h-48 flex-shrink-0 group overflow-hidden">
         <img
           src={image}
           alt={`Terrain ${city}`}
-          className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
+          className={`object-cover w-full h-full transition-all duration-700 group-hover:scale-110`}
           onError={(e) => {
             e.target.src = "/placeholder-stadium.jpg";
           }}
         />
+
         <button
           onClick={handleFavorite}
-          className="absolute top-3 right-3 p-2 bg-black/50 rounded-full hover:bg-primary transition-colors group z-10"
+          className="absolute top-3 right-3 p-2 bg-black/50 rounded-full hover:bg-primary transition-colors group z-10 backdrop-blur-md"
           aria-label="Ajouter aux favoris"
         >
           <Heart
-            className={`w-5 h-5 transition-colors ${
-              isFavorite ? "fill-white text-white" : "text-white"
-            }`}
+            className={`w-5 h-5 transition-colors ${isFavorite ? "fill-white text-white" : "text-white"}`}
           />
         </button>
       </figure>
 
       <div className="flex flex-col gap-3 p-4 flex-grow">
-        {/* Titre et prix */}
+        {/* Title and Price */}
         <div className="flex justify-between items-start gap-2">
-          <h3 className="text-white text-lg font-bold hover:text-primary transition-colors leading-tight">
+          <h3 className={`text-white text-lg font-bold leading-tight transition-colors ${!isPlaceholder && 'hover:text-primary'}`}>
             {city}
           </h3>
           <div className="text-right shrink-0">
@@ -83,13 +81,13 @@ export default function StadiumCard({
           </div>
         </div>
 
-        {/* Localisation */}
+        {/* Location */}
         <div className="flex items-center">
           <MapPin className="text-[#cbad90] w-4 h-4 mr-2 flex-shrink-0" />
           <p className="text-[#cbad90] text-sm truncate">{location}</p>
         </div>
 
-        {/* Détails : Flex wrap pour que les badges ne débordent pas sur petit écran */}
+        {/* Badges */}
         <div className="card-details flex flex-wrap gap-2 items-center justify-between mt-auto pt-2">
           <div className="flex gap-2">
             <Badge label={totalPlayers} />
@@ -98,23 +96,35 @@ export default function StadiumCard({
           <RatingBadge rating={notes} />
         </div>
 
-        {/* Erreur */}
+        {/* Error */}
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-        {/* Bouton réservation */}
+        {/* Action Button */}
         <button
           onClick={handleReserve}
           disabled={isLoading}
-          className="w-full mt-2 bg-primary text-black font-bold py-3 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all active:scale-[0.98]"
+          className={`w-full mt-2 font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2 ${isPlaceholder
+            ? "bg-white/10 text-white hover:bg-white/20 border border-white/10"
+            : "bg-primary text-black hover:bg-primary/90 active:scale-[0.98] shadow-lg shadow-primary/20"
+            } disabled:opacity-50`}
         >
-          {isLoading ? "Chargement..." : "Réserver"}
+          {isLoading ? (
+            "Chargement..."
+          ) : isPlaceholder ? (
+            <>
+              Trouver un terrain
+              <ArrowRight className="w-4 h-4" />
+            </>
+          ) : (
+            "Réserver"
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-// Composant Badge réutilisable (inchangé)
+// Composant Badge réutilisable
 function Badge({ label }) {
   return (
     <div className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-[#342618] text-[#cbad90] rounded-2xl border border-[#493622]">
@@ -123,10 +133,10 @@ function Badge({ label }) {
   );
 }
 
-// Composant Rating réutilisable (inchangé)
+// Composant Rating réutilisable
 function RatingBadge({ rating }) {
   return (
-    <div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-4xl tracking-wider text-white text-[10px] font-bold flex items-center">
+    <div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-4full tracking-wider text-white text-[10px] font-bold flex items-center">
       <Star className="text-primary w-3.5 h-3.5 mr-1 fill-current" />
       {rating}
     </div>

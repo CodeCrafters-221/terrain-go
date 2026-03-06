@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 
 export default function AppLayout() {
   const location = useLocation();
-  const hideHeaderRoutes = ["/search", "/profile"];
+  const hideHeaderRoutes = ["/search", "/compte"];
   const shouldShowHeader = !hideHeaderRoutes.includes(location.pathname);
 
   return (

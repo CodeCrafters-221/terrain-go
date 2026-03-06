@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabaseClient";
+import { toast } from "react-toastify";
 
 import {
   Trophy,
@@ -16,12 +17,22 @@ import {
 
 const HeaderProfile = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    Navigate("/");
-    setIsMenuOpen(false);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      toast.success("Déconnexion réussie");
+      navigate("/");
+      setIsMenuOpen(false);
+    } catch (err) {
+      console.error("Error signing out:", err);
+      toast.error("Erreur lors de la déconnexion");
+    }
   };
+
 
   return (
     <>
@@ -107,11 +118,10 @@ const HeaderProfile = () => {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${
-            isMenuOpen
-              ? "opacity-100 visible"
-              : "opacity-0 invisible pointer-events-none"
-          }`}
+          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
+            ? "opacity-100 visible"
+            : "opacity-0 invisible pointer-events-none"
+            }`}
         >
           {/* Mobile Search */}
           <div className="flex w-full items-center rounded-xl h-12 bg-surface-highlight border border-transparent focus-within:border-primary transition-colors">

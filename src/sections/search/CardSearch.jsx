@@ -1,6 +1,7 @@
 import { SearchX, Zap, Heart, MapPin, Star, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const CardSearch = ({ terrains }) => {
+const CardSearch = ({ terrains, onReserve }) => {
   if (terrains.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in-up">
@@ -25,7 +26,7 @@ const CardSearch = ({ terrains }) => {
             className="group bg-surface-dark border border-surface-highlight rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 flex flex-col relative"
           >
             {/* Image Container */}
-            <div className="relative aspect-[16/10] overflow-hidden">
+            <Link to={`/terrain-details/${terrain.id}`} className="relative aspect-[16/10] overflow-hidden block">
               <div className="absolute top-3 left-3 z-10 flex gap-2">
                 <span className="bg-black/40 backdrop-blur-md border border-white/10 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
                   {terrain.type}
@@ -49,15 +50,17 @@ const CardSearch = ({ terrains }) => {
                 src={terrain.image}
                 alt={terrain.name}
               />
-            </div>
+            </Link>
 
             {/* Content */}
             <div className="p-5 flex flex-col flex-1 gap-3 relative z-10">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-bold text-white group-hover:text-primary transition-colors duration-300 line-clamp-1">
-                    {terrain.name}
-                  </h3>
+                  <Link to={`/terrain-details/${terrain.id}`}>
+                    <h3 className="text-lg font-bold text-white group-hover:text-primary transition-colors duration-300 line-clamp-1">
+                      {terrain.name}
+                    </h3>
+                  </Link>
                   <div className="flex items-center gap-1.5 text-text-secondary mt-1.5 group-hover:text-white/80 transition-colors">
                     <MapPin className="w-[14px] h-[14px] text-primary" />
                     <span className="text-sm font-medium">
@@ -90,7 +93,10 @@ const CardSearch = ({ terrains }) => {
                     <span className="text-sm font-bold text-primary">F</span>
                   </div>
                 </div>
-                <button className="relative overflow-hidden px-6 py-2.5 bg-white text-background-dark hover:text-white rounded-full text-sm font-bold transition-all duration-300 group/btn shadow-lg shadow-white/5 hover:shadow-primary/30 z-0">
+                <button
+                  onClick={() => onReserve(terrain)}
+                  className="relative overflow-hidden px-6 py-2.5 bg-white text-background-dark hover:text-white rounded-full text-sm font-bold transition-all duration-300 group/btn shadow-lg shadow-white/5 hover:shadow-primary/30 z-0"
+                >
                   <span className="absolute inset-0 bg-primary opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 -z-10 ease-out"></span>
                   <span className="relative z-10 flex items-center gap-2">
                     Réserver
