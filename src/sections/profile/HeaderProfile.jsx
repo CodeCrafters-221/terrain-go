@@ -52,7 +52,7 @@ const HeaderProfile = () => {
             </h2>
           </Link>
           {/* Search Bar Desktop */}
-          {/* <label className="hidden lg:flex flex-col min-w-40 h-10 max-w-64">
+          <label className="hidden lg:flex flex-col min-w-40 h-10 max-w-64">
             <div className="flex w-full flex-1 items-stretch rounded-xl h-full group">
               <div className="text-text-secondary flex border-none bg-surface-highlight items-center justify-center pl-4 rounded-l-xl border-r-0 group-focus-within:text-primary transition-colors">
                 <Search className="w-5 h-5" />
@@ -63,7 +63,7 @@ const HeaderProfile = () => {
                 defaultValue=""
               />
             </div>
-          </label> */}
+          </label>
         </div>
 
         <div className="flex flex-1 justify-end items-center gap-4 lg:gap-8">
@@ -119,8 +119,8 @@ const HeaderProfile = () => {
         {/* Mobile Menu Overlay */}
         <div
           className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
-              ? "opacity-100 visible"
-              : "opacity-0 invisible pointer-events-none"
+            ? "opacity-100 visible"
+            : "opacity-0 invisible pointer-events-none"
             }`}
         >
           {/* Mobile Search */}

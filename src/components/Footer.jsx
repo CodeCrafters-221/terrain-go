@@ -125,7 +125,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-surface-highlight pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[#684d31] text-xs">
-            © 2023 Réservation Foot. Tous droits réservés.
+            © 2026 Footbooking. Tous droits réservés.
           </p>
           <div className="flex gap-6 text-[#684d31] text-xs">
             <a className="hover:text-text-secondary" href="#">

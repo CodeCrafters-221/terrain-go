@@ -22,7 +22,7 @@ export const TerrainService = {
             price: t.price_per_hour,
             ...parseDescription(t.description),
             image: t.field_images?.[0]?.url_image || null,
-            status: t.actif ? "Disponible" : "Inactif",
+            status: "Disponible",
             proprietaire_id: t.proprietaire_id
         }));
     },

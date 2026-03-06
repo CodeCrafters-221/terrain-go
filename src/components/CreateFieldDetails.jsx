@@ -9,9 +9,6 @@ export default function CreateFieldDetails() {
 
     // States
     const [images, setImages] = useState([]);
-    const [disponibilites, setDisponibilites] = useState([
-        { jour: "", heure_debut: "", heure_fin: "" },
-    ]);
     const [isLoading, setIsLoading] = useState(false);
 
 

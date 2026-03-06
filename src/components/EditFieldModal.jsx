@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../context/DashboardContext';
 import { toast } from 'react-toastify';
 import { supabase } from '../services/supabaseClient';
+import { AvailabilityService } from '../services/AvailabilityService';
+
+const DAYS = [
+    { value: 1, label: "Lundi" },
+    { value: 2, label: "Mardi" },
+    { value: 3, label: "Mercredi" },
+    { value: 4, label: "Jeudi" },
+    { value: 5, label: "Vendredi" },
+    { value: 6, label: "Samedi" },
+    { value: 0, label: "Dimanche" },
+];
 
 const EditFieldModal = () => {
     const { updateField, closeEditModal, isEditModalOpen, editingField } = useDashboard();
@@ -17,8 +28,27 @@ const EditFieldModal = () => {
         image: ""
     });
 
+    // Availability schedule state
+    const [schedule, setSchedule] = useState(
+        DAYS.map(d => ({
+            day_of_week: d.value,
+            label: d.label,
+            enabled: false,
+            start_time: "08:00",
+            end_time: "22:00",
+        }))
+    );
+
     const [isLoading, setIsLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+
+    const updateScheduleDay = (index, field, value) => {
+        setSchedule(prev => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+            return updated;
+        });
+    };
 
     const handleImageChange = async (e) => {
         try {
@@ -52,15 +82,9 @@ const EditFieldModal = () => {
         }
     };
 
-    // Initialize form with existing data
+    // Initialize form and fetch availability
     useEffect(() => {
         if (editingField) {
-            // Extract numeric price for input if needed, but keeping simple for now
-            // Assuming price format "25k CFA/h" -> we just want "25" or the raw number?
-            // Let's try to parse it if it follows the specific format, otherwise keep as is
-            // Actually, let's keep it simple: just prefill. If the input expects number, we might need to parse.
-            // The previous EditFieldPage did: const priceValue = fieldToEdit.price.replace(/[^0-9]/g, '');
-
             let priceValue = editingField.price;
             if (typeof editingField.price === 'string') {
                 priceValue = editingField.price.replace(/[^0-9]/g, '');
@@ -70,6 +94,31 @@ const EditFieldModal = () => {
                 ...editingField,
                 price: priceValue
             });
+
+            // Fetch existing availability
+            const fetchAvailability = async () => {
+                try {
+                    const availabilities = await AvailabilityService.getFieldAvailability(editingField.id);
+
+                    // Map existing availabilities to our schedule state
+                    setSchedule(prev => prev.map(day => {
+                        const found = availabilities.find(a => a.day_of_week === day.day_of_week);
+                        if (found) {
+                            return {
+                                ...day,
+                                enabled: true,
+                                start_time: found.start_time.substring(0, 5),
+                                end_time: found.end_time.substring(0, 5)
+                            };
+                        }
+                        return { ...day, enabled: false };
+                    }));
+                } catch (error) {
+                    console.error("Erreur chargement disponibilités:", error);
+                }
+            };
+
+            fetchAvailability();
         }
     }, [editingField]);
 
@@ -89,16 +138,48 @@ const EditFieldModal = () => {
             return;
         }
 
-        // Format data for Context
-        const updatedField = {
-            ...formData,
-            price: `${formData.price} CFA/h` // Re-format price
-        };
+        // Check if at least 1 day is enabled
+        const enabledDays = schedule.filter(d => d.enabled);
+        if (enabledDays.length === 0) {
+            toast.error("Veuillez activer au moins un jour de disponibilité.");
+            setIsLoading(false);
+            return;
+        }
 
-        await updateField(editingField.id, updatedField);
-        toast.success("Terrain modifié avec succès !");
-        closeEditModal();
-        setIsLoading(false);
+        try {
+            // Générer un résumé des horaires
+            const activeDays = schedule.filter(d => d.enabled);
+            let hoursSummary = "Fermé";
+            if (activeDays.length > 0) {
+                hoursSummary = `${activeDays[0].start_time} - ${activeDays[0].end_time}`;
+            }
+
+            // Format data for Context
+            const updatedField = {
+                ...formData,
+                hours: hoursSummary,
+                price: `${formData.price} CFA/h` // Re-format price
+            };
+
+            await updateField(editingField.id, updatedField);
+
+            // Update availabilities
+            const availabilities = enabledDays.map(d => ({
+                day_of_week: d.day_of_week,
+                start_time: d.start_time,
+                end_time: d.end_time,
+            }));
+
+            await AvailabilityService.setFieldAvailability(editingField.id, availabilities);
+
+            toast.success("Terrain et disponibilités modifiés avec succès !");
+            closeEditModal();
+        } catch (error) {
+            console.error("Erreur modification:", error);
+            toast.error("Une erreur est survenue lors de la modification.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const inputClasses = "w-full px-4 py-3 rounded-lg border border-[#493622] bg-[#231a10] text-[#cbad90] placeholder-[#5d452b] focus:outline-none focus:border-[#f27f0d] transition-colors";
@@ -112,7 +193,10 @@ const EditFieldModal = () => {
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-[#493622] sticky top-0 bg-[#2c241b] z-10">
-                    <h2 className="text-white text-2xl font-bold">Modifier le Terrain</h2>
+                    <div className="flex flex-col">
+                        <h2 className="text-white text-2xl font-bold">Modifier le Terrain</h2>
+                        <p className="text-[#cbad90] text-xs">Mettez à jour les informations et disponibilités</p>
+                    </div>
                     <button onClick={closeEditModal} className="text-[#cbad90] hover:text-white transition-colors">
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -155,22 +239,6 @@ const EditFieldModal = () => {
                                 </select>
                             </div>
 
-                            {/* Hours - Added */}
-                            <div>
-                                <label htmlFor="hours" className={labelClasses}>Plage Horaire</label>
-                                <input
-                                    type="text"
-                                    id="hours"
-                                    name="hours"
-                                    placeholder="Ex: 08:00 - 02:00"
-                                    value={formData.hours}
-                                    onChange={handleInputChange}
-                                    className={inputClasses}
-                                />
-                            </div>
-
-
-
                             {/* Price */}
                             <div>
                                 <label htmlFor="price" className={labelClasses}>Prix / Heure (CFA) *</label>
@@ -208,7 +276,7 @@ const EditFieldModal = () => {
                             <textarea
                                 id="description"
                                 name="description"
-                                rows="4"
+                                rows="3"
                                 placeholder="Description du terrain, commodités..."
                                 value={formData.description}
                                 onChange={handleInputChange}
@@ -236,8 +304,62 @@ const EditFieldModal = () => {
                             {uploading && <p className="text-sm text-[#cbad90] mt-2">Téléchargement de l'image...</p>}
                         </div>
 
+                        {/* ═══ SECTION DISPONIBILITÉS ═══ */}
+                        <div className="border-t border-[#493622] pt-6">
+                            <h3 className="text-white text-lg font-bold mb-1">📅 Disponibilités</h3>
+                            <p className="text-[#cbad90] text-xs mb-4">Définissez les jours et heures d'ouverture du terrain.</p>
+
+                            <div className="space-y-3">
+                                {schedule.map((day, index) => (
+                                    <div
+                                        key={day.day_of_week}
+                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.enabled
+                                            ? "bg-[#231a10] border-[#f27f0d]/40"
+                                            : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
+                                            }`}
+                                    >
+                                        {/* Toggle */}
+                                        <button
+                                            type="button"
+                                            onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
+                                            className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-[#f27f0d]' : 'bg-[#493622]'
+                                                }`}
+                                        >
+                                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'
+                                                }`} />
+                                        </button>
+
+                                        {/* Day name */}
+                                        <span className={`text-sm font-semibold w-20 flex-shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
+                                            }`}>
+                                            {day.label}
+                                        </span>
+
+                                        {/* Time inputs */}
+                                        {day.enabled && (
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <input
+                                                    type="time"
+                                                    value={day.start_time}
+                                                    onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
+                                                    className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                />
+                                                <span className="text-[#cbad90] text-xs">à</span>
+                                                <input
+                                                    type="time"
+                                                    value={day.end_time}
+                                                    onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
+                                                    className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Submit Button */}
-                        <div className="flex justify-end gap-4 mt-4 pt-4 border-t border-[#493622]">
+                        <div className="flex justify-end gap-4 mt-2 pt-4 border-t border-[#493622]">
                             <button
                                 type="button"
                                 onClick={closeEditModal}
@@ -261,3 +383,4 @@ const EditFieldModal = () => {
 };
 
 export default EditFieldModal;
+

@@ -48,7 +48,7 @@ export default function StadiumCard({
   return (
     <div className={`w-full h-full flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] transition-all duration-300 hover:border-primary/50`}>
       {/* Image Container */}
-      <figure className="relative h-48 sm:h-56 md:h-60 flex-shrink-0 group overflow-hidden">
+      <figure className="relative h-44 sm:h-48 flex-shrink-0 group overflow-hidden">
         <img
           src={image}
           alt={`Terrain ${city}`}

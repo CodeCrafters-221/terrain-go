@@ -13,25 +13,17 @@ import Register from "../pages/Auth/Register";
 import CreateProfile from "../components/CreateProfile";
 import CreateField from "../components/CreateField";
 import CreateFieldDetails from "../components/CreateFieldDetails";
+import DashboardLayout from "../layouts/DashboardLayout";
+import Dashboard from "../pages/Dashboard";
+import MyFields from "../pages/Dashboard/MyFields";
+import MyReservations from "../pages/Dashboard/MyReservations";
+import Statistics from "../pages/Dashboard/Statistics";
+import Revenues from "../pages/Dashboard/Revenues";
+import CreateFieldPage from "../pages/Dashboard/CreateFieldPage";
+import EditFieldPage from "../pages/Dashboard/EditFieldPage";
+import Settings from "../pages/Dashboard/Settings";
 
-// export const router = createBrowserRouter([
-//   {
-//     element: <AppLayout />,
-//     children: [{ path: "/", element: <Home /> }],
-//   },
-//   {
-//     element: <UserProfile/>,
-//     children: [{ path: "/user-profile", element: <UserProfile /> }],
-//   },
-//   {
-//     element: <TerrainDetails />,
-//     children: [{ path: "/terrain-details", element: <TerrainDetails /> }],
-//   },
-//   {
-//     element: <SearchPage/>,
-//     children: [{ path: "/search", element: <SearchPage /> }],
-//   },
-// ]);
+import OwnerRedirect from "../components/OwnerRedirect";
 
 export const router = createBrowserRouter([
   {
@@ -70,6 +62,10 @@ export const router = createBrowserRouter([
         path: "edit-field/:id",
         element: <EditFieldPage />,
       },
+      {
+        path: "compte",
+        element: <Settings />,
+      },
     ],
   },
   {
@@ -80,8 +76,9 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/", element: <Home /> },
+
       {
-        path: "/profile",
+        path: "/compte",
         element: (
           <ProtectedRoute>
             {" "}
@@ -90,7 +87,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "/terrain-details",
+        path: "/terrain-details/:id",
         element: <TerrainDetails />,
       },
       {
