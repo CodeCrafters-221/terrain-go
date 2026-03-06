@@ -38,17 +38,17 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           <div className="flex flex-col gap-8">
             {/* Profile / Brand */}
             <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3">
+              <NavLink to="/dashboard/compte" onClick={onClose} className="flex items-center gap-3 group cursor-pointer">
                 <img
                   src={profile?.image || "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn"}
-                  className="rounded-full object-cover size-12 shadow-lg border-2 border-[#f27f0d]"
+                  className="rounded-full object-cover size-12 shadow-lg border-2 border-[#f27f0d] transition-transform group-hover:scale-110"
                   alt="Profile"
                 />
                 <div className="flex flex-col">
-                  <h1 className="text-white text-lg font-bold leading-tight">Footbooking</h1>
-                  <p className="text-[#cbad90] text-xs font-normal">Espace Propriétaire</p>
+                  <h1 className="text-white text-lg font-bold leading-tight group-hover:text-[#f27f0d] transition-colors">Footbooking</h1>
+                  <p className="text-[#cbad90] text-xs font-normal">Mon Compte</p>
                 </div>
-              </div>
+              </NavLink>
               {/* Close Button Mobile */}
               <button
                 onClick={onClose}
@@ -65,7 +65,6 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
               <NavItem to="/dashboard/reservations" icon="calendar_month" label="Mes Réservations" onClick={onClose} />
               <NavItem to="/dashboard/stats" icon="bar_chart" label="Statistiques" onClick={onClose} />
               <NavItem to="/dashboard/revenues" icon="payments" label="Revenus" onClick={onClose} />
-              <NavItem to="/dashboard/settings" icon="settings" label="Paramètres" onClick={onClose} />
             </nav>
           </div>
 

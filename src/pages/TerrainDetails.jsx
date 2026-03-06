@@ -191,7 +191,6 @@ export default function TerrainDetails() {
           </div>
         </header>
       </div>
-
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-4 md:px-10 py-6 pb-20">
         {/* Breadcrumbs */}
@@ -227,7 +226,9 @@ export default function TerrainDetails() {
               <span className="w-1 h-1 rounded-full bg-text-secondary"></span>
               <span className="flex items-center gap-1">
                 <Star className="text-primary w-5 h-5 fill-current" />
-                <span className="text-white font-semibold">{ratingStats.average}</span>
+                <span className="text-white font-semibold">
+                  {ratingStats.average}
+                </span>
                 <span>({ratingStats.count} avis)</span>
               </span>
             </div>
@@ -259,7 +260,10 @@ export default function TerrainDetails() {
           {/* Secondary Images */}
           {/* Secondary Images - Mapping real images */}
           {terrain.field_images?.slice(1, 4).map((img, idx) => (
-            <div key={idx} className="relative group cursor-pointer hidden md:block">
+            <div
+              key={idx}
+              className="relative group cursor-pointer hidden md:block"
+            >
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                 style={{ backgroundImage: `url('${img.url_image}')` }}
@@ -269,22 +273,30 @@ export default function TerrainDetails() {
 
           {/* Fallback if less than 5 images */}
           {(!terrain.field_images || terrain.field_images.length < 5) &&
-            Array.from({ length: Math.max(0, 4 - (terrain.field_images?.length || 1)) }).map((_, idx) => (
-              <div key={`empty-${idx}`} className="relative group cursor-pointer hidden md:block bg-surface-dark/50 flex items-center justify-center border border-dashed border-surface-highlight">
+            Array.from({
+              length: Math.max(0, 4 - (terrain.field_images?.length || 1)),
+            }).map((_, idx) => (
+              <div
+                key={`empty-${idx}`}
+                className="relative group cursor-pointer hidden md:block bg-surface-dark/50 flex items-center justify-center border border-dashed border-surface-highlight"
+              >
                 <Search className="w-8 h-8 text-surface-highlight opacity-20" />
               </div>
-            ))
-          }
+            ))}
 
           {terrain.field_images?.length >= 5 && (
             <div className="relative group cursor-pointer hidden md:block">
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                style={{ backgroundImage: `url('${terrain.field_images[4].url_image}')` }}
+                style={{
+                  backgroundImage: `url('${terrain.field_images[4].url_image}')`,
+                }}
               ></div>
               {terrain.field_images.length > 5 && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 hover:bg-black/40 transition-colors">
-                  <span className="text-white font-bold text-lg">+{terrain.field_images.length - 5} Photos</span>
+                  <span className="text-white font-bold text-lg">
+                    +{terrain.field_images.length - 5} Photos
+                  </span>
                 </div>
               )}
             </div>
@@ -301,7 +313,10 @@ export default function TerrainDetails() {
                 À propos de ce terrain
               </h3>
               <div className="text-text-secondary leading-relaxed space-y-4">
-                <p>{terrain.description || "Aucune description disponible pour ce terrain."}</p>
+                <p>
+                  {terrain.description ||
+                    "Aucune description disponible pour ce terrain."}
+                </p>
               </div>
             </section>
 
@@ -468,10 +483,14 @@ export default function TerrainDetails() {
             {/* Reviews */}
             <section className="border-t border-surface-light pt-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Avis ({ratingStats.count})</h3>
+                <h3 className="text-xl font-bold text-white">
+                  Avis ({ratingStats.count})
+                </h3>
                 <div className="flex items-center gap-2">
                   <Star className="text-primary w-5 h-5 fill-current" />
-                  <span className="text-xl font-bold text-white">{ratingStats.average}</span>
+                  <span className="text-xl font-bold text-white">
+                    {ratingStats.average}
+                  </span>
                 </div>
               </div>
 
@@ -481,26 +500,36 @@ export default function TerrainDetails() {
                   <h4 className="text-white font-bold mb-4">Laisser un avis</h4>
                   <form onSubmit={handleReviewSubmit} className="space-y-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-text-secondary mr-2">Votre note :</span>
+                      <span className="text-sm text-text-secondary mr-2">
+                        Votre note :
+                      </span>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
                           type="button"
-                          onClick={() => setNewReview({ ...newReview, note: star })}
+                          onClick={() =>
+                            setNewReview({ ...newReview, note: star })
+                          }
                           className="focus:outline-none transition-transform hover:scale-110"
                         >
                           <Star
-                            className={`w-6 h-6 ${star <= newReview.note
-                              ? "text-primary fill-current"
-                              : "text-text-secondary"
-                              }`}
+                            className={`w-6 h-6 ${
+                              star <= newReview.note
+                                ? "text-primary fill-current"
+                                : "text-text-secondary"
+                            }`}
                           />
                         </button>
                       ))}
                     </div>
                     <textarea
                       value={newReview.commentaire}
-                      onChange={(e) => setNewReview({ ...newReview, commentaire: e.target.value })}
+                      onChange={(e) =>
+                        setNewReview({
+                          ...newReview,
+                          commentaire: e.target.value,
+                        })
+                      }
                       placeholder="Partagez votre expérience sur ce terrain..."
                       className="w-full bg-[#231a10] border border-surface-light rounded-xl p-4 text-white text-sm focus:border-primary outline-none transition-colors min-h-[100px]"
                     />
@@ -517,15 +546,26 @@ export default function TerrainDetails() {
 
               <div className="grid gap-6">
                 {reviews.length === 0 ? (
-                  <p className="text-text-secondary italic text-center py-4">Aucun avis pour le moment.</p>
+                  <p className="text-text-secondary italic text-center py-4">
+                    Aucun avis pour le moment.
+                  </p>
                 ) : (
                   reviews.map((rev) => (
-                    <div key={rev.id} className="bg-surface-dark p-6 rounded-2xl border border-surface-light">
+                    <div
+                      key={rev.id}
+                      className="bg-surface-dark p-6 rounded-2xl border border-surface-light"
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div
                             className="size-10 rounded-full bg-cover bg-center bg-[#493622]"
-                            style={rev.profiles?.image ? { backgroundImage: `url('${rev.profiles.image}')` } : {}}
+                            style={
+                              rev.profiles?.image
+                                ? {
+                                    backgroundImage: `url('${rev.profiles.image}')`,
+                                  }
+                                : {}
+                            }
                           >
                             {!rev.profiles?.image && (
                               <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold uppercase">
@@ -538,11 +578,14 @@ export default function TerrainDetails() {
                               {rev.profiles?.name || "Anonyme"}
                             </p>
                             <p className="text-xs text-text-secondary">
-                              {new Date(rev.created_at).toLocaleDateString("fr-FR", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })}
+                              {new Date(rev.created_at).toLocaleDateString(
+                                "fr-FR",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                },
+                              )}
                             </p>
                           </div>
                         </div>
@@ -550,8 +593,9 @@ export default function TerrainDetails() {
                           {[1, 2, 3, 4, 5].map((i) => (
                             <Star
                               key={i}
-                              className={`w-[14px] h-[14px] ${i <= rev.note ? "fill-current" : "opacity-30"
-                                }`}
+                              className={`w-[14px] h-[14px] ${
+                                i <= rev.note ? "fill-current" : "opacity-30"
+                              }`}
                             />
                           ))}
                         </div>
@@ -604,7 +648,9 @@ export default function TerrainDetails() {
                 </div>
                 <div className="flex items-center gap-1 bg-surface-light px-2 py-1 rounded-md">
                   <Star className="text-primary w-4 h-4 fill-current" />
-                  <span className="text-white font-bold text-sm">{ratingStats.average}</span>
+                  <span className="text-white font-bold text-sm">
+                    {ratingStats.average}
+                  </span>
                 </div>
               </div>
               <div className="space-y-4 mb-6">
@@ -663,11 +709,13 @@ export default function TerrainDetails() {
           </div>
         </div>
       </main>
-      <ReservationModal
-        isOpen={isReservationOpen}
-        onClose={() => setIsReservationOpen(false)}
-        stadium={stadiumDataForModal}
-      />
+      {isReservationOpen && (
+        <ReservationModal
+          
+          onClose={() => setIsReservationOpen(false)}
+          stadium={stadiumDataForModal}
+        />
+      )}
     </div>
   );
 }

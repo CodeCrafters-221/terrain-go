@@ -109,8 +109,11 @@ export const AvailabilityService = {
     },
 
     // ─── GET créneaux libres pour un terrain à une date précise ───
-    async getAvailableSlots(fieldId, dateString) {
-        console.log("🔍 getAvailableSlots called:", { fieldId, dateString });
+    async getAvailableSlots(fieldId, dateString, durationHours = 1) {
+        console.log("🔍 getAvailableSlots called:", { fieldId, dateString, durationHours });
+
+        const EXPIRATION_LIMIT_MINUTES = 20;
+        const BUFFER_TIME_MINUTES = 10;
 
         const DEFAULT_HOURS = [{ start_time: "08:00:00", end_time: "23:00:00" }];
         let availability = DEFAULT_HOURS;
@@ -133,17 +136,36 @@ export const AvailabilityService = {
             }
         }
 
+        // --- Déterminer si c'est aujourd'hui pour bloquer les créneaux passés ---
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+
         let reservations = [];
         try {
             const { data, error } = await supabase
                 .from("reservations")
-                .select("start_time, end_time, status")
+                .select("start_time, end_time, status, created_at")
                 .eq("field_id", fieldId)
                 .eq("date", dateString)
                 .neq("status", "Annulé")
                 .neq("status", "Expiré");
 
-            if (!error) reservations = data || [];
+            if (!error) {
+                // LOGIQUE 1 : Filtrer les réservations expirées (En attente + > 20 min)
+                const nowMs = new Date().getTime();
+                reservations = (data || []).filter(res => {
+                    if (res.status === "En attente de paiement") {
+                        const createdMs = new Date(res.created_at).getTime();
+                        const diffMins = (nowMs - createdMs) / (1000 * 60);
+                        return diffMins < EXPIRATION_LIMIT_MINUTES;
+                    }
+                    return true;
+                });
+            }
         } catch (err) { }
 
         const allSlots = [];
@@ -157,26 +179,72 @@ export const AvailabilityService = {
             }
         }
 
+        const durationMins = Math.round(parseFloat(durationHours) * 60);
+
         return allSlots.map(slot => {
             const slotMins = this.toMinutes(slot);
-            const isReserved = reservations.some(res => {
-                const startMins = this.toMinutes(res.start_time);
-                let endMins = this.toMinutes(res.end_time);
+            const slotEndMins = slotMins + durationMins;
 
-                // Si end_time est "00:00", on le traite comme 1440 mins (24h)
-                if (endMins === 0 && res.end_time.startsWith("00")) endMins = 1440;
-                // Si end < start, c'est que ça traverse minuit
-                if (endMins <= startMins) endMins += 1440;
+            // 1. Vérifier si c'est dans le passé (pour aujourd'hui)
+            let isPast = false;
+            if (dateString === todayStr) {
+                isPast = slotMins < currentMins;
+            } else if (dateString < todayStr) {
+                isPast = true;
+            }
 
-                return slotMins >= startMins && slotMins < endMins;
+            // 2. Vérifier si ça sort des heures d'ouverture (LOGIQUE 2)
+            const isWithinHours = availability.some(avail => {
+                const aStart = this.toMinutes(avail.start_time);
+                let aEnd = this.toMinutes(avail.end_time);
+                if (aEnd === 0 || aEnd <= aStart) aEnd = 1440;
+                return slotMins >= aStart && slotEndMins <= aEnd;
             });
 
-            return { time: slot, available: !isReserved };
+            // 3. Vérifier si c'est réservé (LOGIQUE 2 & 4 avec Buffer)
+            const isReserved = reservations.some(res => {
+                const rStart = this.toMinutes(res.start_time);
+                let rEnd = this.toMinutes(res.end_time);
+
+                if (rEnd === 0 && res.end_time.startsWith("00")) rEnd = 1440;
+                if (rEnd <= rStart) rEnd += 1440;
+
+                // LOGIQUE 4 : Ajouter un buffer de 10 min après chaque réservation
+                const rEndWithBuffer = rEnd + BUFFER_TIME_MINUTES;
+
+                // Check overlap between [slotMins, slotEndMins] and [rStart, rEndWithBuffer]
+                return slotMins < rEndWithBuffer && slotEndMins > rStart;
+            });
+
+            return {
+                time: slot,
+                available: !isReserved && !isPast && isWithinHours
+            };
         });
     },
 
     // ─── VÉRIFIER chevauchement avant réservation ───
     async checkOverlap(fieldId, dateString, startTime, endTime) {
+        const EXPIRATION_LIMIT_MINUTES = 20;
+        const BUFFER_TIME_MINUTES = 10;
+
+        // --- Vérification du temps passé ---
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+
+        if (dateString < todayStr) {
+            return { available: false, reason: "La date choisie est déjà passée." };
+        }
+
+        const startM = this.toMinutes(startTime);
+        if (dateString === todayStr && startM < currentMins) {
+            return { available: false, reason: "Ce créneau horaire est déjà passé." };
+        }
+
         const hasDefined = await this.hasDefinedAvailability(fieldId);
         let availability = hasDefined
             ? await this.getAvailabilityForDate(fieldId, dateString)
@@ -186,7 +254,6 @@ export const AvailabilityService = {
             return { available: false, reason: "Le terrain est fermé ce jour-là." };
         }
 
-        const startM = this.toMinutes(startTime);
         let endM = this.toMinutes(endTime);
         if (endM <= startM) endM += 1440;
 
@@ -198,12 +265,12 @@ export const AvailabilityService = {
         });
 
         if (!isWithinHours) {
-            return { available: false, reason: "Le créneau demandé est hors des heures d'ouverture." };
+            return { available: false, reason: "Le créneau demandé (comprenant la durée) dépasse les heures d'ouverture." };
         }
 
-        const { data: existing, error } = await supabase
+        const { data, error } = await supabase
             .from("reservations")
-            .select("id, start_time, end_time")
+            .select("id, start_time, end_time, status, created_at")
             .eq("field_id", fieldId)
             .eq("date", dateString)
             .neq("status", "Annulé")
@@ -211,16 +278,30 @@ export const AvailabilityService = {
 
         if (error) throw error;
 
-        const overlap = (existing || []).some(res => {
+        // LOGIQUE 1 : Filtrer les expirés
+        const nowMs = new Date().getTime();
+        const activeReservations = (data || []).filter(res => {
+            if (res.status === "En attente de paiement") {
+                const createdMs = new Date(res.created_at).getTime();
+                const diffMins = (nowMs - createdMs) / (1000 * 60);
+                return diffMins < EXPIRATION_LIMIT_MINUTES;
+            }
+            return true;
+        });
+
+        const overlap = activeReservations.some(res => {
             const rStart = this.toMinutes(res.start_time);
             let rEnd = this.toMinutes(res.end_time);
             if (rEnd === 0 || rEnd <= rStart) rEnd = 1440;
 
-            return startM < rEnd && endM > rStart;
+            // LOGIQUE 4 : Buffer
+            const rEndWithBuffer = rEnd + BUFFER_TIME_MINUTES;
+
+            return startM < rEndWithBuffer && endM > rStart;
         });
 
         return overlap
-            ? { available: false, reason: "Ce créneau est déjà réservé." }
+            ? { available: false, reason: "Ce créneau (ou une partie) est déjà réservé ou nécessite un délai de préparation." }
             : { available: true, reason: null };
     },
 

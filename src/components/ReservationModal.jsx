@@ -48,6 +48,21 @@ export default function ReservationModal({
     }
   }, [user, profile]);
 
+  // Reset modal when it opens or stadium changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData((prev) => ({
+        ...prev,
+        date: "",
+        timeSlot: "",
+        duration: "1",
+      }));
+      setStep(1);
+      setError(null);
+      setAvailableSlots([]);
+    }
+  }, [isOpen, stadium?.id]);
+
   // Récupérer les créneaux libres depuis la table disponibilite + réservations existantes
   useEffect(() => {
     const fetchAvailableSlots = async () => {
@@ -70,7 +85,7 @@ export default function ReservationModal({
       setLoadingSlots(true);
       setError(null);
       try {
-        const slots = await AvailabilityService.getAvailableSlots(stadium.id, formData.date);
+        const slots = await AvailabilityService.getAvailableSlots(stadium.id, formData.date, formData.duration);
         console.log("🎯 Modal received slots:", slots);
         setAvailableSlots(slots);
       } catch (err) {
@@ -506,7 +521,9 @@ export default function ReservationModal({
                       {formData.date && !loadingSlots && availableSlots.length > 0 && availableSlots.every(s => !s.available) && (
                         <p className="text-orange-400 text-xs mt-3 flex items-center gap-1">
                           <span className="material-symbols-outlined text-sm">info</span>
-                          Tous les créneaux sont déjà réservés pour ce jour.
+                          {formData.date === new Date().toISOString().split('T')[0]
+                            ? "Aucun créneau disponible pour le reste de la journée (temps passé ou réservé)."
+                            : "Tous les créneaux sont déjà réservés pour ce jour."}
                         </p>
                       )}
                     </div>
