@@ -833,7 +833,7 @@ export default function ReservationModal({
                       onClick={() => {
                         onClose();
                         setStep(1);
-                        navigate("/profile");
+                        navigate("/compte");
                       }}
                       className="flex items-center justify-center gap-2 bg-primary text-black font-bold py-3.5 rounded-xl hover:bg-primary/90 transition-all shadow-lg w-full"
                     >
