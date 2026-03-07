@@ -22,10 +22,11 @@ export default function ReservationModal({
     playerName: "",
     phone: "",
     email: "",
+    paymentMethod: "Wave",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: Info, 2: Payment
   const [ownerProfile, setOwnerProfile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -207,6 +208,12 @@ export default function ReservationModal({
         throw new Error("Veuillez remplir les champs obligatoires (*)");
       }
 
+      if (step === 1) {
+        setStep(2);
+        setIsSubmitting(false);
+        return;
+      }
+
       // Check if it's a demo terrain
       if (stadium.id.toString().startsWith("default-")) {
         throw new Error(
@@ -256,14 +263,18 @@ export default function ReservationModal({
 
       if (insertError) {
         console.error("DETAILED INSERT ERROR:", insertError);
+        console.error("Error code:", insertError.code);
+        console.error("Error message:", insertError.message);
+        console.error("Error details:", insertError.details);
         throw insertError;
       }
 
       console.log("INSERT SUCCESSFUL, RECEIVED DATA:", insertedData);
 
-      toast.success("Réservation confirmée !");
+      setLastReservation(insertedData[0]);
+      setStep(3);
+      toast.success("Réservation effectuée !");
 
-      onClose();
       setFormData((prev) => ({ ...prev, date: "", timeSlot: "" }));
     } catch (err) {
       console.error("Erreur réservation:", err);
@@ -658,7 +669,7 @@ export default function ReservationModal({
                     <h3 className="text-white text-xl font-bold mb-2">
                       Dernière étape : Paiement
                     </h3>
-                    <p className="text-text-secondary text-sm">
+                    <p className="text-[#cbad90] text-sm">
                       Choisissez votre mode de paiement préféré
                     </p>
                   </div>
@@ -675,7 +686,7 @@ export default function ReservationModal({
                       className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${
                         formData.paymentMethod === "Wave"
                           ? "bg-[#1e40af]/20 border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                          : "bg-[#342618] border-surface-highlight hover:border-[#3b82f6]/50"
+                          : "bg-[#342618] border-[#493622] hover:border-[#3b82f6]/50"
                       }`}
                     >
                       <div className="w-12 h-12 bg-[#3b82f6] rounded-full flex items-center justify-center">
@@ -697,7 +708,7 @@ export default function ReservationModal({
                       className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${
                         formData.paymentMethod === "Orange Money"
                           ? "bg-[#ea580c]/20 border-[#f97316] shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-                          : "bg-[#342618] border-surface-highlight hover:border-[#f97316]/50"
+                          : "bg-[#342618] border-[#493622] hover:border-[#f97316]/50"
                       }`}
                     >
                       <div className="w-12 h-12 bg-[#f97316] rounded-full flex items-center justify-center">
@@ -711,7 +722,7 @@ export default function ReservationModal({
 
                   <div className="bg-[#231a10] border border-primary/20 rounded-2xl p-6 space-y-4">
                     <div className="flex flex-col items-center text-center gap-2">
-                      <p className="text-text-secondary text-sm font-medium">
+                      <p className="text-[#cbad90] text-sm font-medium">
                         Envoyez exactement
                       </p>
                       <p className="text-primary text-3xl font-black">
@@ -725,12 +736,12 @@ export default function ReservationModal({
                       <p className="text-white/60 text-xs text-center uppercase tracking-widest font-bold">
                         Numéro de transfert
                       </p>
-                      <div className="bg-[#342618] rounded-xl p-4 flex items-center justify-center gap-3 border border-surface-highlight">
+                      <div className="bg-[#342618] rounded-xl p-4 flex items-center justify-center gap-3 border border-[#493622]">
                         <span className="text-white text-2xl font-black tracking-wider">
                           {ownerProfile?.phone || "Non renseigné"}
                         </span>
                       </div>
-                      <p className="text-text-secondary text-[10px] text-center italic mt-1">
+                      <p className="text-[#cbad90] text-[10px] text-center italic mt-1">
                         Destinataire :{" "}
                         <span className="text-white not-italic font-bold">
                           {ownerProfile?.name || "Propriétaire"}
@@ -742,7 +753,7 @@ export default function ReservationModal({
                       <div className="size-5 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
                         <X className="size-3 text-black rotate-45" />
                       </div>
-                      <p className="text-text-secondary text-xs leading-relaxed">
+                      <p className="text-[#cbad90] text-xs leading-relaxed">
                         Une fois le transfert effectué, cliquez sur{" "}
                         <strong>"Confirmer la réservation"</strong>. Le
                         propriétaire validera votre créneau dès réception.
@@ -758,7 +769,7 @@ export default function ReservationModal({
                   <h3 className="text-white text-2xl font-bold mb-2">
                     Demande de réservation envoyée !
                   </h3>
-                  <p className="text-text-secondary max-w-sm mx-auto mb-8">
+                  <p className="text-[#cbad90] max-w-sm mx-auto mb-8">
                     Votre demande pour{" "}
                     <span className="text-white font-bold">{stadium.city}</span>{" "}
                     a bien été enregistrée avec le statut{" "}
@@ -774,6 +785,39 @@ export default function ReservationModal({
                       {formData.paymentMethod}
                     </span>
                     , votre ticket sera mis à jour.
+                  </p>
+
+                  <div className="flex flex-col gap-3 w-full max-w-md">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        setStep(1);
+                        navigate("/profile");
+                      }}
+                      className="flex items-center justify-center gap-2 bg-primary text-black font-bold py-3.5 rounded-xl hover:bg-primary/90 transition-all shadow-lg w-full"
+                    >
+                      Voir mes réservations
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        setStep(1);
+                      }}
+                      className="text-[#cbad90] text-sm font-bold py-2 hover:text-white transition-all underline"
+                    >
+                      Retourner à l'accueil
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Erreur */}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500 rounded-lg p-3 sm:p-4">
+                  <p className="text-red-500 text-xs sm:text-sm text-center">
+                    {error}
                   </p>
                 </div>
               )}
