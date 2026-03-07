@@ -11,12 +11,13 @@ import {
 } from "lucide-react";
 
 const NavSearch = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const defaultAvatar = "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn";
 
   return (
     <>
-      <header className="fixed w-full top-0 z-200 bg-background-dark/95 backdrop-blur-md border-b border-surface-highlight px-4 lg:px-10 py-3 transition-all duration-300">
+      <header className="fixed w-full top-0 z-[200] bg-background-dark/95 backdrop-blur-md border-b border-surface-highlight px-4 lg:px-10 py-3 transition-all duration-300">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 lg:gap-4 text-white ">
             <Trophy className="text-primary w-8 h-8" strokeWidth={1.5} />
@@ -35,38 +36,55 @@ const NavSearch = () => {
               Rechercher
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </a>
-            <a
+            <Link
               className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
-              href="#"
+              to="/compte#reservations"
             >
               Mes Réservations
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
-            </a>
-            <a
-              className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
-              href="#"
-            >
-              Devenir Partenaire
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
-            </a>
+            </Link>
+            {user ? (
+              profile?.role === "owner" ? (
+                <Link
+                  className="text-white font-bold bg-primary/20 border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary hover:text-black transition-all text-sm"
+                  to="/dashboard"
+                >
+                  Mon Dashboard
+                </Link>
+              ) : (
+                <Link
+                  className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
+                  to="/owners"
+                >
+                  Devenir Partenaire
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
+                </Link>
+              )
+            ) : (
+              <Link
+                className="text-text-secondary text-sm font-medium leading-normal hover:text-white transition-colors relative group"
+                to="/owners"
+              >
+                Pour les propriétaires
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-4">
             {user ? (
-              <Link to="/profile">
+              <Link to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}>
                 <div
                   className="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-surface-highlight hover:border-primary transition-colors cursor-pointer"
-                  data-alt="User profile avatar showing a smiling person"
                   style={{
-                    backgroundImage:
-                      'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBdJyWt6KYLxUW18PxDybaPnYFQpsJrnXs29RH-Yjla5XXFbCa2a88Mr74ljGOR6_MAMJp5hDAenWB2pg_pFvFmtCf3yS5bttebeUmIJ46QYZZ16U6_0MfLsEPkWFGhwhu0rJqHHDXrEvzkwpmKmFGK8RH9Xt36a7uKyOrUtVEz_9RsBgST1SVrmN5QQUY7tM4vbvRfC1vynGbVZAiTlwpBjK9b99AgzZ4GIJc_cP8YbQhKNzLwOFk7jUTPvT8ZHh4VhI26lwVqw")',
+                    backgroundImage: `url("${profile?.image || defaultAvatar}")`,
                   }}
                 ></div>
               </Link>
             ) : (
               <Link
-                to="/auth/login"
-                className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+                to="/login"
+                className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-orange-600 transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-lg shadow-primary/20"
               >
                 <span className="truncate">Connexion</span>
               </Link>
@@ -74,7 +92,7 @@ const NavSearch = () => {
 
             {/* Mobile Menu Toggle */}
             <button
-              className="md:hidden text-white p-1 rounded-full hover:bg-white/10 transition-colors z-210 relative"
+              className="md:hidden text-white p-1 rounded-full hover:bg-white/10 transition-colors z-[300] relative"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? (
@@ -88,11 +106,10 @@ const NavSearch = () => {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`fixed inset-0 bg-[#231a10] backdrop-blur-xl z-999 md:hidden transition-all duration-300 flex flex-col justify-center items-center gap-8 ${
-            isMenuOpen
-              ? "opacity-100 visible top-[60px]"
-              : "opacity-0 invisible -top-full"
-          }`}
+          className={`fixed inset-0 bg-[#231a10] backdrop-blur-xl z-[250] md:hidden transition-all duration-300 flex flex-col justify-center items-center gap-8 ${isMenuOpen
+            ? "opacity-100 visible top-[60px]"
+            : "opacity-0 invisible -top-full"
+            }`}
           style={{ height: "calc(100vh - 60px)" }}
         >
           <nav className="flex flex-col items-center gap-8 w-full max-w-xs">
@@ -104,26 +121,48 @@ const NavSearch = () => {
               <Search className="w-6 h-6" />
               Rechercher
             </a>
-            <a
+            <Link
               className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
-              href="#"
+              to="/compte#reservations"
               onClick={() => setIsMenuOpen(false)}
             >
               <Calendar className="w-6 h-6" />
               Mes Réservations
-            </a>
-            <a
-              className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
-              href="#"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <Handshake className="w-6 h-6" />
-              Devenir Partenaire
-            </a>
+            </Link>
+            {user ? (
+              profile?.role === "owner" ? (
+                <Link
+                  className="text-primary text-xl font-medium transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
+                  to="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Handshake className="w-6 h-6" />
+                  Mon Dashboard
+                </Link>
+              ) : (
+                <Link
+                  className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
+                  to="/owners"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Handshake className="w-6 h-6" />
+                  Devenir Partenaire
+                </Link>
+              )
+            ) : (
+              <Link
+                className="text-text-secondary text-xl font-medium hover:text-white transition-colors flex items-center gap-3 w-full justify-center p-4 rounded-2xl hover:bg-white/5"
+                to="/owners"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Handshake className="w-6 h-6" />
+                Pour les propriétaires
+              </Link>
+            )}
 
             {!user && (
               <Link
-                to="/auth/login"
+                to="/login"
                 className="w-full flex items-center justify-center h-14 bg-primary text-background-dark text-lg font-bold rounded-xl shadow-xl shadow-primary/20 mt-4 active:scale-95 transition-transform"
                 onClick={() => setIsMenuOpen(false)}
               >

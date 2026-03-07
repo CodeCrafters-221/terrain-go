@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabaseClient";
+import { toast } from "react-toastify";
 
 import {
   Trophy,
@@ -16,11 +17,20 @@ import {
 
 const HeaderProfile = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    Navigate("/");
-    setIsMenuOpen(false);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      toast.success("Déconnexion réussie");
+      navigate("/");
+      setIsMenuOpen(false);
+    } catch (err) {
+      console.error("Error signing out:", err);
+      toast.error("Erreur lors de la déconnexion");
+    }
   };
 
   return (
@@ -41,7 +51,7 @@ const HeaderProfile = () => {
             </h2>
           </Link>
           {/* Search Bar Desktop */}
-          <label className="hidden lg:flex flex-col min-w-40 h-10 max-w-64">
+          {/* <label className="hidden lg:flex flex-col min-w-40 h-10 max-w-64">
             <div className="flex w-full flex-1 items-stretch rounded-xl h-full group">
               <div className="text-text-secondary flex border-none bg-surface-highlight items-center justify-center pl-4 rounded-l-xl border-r-0 group-focus-within:text-primary transition-colors">
                 <Search className="w-5 h-5" />
@@ -52,7 +62,7 @@ const HeaderProfile = () => {
                 defaultValue=""
               />
             </div>
-          </label>
+          </label> */}
         </div>
 
         <div className="flex flex-1 justify-end items-center gap-4 lg:gap-8">
@@ -80,7 +90,7 @@ const HeaderProfile = () => {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </a>
           </nav>
-          {/* LogOut */}
+
           <button
             onClick={handleLogout}
             className="text-text-secondary hover:text-white transition-colors"
@@ -91,7 +101,6 @@ const HeaderProfile = () => {
           {/* <button className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary hover:bg-[#d96f0b] transition-all text-background-dark text-sm font-bold leading-normal tracking-[0.015em] shadow-[0_0_15px_rgba(242,127,13,0.3)] hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] active:scale-95">
             <span className="truncate">Réserver</span>
           </button> */}
-
           {/* Mobile Menu Toggle */}
           <button
             className="lg:hidden text-white p-2 rounded-full hover:bg-white/10 transition-colors z-1000 relative"

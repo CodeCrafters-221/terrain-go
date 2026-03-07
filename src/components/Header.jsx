@@ -1,17 +1,32 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../services/supabaseClient";
+import { toast } from "react-toastify";
 import {
   Trophy,
   Menu as MenuIcon,
   X as XIcon,
   User as UserIcon,
+  LogOut,
+  ChevronRight,
+  Search,
 } from "lucide-react";
 
 export default function Header() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Erreur lors de la déconnexion");
+    } else {
+      toast.success("À bientôt !");
+      navigate("/");
+    }
+  };
 
   return (
     <>
@@ -45,28 +60,50 @@ export default function Header() {
                 Trouver un terrain
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
               </Link>
-              <a
-                className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
-                href="#"
-              >
-                Pour les propriétaires
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-              </a>
+              {user ? (
+                profile?.role === "owner" ? (
+                  <Link
+                    className="text-white font-bold bg-primary/20 border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary hover:text-black transition-all text-sm"
+                    to="/dashboard"
+                  >
+                    Mon Dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
+                    to="/owners"
+                  >
+                    Devenir partenaire
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                  </Link>
+                )
+              ) : (
+                <Link
+                  className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
+                  to="/owners"
+                >
+                  Pour les propriétaires
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              )}
             </nav>
 
             {/* Desktop Auth Actions */}
             <div className="hidden lg:flex items-center gap-4">
               {user ? (
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-4">
                   <Link
-                    to="/profile"
+                    to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}
                     className="flex items-center gap-2 text-white hover:text-primary transition-colors font-medium border border-white/10 rounded-full pl-1 pr-4 py-1 hover:bg-white/5"
                   >
                     <img
-                      src={profile?.image}
+                      src={
+                        profile?.image ||
+                        "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn"
+                      }
                       className="size-12 object-cover rounded-full"
                     />
-                    <span>{profile?.name}</span>
+                    <span>{profile?.name || "Sans Nom"}</span>
                   </Link>
                 </div>
               ) : (
@@ -116,25 +153,45 @@ export default function Header() {
             >
               Trouver un terrain
             </Link>
-            <a
-              className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
-              href="#"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Pour les propriétaires
-            </a>
+            {user ? (
+              profile?.role === "owner" ? (
+                <Link
+                  className="text-primary text-2xl font-bold transition-colors flex items-center gap-3 w-full justify-center p-2"
+                  to="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Mon Dashboard
+                </Link>
+              ) : (
+                <Link
+                  className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
+                  to="/owners"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Devenir partenaire
+                </Link>
+              )
+            ) : (
+              <Link
+                className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
+                to="/owners"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Pour les propriétaires
+              </Link>
+            )}
           </nav>
 
           <div className="mt-auto mb-10 w-full flex flex-col gap-4">
             {user ? (
               <>
                 <Link
-                  to="/profile"
+                  to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}
                   className="w-full bg-surface-highlight hover:bg-surface-highlight/80 text-white font-bold text-lg h-14 rounded-2xl flex items-center justify-center gap-2 transition-all"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <UserIcon className="w-6 h-6" />
-                  {profile?.name}
+                  {profile?.name || "Compte"}
                 </Link>
               </>
             ) : (

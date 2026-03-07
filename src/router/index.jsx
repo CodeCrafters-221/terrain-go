@@ -13,14 +13,72 @@ import Register from "../pages/Auth/Register";
 import CreateProfile from "../components/CreateProfile";
 import CreateField from "../components/CreateField";
 import CreateFieldDetails from "../components/CreateFieldDetails";
+import DashboardLayout from "../layouts/DashboardLayout";
+import Dashboard from "../pages/Dashboard";
+import MyFields from "../pages/Dashboard/MyFields";
+import MyReservations from "../pages/Dashboard/MyReservations";
+import Statistics from "../pages/Dashboard/Statistics";
+import Revenues from "../pages/Dashboard/Revenues";
+import CreateFieldPage from "../pages/Dashboard/CreateFieldPage";
+import EditFieldPage from "../pages/Dashboard/EditFieldPage";
+import Settings from "../pages/Dashboard/Settings";
+
+import OwnerRedirect from "../components/OwnerRedirect";
 
 export const router = createBrowserRouter([
   {
-    element: <AppLayout />,
+    path: "/dashboard",
+    element: (
+      <ProtectedRoute allowedRoles={["owner"]}>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: <Dashboard />,
+      },
+      {
+        path: "terrains",
+        element: <MyFields />,
+      },
+      {
+        path: "reservations",
+        element: <MyReservations />,
+      },
+      {
+        path: "stats",
+        element: <Statistics />,
+      },
+      {
+        path: "revenues",
+        element: <Revenues />,
+      },
+      {
+        path: "create-field",
+        element: <CreateFieldPage />,
+      },
+      {
+        path: "edit-field/:id",
+        element: <EditFieldPage />,
+      },
+      {
+        path: "compte",
+        element: <Settings />,
+      },
+    ],
+  },
+  {
+    element: (
+      <OwnerRedirect>
+        <AppLayout />
+      </OwnerRedirect>
+    ),
     children: [
       { path: "/", element: <Home /> },
+
       {
-        path: "/profile",
+        path: "/compte",
         element: (
           <ProtectedRoute>
             {" "}
@@ -29,29 +87,44 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "/terrain-details",
+        path: "/terrain-details/:id",
         element: <TerrainDetails />,
       },
       {
         path: "/search",
         element: <SearchPage />,
       },
-      // {
-      //   path: "/booking",
-      //   element: <ProtectedRoute> <BookingPage /> </ProtectedRoute>
-      // }
     ],
   },
   {
-    element: <UserProfile />,
-    children: [{ path: "/user-profile", element: <UserProfile /> }],
-  },
-  {
-    element: <TerrainDetails />,
-    children: [{ path: "/terrain-details", element: <TerrainDetails /> }],
-  },
-  {
-    element: <SearchPage />,
-    children: [{ path: "/search", element: <SearchPage /> }],
+    element: <AuthLayout />,
+    children: [
+      { path: "/login", element: <Login /> },
+      { path: "/register", element: <Register /> },
+      {
+        path: "/create-profile",
+        element: (
+          <ProtectedRoute>
+            <CreateProfile />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/create-field",
+        element: (
+          <ProtectedRoute allowedRoles={["owner"]}>
+            <CreateField />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/create-field-details",
+        element: (
+          <ProtectedRoute allowedRoles={["owner"]}>
+            <CreateFieldDetails />
+          </ProtectedRoute>
+        ),
+      },
+    ],
   },
 ]);
