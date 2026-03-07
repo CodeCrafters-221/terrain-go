@@ -34,6 +34,8 @@ export default function ReservationModal({
     stadium?.status || "Disponible",
   );
   const [lastReservation, setLastReservation] = useState(null);
+  const [fullSchedule, setFullSchedule] = useState([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
   // recuperer l'utilisateur
   const { user, profile } = useAuth();
 
@@ -66,8 +68,10 @@ export default function ReservationModal({
   // Récupérer les créneaux libres depuis la table disponibilite + réservations existantes
   useEffect(() => {
     const fetchAvailableSlots = async () => {
+      console.log("🔄 fetchAvailableSlots triggered:", { date: formData.date, duration: formData.duration });
       if (!formData.date || !stadium?.id) {
         setAvailableSlots([]);
+        setFormData(prev => ({ ...prev, timeSlot: "" })); // Clear timeSlot when date is cleared
         return;
       }
 
@@ -88,6 +92,15 @@ export default function ReservationModal({
         const slots = await AvailabilityService.getAvailableSlots(stadium.id, formData.date, formData.duration);
         console.log("🎯 Modal received slots:", slots);
         setAvailableSlots(slots);
+
+        // ─── CRITICAL : Reset timeSlot if it's no longer valid ───
+        if (formData.timeSlot) {
+          const stillValid = slots.find(s => s.time === formData.timeSlot && s.available);
+          if (!stillValid) {
+            console.log("🧹 Clearing invalid timeSlot:", formData.timeSlot);
+            setFormData(prev => ({ ...prev, timeSlot: "" }));
+          }
+        }
       } catch (err) {
         console.error("Error fetching available slots:", err);
         setError("Erreur lors du chargement des créneaux: " + err.message);
@@ -98,7 +111,7 @@ export default function ReservationModal({
     };
 
     fetchAvailableSlots();
-  }, [formData.date, stadium?.id]);
+  }, [formData.date, formData.duration, stadium?.id]); // Added formData.duration
 
   useEffect(() => {
     const fetchFieldStatus = async () => {
@@ -130,6 +143,29 @@ export default function ReservationModal({
   }, [stadium?.id]);
 
   // availableSlots est maintenant directement alimenté par le state via AvailabilityService
+
+  // Fetch full schedule for information
+  useEffect(() => {
+    const fetchFullSchedule = async () => {
+      if (!stadium?.id || !isOpen) return;
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stadium.id);
+      const isNumeric = /^\d+$/.test(stadium.id);
+      if (!isUuid && !isNumeric) return;
+
+      setLoadingSchedule(true);
+      try {
+        const data = await AvailabilityService.getFieldAvailability(stadium.id);
+        setFullSchedule(data || []);
+      } catch (err) {
+        console.error("Error fetching full schedule:", err);
+      } finally {
+        setLoadingSchedule(false);
+      }
+    };
+
+    fetchFullSchedule();
+  }, [stadium?.id, isOpen]);
 
   // Fetch owner profile for payment number
   useEffect(() => {
@@ -402,7 +438,7 @@ export default function ReservationModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {fieldStatus === "Indisponible" ? (
             <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+              <div className="w-16 h-10 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
                 <Lock className="w-8 h-8 text-red-500" />
               </div>
               <h3 className="text-white text-xl font-bold mb-2">
@@ -453,6 +489,43 @@ export default function ReservationModal({
                     </div>
                   </div>
 
+                  {/* Section Horaires d'ouverture */}
+                  {loadingSchedule ? (
+                    <div className="bg-[#231a10] border border-[#493622]/30 rounded-xl p-3 flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                      <p className="text-[#cbad90] text-sm">Chargement des horaires...</p>
+                    </div>
+                  ) : fullSchedule.length > 0 && (
+                    <div className="bg-[#231a10] border border-[#493622]/30 rounded-xl p-3">
+                      <h4 className="text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-sm text-primary">schedule</span>
+                        Horaires d'ouverture par jour
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[1, 2, 3, 4, 5, 6, 0].map(dayNum => { // Monday=1, Sunday=0
+                          const dayAvail = fullSchedule.find(a => a.day_of_week === dayNum);
+                          const dayName = AvailabilityService.getDayShortName(dayNum); // Assuming AvailabilityService is imported and has this method
+                          return (
+                            <div
+                              key={dayNum}
+                              className={`flex flex-col items-center min-w-[38px] sm:min-w-[45px] py-1.5 rounded-lg border transition-all ${dayAvail
+                                ? "bg-primary/5 border-primary/20"
+                                : "bg-red-500/5 border-red-500/10 opacity-40"
+                                }`}
+                            >
+                              <span className={`text-[9px] sm:text-[10px] font-bold ${dayAvail ? "text-primary" : "text-red-400"}`}>
+                                {dayName}
+                              </span>
+                              <span className="text-[8px] sm:text-[9px] text-[#cbad90]">
+                                {dayAvail ? dayAvail.start_time.substring(0, 5) : "Fermé"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Grid Date & Heure */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -476,17 +549,23 @@ export default function ReservationModal({
                       </label>
 
                       {loadingSlots ? (
-                        <div className="flex items-center gap-2 text-[#cbad90] bg-[#342618] p-4 rounded-xl border border-[#493622]">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                          <p className="text-sm">Chargement des créneaux...</p>
+                        <div className="flex flex-col items-center justify-center py-10 bg-[#342618]/30 rounded-xl border border-[#493622] animate-pulse">
+                          <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-3"></div>
+                          <p className="text-sm text-[#cbad90] font-medium">Vérification des disponibilités...</p>
                         </div>
                       ) : !formData.date ? (
                         <div className="text-center p-6 border-2 border-dashed border-[#493622] rounded-xl bg-[#342618]/30">
                           <p className="text-[#cbad90] text-sm">Veuillez d'abord choisir une date</p>
                         </div>
                       ) : availableSlots.length === 0 ? (
-                        <div className="text-center p-6 border-2 border-dashed border-red-500/30 rounded-xl bg-red-500/5">
-                          <p className="text-red-400 text-sm italic">Le terrain est fermé ce jour-là.</p>
+                        <div className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-red-500/30 rounded-2xl bg-red-500/5 animate-in fade-in duration-300">
+                          <div className="size-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+                            <X className="size-6 text-red-500" />
+                          </div>
+                          <h4 className="text-white font-bold text-lg mb-1 italic">Terrain indisponible</h4>
+                          <p className="text-red-400 text-sm text-center max-w-[200px]">
+                            Le propriétaire ne propose pas de créneaux pour ce jour-là.
+                          </p>
                         </div>
                       ) : (
                         <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
@@ -807,14 +886,16 @@ export default function ReservationModal({
                     </button>
                     <button
                       type="submit"
-                      disabled={isSubmitting}
-                      className="flex-1 py-3 sm:py-3.5 px-4 rounded-xl bg-primary text-black text-sm sm:text-base font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-lg shadow-primary/20 whitespace-nowrap"
+                      disabled={isSubmitting || loadingSlots || (step === 1 && (!formData.timeSlot || availableSlots.length === 0))}
+                      className="flex-1 py-3 sm:py-3.5 px-4 rounded-xl bg-primary text-black text-sm sm:text-base font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                     >
-                      {isSubmitting
-                        ? "En cours..."
-                        : step === 1
-                          ? "Suivant : Paiement"
-                          : "Confirmer la réservation"}
+                      {loadingSlots && step === 1
+                        ? "Vérification..."
+                        : isSubmitting
+                          ? "En cours..."
+                          : step === 1
+                            ? "Suivant : Paiement"
+                            : "Confirmer la réservation"}
                     </button>
                   </div>
                 </div>

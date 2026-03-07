@@ -57,7 +57,6 @@ export const AvailabilityService = {
     // ─── GET disponibilité pour un terrain à une date précise ───
     async getAvailabilityForDate(fieldId, dateString) {
         // dateString format attendu: "YYYY-MM-DD"
-        // On parse manuellement pour éviter les décalages de fuseau horaire
         const parts = dateString.split("-");
         if (parts.length !== 3) return [];
 
@@ -68,20 +67,35 @@ export const AvailabilityService = {
         const date = new Date(year, month, day);
         const dayOfWeek = date.getDay(); // 0=Dimanche, 1=Lundi, etc.
 
-        console.log(`📅 Calcul du jour pour ${dateString}: ${this.getDayName(dayOfWeek)} (${dayOfWeek})`);
+        console.log(`📅 getAvailabilityForDate: ${dateString} -> day ${dayOfWeek}`);
 
-        const { data, error } = await supabase
-            .from("disponibilite")
-            .select("start_time, end_time")
-            .eq("field_id", fieldId)
-            .eq("day_of_week", dayOfWeek);
+        try {
+            const { data, error } = await supabase
+                .from("disponibilite")
+                .select("start_time, end_time")
+                .eq("field_id", fieldId)
+                .eq("day_of_week", dayOfWeek);
 
-        if (error) throw error;
-        return data || [];
+            if (error) {
+                if (error.code === '22P02') {
+                    console.warn(`⚠️ Format UUID invalide pour field_id: ${fieldId}`);
+                    return [];
+                }
+                throw error;
+            }
+            return data || [];
+        } catch (err) {
+            console.error("❌ Erreur getAvailabilityForDate:", err);
+            return [];
+        }
     },
 
     // ─── Vérifier si un terrain a des disponibilités définies ───
     async hasDefinedAvailability(fieldId) {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId);
+        const isNumeric = /^\d+$/.test(fieldId);
+        if (!isUuid && !isNumeric) return false;
+
         try {
             const { data, error } = await supabase
                 .from("disponibilite")
@@ -90,12 +104,12 @@ export const AvailabilityService = {
                 .limit(1);
 
             if (error) {
-                console.warn("⚠️ hasDefinedAvailability error:", error.message);
-                return false; // En cas d'erreur → considérer comme non défini → fallback
+                if (error.code === '22P02') return false; // Invalid UUID
+                throw error;
             }
             return data && data.length > 0;
         } catch (err) {
-            console.warn("⚠️ hasDefinedAvailability exception:", err);
+            console.warn("⚠️ hasDefinedAvailability error:", err.message || err);
             return false;
         }
     },
@@ -110,30 +124,44 @@ export const AvailabilityService = {
 
     // ─── GET créneaux libres pour un terrain à une date précise ───
     async getAvailableSlots(fieldId, dateString, durationHours = 1) {
-        console.log("🔍 getAvailableSlots called:", { fieldId, dateString, durationHours });
+        console.log("🔍 getAvailableSlots start:", { fieldId, dateString });
 
         const EXPIRATION_LIMIT_MINUTES = 20;
         const BUFFER_TIME_MINUTES = 10;
 
         const DEFAULT_HOURS = [{ start_time: "08:00:00", end_time: "23:00:00" }];
-        let availability = DEFAULT_HOURS;
+        let availability = []; // On part d'un terrain FERMÉ par défaut pour les vrais terrains
 
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId);
+        const isNumeric = /^\d+$/.test(fieldId);
+        const isReal = isUuid || isNumeric;
 
-        if (isUuid) {
+        if (isReal) {
             try {
                 const hasDefined = await this.hasDefinedAvailability(fieldId);
+                console.log(`🏗️ hasDefinedAvailability for ${fieldId}:`, hasDefined);
+
                 if (hasDefined) {
                     const dayAvailability = await this.getAvailabilityForDate(fieldId, dateString);
                     if (dayAvailability && dayAvailability.length > 0) {
                         availability = dayAvailability;
                     } else {
+                        // EXPLICITEMENT FERMÉ : Le terrain a des horaires, mais rien pour ce jour
+                        console.log("🚫 Terrain fermé ce jour-là (défini mais vide)");
                         return [];
                     }
+                } else {
+                    // FALLBACK : Terrain sans aucune config -> on ouvre par défaut
+                    console.log("⚠️ Fallback DEFAULT_HOURS (non configuré)");
+                    availability = DEFAULT_HOURS;
                 }
             } catch (err) {
-                console.warn("⚠️ Error checking availability:", err);
+                console.error("❌ Crash checking availability, assuming closed:", err);
+                return [];
             }
+        } else {
+            // Demo / Mock (IDs type 'default-1', 'p1'...)
+            availability = DEFAULT_HOURS;
         }
 
         // --- Déterminer si c'est aujourd'hui pour bloquer les créneaux passés ---
@@ -245,13 +273,31 @@ export const AvailabilityService = {
             return { available: false, reason: "Ce créneau horaire est déjà passé." };
         }
 
-        const hasDefined = await this.hasDefinedAvailability(fieldId);
-        let availability = hasDefined
-            ? await this.getAvailabilityForDate(fieldId, dateString)
-            : [{ start_time: "08:00", end_time: "23:00" }];
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId);
+        const isNumeric = /^\d+$/.test(fieldId);
+        const isReal = isUuid || isNumeric;
 
-        if (hasDefined && availability.length === 0) {
-            return { available: false, reason: "Le terrain est fermé ce jour-là." };
+        let availability = [];
+        let hasDefined = false;
+
+        if (isReal) {
+            try {
+                hasDefined = await this.hasDefinedAvailability(fieldId);
+                if (hasDefined) {
+                    availability = await this.getAvailabilityForDate(fieldId, dateString);
+                    if (availability.length === 0) {
+                        return { available: false, reason: "Le terrain est fermé ce jour-là." };
+                    }
+                } else {
+                    // Fallback pour terrains non configurés
+                    availability = [{ start_time: "08:00", end_time: "23:00" }];
+                }
+            } catch (err) {
+                return { available: false, reason: "Erreur lors de la vérification des disponibilités." };
+            }
+        } else {
+            // Demo
+            availability = [{ start_time: "08:00", end_time: "23:00" }];
         }
 
         let endM = this.toMinutes(endTime);
