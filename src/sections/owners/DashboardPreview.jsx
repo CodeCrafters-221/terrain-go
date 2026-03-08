@@ -1,7 +1,7 @@
 export default function DashboardPreview() {
   return (
     <div className="relative">
-      <div className="absolute-inset-4 bg-primary/20 rounded-3xl blur-2xl"></div>
+      <div className="absolute -inset-4 bg-primary/20 rounded-3xl blur-2xl"></div>
 
       <div className="relative bg-[#231a10] border border-white/10 rounded-2xl shadow-2xl p-6 transform rotate-1 hover:rotate-0 transition-all duration-500">
         {/* Fake Header */}

@@ -45,20 +45,22 @@ const FEATURES = [
 export default function OwnersFeatures() {
   return (
     <section id="features" className="py-24 px-4  ">
-      <div className="text-center mb-16">
-        <h2 className="text-primary font-bold uppercase text-sm mb-3">
-          Pourquoi nous rejoindre ?
-        </h2>
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-primary font-bold uppercase text-sm mb-3">
+            Pourquoi nous rejoindre ?
+          </h2>
 
-        <h3 className="text-3xl md:text-4xl font-bold">
-          Une suite d'outils conçue pour vous
-        </h3>
-      </div>
+          <h3 className="text-3xl md:text-4xl font-bold">
+            Une suite d'outils conçue pour vous
+          </h3>
+        </div>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        {FEATURES.map((feature) => (
-          <FeatureCard key={feature.title} {...feature} />
-        ))}
+        <div className="grid md:grid-cols-3 gap-8">
+          {FEATURES.map((feature) => (
+            <FeatureCard key={feature.title} {...feature} />
+          ))}
+        </div>
       </div>
     </section>
   );

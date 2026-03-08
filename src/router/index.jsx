@@ -126,7 +126,10 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      { path: "/owners", element: <Owners /> },
     ],
+  },
+  {
+    path: "/owners",
+    element: <Owners />,
   },
 ]);

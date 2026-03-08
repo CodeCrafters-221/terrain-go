@@ -9,9 +9,9 @@ import OwnersCTA from "../sections/owners/OwnersCTA";
 
 export default function Owners() {
   return (
-    <div className="min-h-screen w-full bg-[#231a10] text-white overflow-x-hidden">
+    <div className="min-h-screen w-full bg-[#231a10] text-white">
       <Header />
-      <main className="">
+      <main className="pt-20 md:pt-24 flex flex-col relative z-0">
         <OwnersHero />
         <OwnersStats />
         <OwnersFeatures />
