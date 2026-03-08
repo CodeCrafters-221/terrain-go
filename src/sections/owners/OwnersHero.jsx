@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 export default function OwnersHero() {
   return (
-    <section className="pt-32 pb-24 px-4 lg:pt-40 lg:pb-32 sm:px-6 lg:px-8 relative w-full overflow-hidden">
+    <section className="pt-32 pb-24 px-4 lg:pt-35 lg:pb-32 sm:px-6 lg:px-8 relative w-full overflow-hidden">
       <div className="absolute -top-16 -left-16 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-16 -right-16 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
