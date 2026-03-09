@@ -11,7 +11,7 @@ export default function Owners() {
   return (
     <div className="min-h-screen w-full bg-[#231a10] text-white">
       <Header />
-      <main className="pt-20 md:pt-24 flex flex-col relative z-0">
+      <main className="flex flex-col relative z-0">
         <OwnersHero />
         <OwnersStats />
         <OwnersFeatures />

@@ -3,22 +3,22 @@ import { ArrowRight } from "lucide-react";
 
 export default function OwnersHero() {
   return (
-    <section className="pt-32 pb-24 px-4 lg:pt-35 lg:pb-32 sm:px-6 lg:px-8 relative w-full overflow-hidden">
+    <section className="mt-20 py-27 px-8 lg:pt-20 lg:pb-32 sm:px-6 lg:px-8 relative w-full overflow-hidden">
       <div className="absolute -top-16 -left-16 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-16 -right-16 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-7xl mx-auto relative z-10 text-center">
-        <div className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-full bg-white/5 border mb-8">
+      <div className="w-full max-w-7xl mx-auto relative z-10 text-center px-4 sm:px-6 lg:px-6">
+        <div className="inline-flex items-center justify-center gap-3 px-4 py-2 rounded-full bg-white/3 border mb-8">
           <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           <span className="text-sm font-medium text-gray-300">
             La plateforme n°1 pour les gérants à Dakar
           </span>
         </div>
 
-        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
-          Boostez la rentabilité de <br />
+        <h1 className="font-display text-3xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
+          Boostez la rentabilité de{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">
-            vos terrains de foot
+            vos terrains
           </span>
         </h1>
 

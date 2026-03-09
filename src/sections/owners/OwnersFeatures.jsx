@@ -44,14 +44,17 @@ const FEATURES = [
 
 export default function OwnersFeatures() {
   return (
-    <section id="features" className="py-24 px-4  ">
+    <section
+      id="features"
+      className="py-24 px-16 sm:px-4 lg:px-24 bg-[#1a130c]"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-primary font-bold uppercase text-sm mb-3">
+          <h2 className="text-primary font-bold uppercase text-sm sm:text-2xl mb-3">
             Pourquoi nous rejoindre ?
           </h2>
 
-          <h3 className="text-3xl md:text-4xl font-bold">
+          <h3 className="text-3xl md:text-4xl sm:text-2xl  font-bold">
             Une suite d'outils conçue pour vous
           </h3>
         </div>
