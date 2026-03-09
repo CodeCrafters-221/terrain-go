@@ -22,6 +22,7 @@ import Revenues from "../pages/Dashboard/Revenues";
 import CreateFieldPage from "../pages/Dashboard/CreateFieldPage";
 import EditFieldPage from "../pages/Dashboard/EditFieldPage";
 import Settings from "../pages/Dashboard/Settings";
+import Owners from "../pages/Owners";
 
 import OwnerRedirect from "../components/OwnerRedirect";
 
@@ -126,5 +127,9 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  {
+    path: "/owners",
+    element: <Owners />,
   },
 ]);

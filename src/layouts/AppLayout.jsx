@@ -1,21 +1,22 @@
-
 import { Outlet, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 export default function AppLayout() {
   const location = useLocation();
+
   const hideHeaderRoutes = ["/search", "/compte"];
   const shouldShowHeader = !hideHeaderRoutes.includes(location.pathname);
 
   return (
-    <>
+    <div className="min-h-screen bg-background-dark overflow-x-hidden flex flex-col">
       {shouldShowHeader && <Header />}
-      <main>
+
+      <main className={`flex-1 ${shouldShowHeader ? "pt-20 md:pt-24" : ""}`}>
         <Outlet />
       </main>
+
       <Footer />
-    </>
+    </div>
   );
 }
-
