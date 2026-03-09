@@ -28,7 +28,6 @@ export default function Header() {
     }
   };
 
-
   return (
     <>
       <header className="fixed w-full top-0 z-999 bg-[#231a10] border-b border-white/5 transition-all duration-300">
@@ -98,7 +97,10 @@ export default function Header() {
                     className="flex items-center gap-2 text-white hover:text-primary transition-colors font-medium border border-white/10 rounded-full pl-1 pr-4 py-1 hover:bg-white/5"
                   >
                     <img
-                      src={profile?.image || "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn"}
+                      src={
+                        profile?.image ||
+                        "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn"
+                      }
                       className="size-12 object-cover rounded-full"
                     />
                     <span>{profile?.name || "Sans Nom"}</span>
@@ -130,10 +132,11 @@ export default function Header() {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${isMenuOpen
-            ? "opacity-100 visible"
-            : "opacity-0 invisible pointer-events-none"
-            }`}
+          className={`fixed inset-0 bg-[#231a10] z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${
+            isMenuOpen
+              ? "opacity-100 visible"
+              : "opacity-0 invisible pointer-events-none"
+          }`}
         >
           <nav className="flex flex-col gap-6 items-center w-full">
             <Link
@@ -202,7 +205,6 @@ export default function Header() {
             )}
           </div>
         </div>
-
       </header>
     </>
   );

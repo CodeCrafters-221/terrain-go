@@ -68,15 +68,21 @@ export default function ReservationModal({
   // Récupérer les créneaux libres depuis la table disponibilite + réservations existantes
   useEffect(() => {
     const fetchAvailableSlots = async () => {
-      console.log("🔄 fetchAvailableSlots triggered:", { date: formData.date, duration: formData.duration });
+      console.log("🔄 fetchAvailableSlots triggered:", {
+        date: formData.date,
+        duration: formData.duration,
+      });
       if (!formData.date || !stadium?.id) {
         setAvailableSlots([]);
-        setFormData(prev => ({ ...prev, timeSlot: "" })); // Clear timeSlot when date is cleared
+        setFormData((prev) => ({ ...prev, timeSlot: "" })); // Clear timeSlot when date is cleared
         return;
       }
 
       // Autoriser les UUIDs et les IDs numériques (bigint)
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stadium.id);
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          stadium.id,
+        );
       const isNumeric = /^\d+$/.test(stadium.id);
 
       if (!isUuid && !isNumeric) {
@@ -89,16 +95,22 @@ export default function ReservationModal({
       setLoadingSlots(true);
       setError(null);
       try {
-        const slots = await AvailabilityService.getAvailableSlots(stadium.id, formData.date, formData.duration);
+        const slots = await AvailabilityService.getAvailableSlots(
+          stadium.id,
+          formData.date,
+          formData.duration,
+        );
         console.log("🎯 Modal received slots:", slots);
         setAvailableSlots(slots);
 
         // ─── CRITICAL : Reset timeSlot if it's no longer valid ───
         if (formData.timeSlot) {
-          const stillValid = slots.find(s => s.time === formData.timeSlot && s.available);
+          const stillValid = slots.find(
+            (s) => s.time === formData.timeSlot && s.available,
+          );
           if (!stillValid) {
             console.log("🧹 Clearing invalid timeSlot:", formData.timeSlot);
-            setFormData(prev => ({ ...prev, timeSlot: "" }));
+            setFormData((prev) => ({ ...prev, timeSlot: "" }));
           }
         }
       } catch (err) {
@@ -117,7 +129,10 @@ export default function ReservationModal({
     const fetchFieldStatus = async () => {
       if (!stadium?.id) return;
 
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stadium.id);
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          stadium.id,
+        );
       const isNumeric = /^\d+$/.test(stadium.id);
       if (!isUuid && !isNumeric) return;
 
@@ -149,7 +164,10 @@ export default function ReservationModal({
     const fetchFullSchedule = async () => {
       if (!stadium?.id || !isOpen) return;
 
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stadium.id);
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          stadium.id,
+        );
       const isNumeric = /^\d+$/.test(stadium.id);
       if (!isUuid && !isNumeric) return;
 
@@ -253,7 +271,8 @@ export default function ReservationModal({
       );
 
       // ═══ VÉRIFICATION CHEVAUCHEMENT AVANT INSERTION ═══
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(stadium.id)) {
         const overlapCheck = await AvailabilityService.checkOverlap(
           stadium.id,
@@ -493,37 +512,52 @@ export default function ReservationModal({
                   {loadingSchedule ? (
                     <div className="bg-[#231a10] border border-[#493622]/30 rounded-xl p-3 flex items-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                      <p className="text-[#cbad90] text-sm">Chargement des horaires...</p>
+                      <p className="text-[#cbad90] text-sm">
+                        Chargement des horaires...
+                      </p>
                     </div>
-                  ) : fullSchedule.length > 0 && (
-                    <div className="bg-[#231a10] border border-[#493622]/30 rounded-xl p-3">
-                      <h4 className="text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm text-primary">schedule</span>
-                        Horaires d'ouverture par jour
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {[1, 2, 3, 4, 5, 6, 0].map(dayNum => { // Monday=1, Sunday=0
-                          const dayAvail = fullSchedule.find(a => a.day_of_week === dayNum);
-                          const dayName = AvailabilityService.getDayShortName(dayNum); // Assuming AvailabilityService is imported and has this method
-                          return (
-                            <div
-                              key={dayNum}
-                              className={`flex flex-col items-center min-w-[38px] sm:min-w-[45px] py-1.5 rounded-lg border transition-all ${dayAvail
-                                ? "bg-primary/5 border-primary/20"
-                                : "bg-red-500/5 border-red-500/10 opacity-40"
+                  ) : (
+                    fullSchedule.length > 0 && (
+                      <div className="bg-[#231a10] border border-[#493622]/30 rounded-xl p-3">
+                        <h4 className="text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-sm text-primary">
+                            schedule
+                          </span>
+                          Jours d'ouverture
+                        </h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[1, 2, 3, 4, 5, 6, 0].map((dayNum) => {
+                            // Monday=1, Sunday=0
+                            const dayAvail = fullSchedule.find(
+                              (a) => a.day_of_week === dayNum,
+                            );
+                            const dayName =
+                              AvailabilityService.getDayShortName(dayNum); // Assuming AvailabilityService is imported and has this method
+                            return (
+                              <div
+                                key={dayNum}
+                                className={`flex flex-col items-center min-w-[38px] sm:min-w-[45px] py-1.5 rounded-lg border transition-all ${
+                                  dayAvail
+                                    ? "bg-primary/5 border-primary/20"
+                                    : "bg-red-500/5 border-red-500/10 opacity-40"
                                 }`}
-                            >
-                              <span className={`text-[9px] sm:text-[10px] font-bold ${dayAvail ? "text-primary" : "text-red-400"}`}>
-                                {dayName}
-                              </span>
-                              <span className="text-[8px] sm:text-[9px] text-[#cbad90]">
-                                {dayAvail ? dayAvail.start_time.substring(0, 5) : "Fermé"}
-                              </span>
-                            </div>
-                          );
-                        })}
+                              >
+                                <span
+                                  className={`text-[9px] sm:text-[10px] font-bold ${dayAvail ? "text-primary" : "text-red-400"}`}
+                                >
+                                  {dayName}
+                                </span>
+                                <span className="text-[8px] sm:text-[9px] text-[#cbad90]">
+                                  {dayAvail
+                                    ? dayAvail.start_time.substring(0, 5)
+                                    : "Fermé"}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
+                    )
                   )}
 
                   {/* Grid Date & Heure */}
@@ -551,20 +585,27 @@ export default function ReservationModal({
                       {loadingSlots ? (
                         <div className="flex flex-col items-center justify-center py-10 bg-[#342618]/30 rounded-xl border border-[#493622] animate-pulse">
                           <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-3"></div>
-                          <p className="text-sm text-[#cbad90] font-medium">Vérification des disponibilités...</p>
+                          <p className="text-sm text-[#cbad90] font-medium">
+                            Vérification des disponibilités...
+                          </p>
                         </div>
                       ) : !formData.date ? (
                         <div className="text-center p-6 border-2 border-dashed border-[#493622] rounded-xl bg-[#342618]/30">
-                          <p className="text-[#cbad90] text-sm">Veuillez d'abord choisir une date</p>
+                          <p className="text-[#cbad90] text-sm">
+                            Veuillez d'abord choisir une date
+                          </p>
                         </div>
                       ) : availableSlots.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-2 border-2 border-dashed border-red-500/30 rounded-2xl bg-red-500/5 animate-in fade-in duration-300">
                           <div className="size-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
                             <X className="size-6 text-red-500" />
                           </div>
-                          <h4 className="text-white font-bold text-lg mb-1 italic">Terrain indisponible</h4>
+                          <h4 className="text-white font-bold text-lg mb-1 italic">
+                            Terrain indisponible
+                          </h4>
                           <p className="text-red-400 text-sm text-center max-w-[200px]">
-                            Le propriétaire ne propose pas de créneaux pour ce jour-là.
+                            Le propriétaire ne propose pas de créneaux pour ce
+                            jour-là.
                           </p>
                         </div>
                       ) : (
@@ -574,14 +615,20 @@ export default function ReservationModal({
                               key={slot.time}
                               type="button"
                               disabled={!slot.available}
-                              onClick={() => setFormData(prev => ({ ...prev, timeSlot: slot.time }))}
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  timeSlot: slot.time,
+                                }))
+                              }
                               className={`
                                 relative py-2.5 rounded-lg text-sm font-bold transition-all border
-                                ${!slot.available
-                                  ? "bg-[#231a10] border-[#493622] text-white/20 cursor-not-allowed overflow-hidden shadow-inner"
-                                  : formData.timeSlot === slot.time
-                                    ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)] scale-105 z-10"
-                                    : "bg-[#342618] text-white border-[#493622] hover:border-primary/50 hover:bg-[#3d2d1d]"
+                                ${
+                                  !slot.available
+                                    ? "bg-[#231a10] border-[#493622] text-white/20 cursor-not-allowed overflow-hidden shadow-inner"
+                                    : formData.timeSlot === slot.time
+                                      ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)] scale-105 z-10"
+                                      : "bg-[#342618] text-white border-[#493622] hover:border-primary/50 hover:bg-[#3d2d1d]"
                                 }
                               `}
                             >
@@ -597,14 +644,20 @@ export default function ReservationModal({
                         </div>
                       )}
 
-                      {formData.date && !loadingSlots && availableSlots.length > 0 && availableSlots.every(s => !s.available) && (
-                        <p className="text-orange-400 text-xs mt-3 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">info</span>
-                          {formData.date === new Date().toISOString().split('T')[0]
-                            ? "Aucun créneau disponible pour le reste de la journée (temps passé ou réservé)."
-                            : "Tous les créneaux sont déjà réservés pour ce jour."}
-                        </p>
-                      )}
+                      {formData.date &&
+                        !loadingSlots &&
+                        availableSlots.length > 0 &&
+                        availableSlots.every((s) => !s.available) && (
+                          <p className="text-orange-400 text-xs mt-3 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">
+                              info
+                            </span>
+                            {formData.date ===
+                            new Date().toISOString().split("T")[0]
+                              ? "Aucun créneau disponible pour le reste de la journée (temps passé ou réservé)."
+                              : "Tous les créneaux sont déjà réservés pour ce jour."}
+                          </p>
+                        )}
                     </div>
                   </div>
 
@@ -624,10 +677,11 @@ export default function ReservationModal({
                               duration: dur.value,
                             }));
                           }}
-                          className={`py-2 sm:py-3 px-1 sm:px-4 rounded-lg font-semibold text-xs sm:text-base transition-all border ${formData.duration === dur.value
-                            ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(242,127,13,0.2)]"
-                            : "bg-[#342618] text-white border-[#493622] hover:border-primary/50"
-                            }`}
+                          className={`py-2 sm:py-3 px-1 sm:px-4 rounded-lg font-semibold text-xs sm:text-base transition-all border ${
+                            formData.duration === dur.value
+                              ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(242,127,13,0.2)]"
+                              : "bg-[#342618] text-white border-[#493622] hover:border-primary/50"
+                          }`}
                         >
                           {dur.label}
                         </button>
@@ -637,12 +691,21 @@ export default function ReservationModal({
                     {/* Récapitulatif Heure */}
                     {formData.timeSlot && (
                       <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-between">
-                        <span className="text-[#cbad90] text-sm">Créneau sélectionné :</span>
+                        <span className="text-[#cbad90] text-sm">
+                          Créneau sélectionné :
+                        </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-white font-bold">{formData.timeSlot}</span>
-                          <span className="material-symbols-outlined text-primary text-sm">arrow_forward</span>
+                          <span className="text-white font-bold">
+                            {formData.timeSlot}
+                          </span>
+                          <span className="material-symbols-outlined text-primary text-sm">
+                            arrow_forward
+                          </span>
                           <span className="text-primary font-bold">
-                            {calculateEndTime(formData.timeSlot, formData.duration)}
+                            {calculateEndTime(
+                              formData.timeSlot,
+                              formData.duration,
+                            )}
                           </span>
                         </div>
                       </div>
@@ -725,10 +788,11 @@ export default function ReservationModal({
                           paymentMethod: "Wave",
                         }))
                       }
-                      className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${formData.paymentMethod === "Wave"
-                        ? "bg-[#1e40af]/20 border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                        : "bg-[#342618] border-[#493622] hover:border-[#3b82f6]/50"
-                        }`}
+                      className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${
+                        formData.paymentMethod === "Wave"
+                          ? "bg-[#1e40af]/20 border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                          : "bg-[#342618] border-[#493622] hover:border-[#3b82f6]/50"
+                      }`}
                     >
                       <div className="w-12 h-12 bg-[#3b82f6] rounded-full flex items-center justify-center">
                         <span className="text-white font-black text-xl italic">
@@ -746,10 +810,11 @@ export default function ReservationModal({
                           paymentMethod: "Orange Money",
                         }))
                       }
-                      className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${formData.paymentMethod === "Orange Money"
-                        ? "bg-[#ea580c]/20 border-[#f97316] shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-                        : "bg-[#342618] border-[#493622] hover:border-[#f97316]/50"
-                        }`}
+                      className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${
+                        formData.paymentMethod === "Orange Money"
+                          ? "bg-[#ea580c]/20 border-[#f97316] shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+                          : "bg-[#342618] border-[#493622] hover:border-[#f97316]/50"
+                      }`}
                     >
                       <div className="w-12 h-12 bg-[#f97316] rounded-full flex items-center justify-center">
                         <span className="text-white font-black text-xl italic">
@@ -886,7 +951,12 @@ export default function ReservationModal({
                     </button>
                     <button
                       type="submit"
-                      disabled={isSubmitting || loadingSlots || (step === 1 && (!formData.timeSlot || availableSlots.length === 0))}
+                      disabled={
+                        isSubmitting ||
+                        loadingSlots ||
+                        (step === 1 &&
+                          (!formData.timeSlot || availableSlots.length === 0))
+                      }
                       className="flex-1 py-3 sm:py-3.5 px-4 rounded-xl bg-primary text-black text-sm sm:text-base font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                     >
                       {loadingSlots && step === 1
