@@ -6,18 +6,33 @@ const MyReservations = () => {
     const { reservations, updateReservationStatus, archivedIds, toggleArchiveReservation } = useDashboard();
     const [fieldFilter, setFieldFilter] = useState('Tous les terrains');
     const [statusFilter, setStatusFilter] = useState('Tous les statuts');
+    const [timeFilter, setTimeFilter] = useState('À venir'); // 'Toutes', 'À venir', 'Passées'
     const [showArchived, setShowArchived] = useState(false);
-    const [loadingAction, setLoadingAction] = useState(null); // tracks which booking.id is being processed
-    const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
+    const [loadingAction, setLoadingAction] = useState(null);
+    const [toast, setToast] = useState(null);
+    const [visibleCount, setVisibleCount] = useState(10);
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const today = new Date(todayStr);
 
     const filteredReservations = reservations.filter(r => {
         const matchesField = fieldFilter === 'Tous les terrains' || r.fieldName === fieldFilter;
         const matchesStatus = statusFilter === 'Tous les statuts' || r.status === statusFilter;
         const isArchived = archivedIds.includes(String(r.id));
 
-        if (showArchived) return matchesField && matchesStatus && isArchived;
-        return matchesField && matchesStatus && !isArchived;
+        const rDate = new Date(r.originalDate);
+        const matchesTime =
+            timeFilter === 'Toutes' ? true :
+                timeFilter === 'À venir' ? rDate >= today :
+                    rDate < today;
+
+        const isSingle = r.reservationType === 'single';
+
+        if (showArchived) return matchesField && matchesStatus && matchesTime && isArchived && isSingle;
+        return matchesField && matchesStatus && matchesTime && !isArchived && isSingle;
     });
+
+    const paginatedReservations = filteredReservations.slice(0, visibleCount);
 
     const handleDownloadTicket = (booking) => {
         generateTicket(booking);
@@ -33,13 +48,10 @@ const MyReservations = () => {
         try {
             await updateReservationStatus(bookingId, newStatus);
             showToast('success', newStatus === 'Confirmé'
-                ? 'Réservation confirmée avec succès !'
-                : newStatus === 'Annulé'
-                    ? 'Réservation annulée.'
-                    : `Statut mis à jour : ${newStatus}`);
+                ? 'Réservation confirmée!'
+                : `Statut mis à jour : ${newStatus}`);
         } catch (error) {
-            console.error("Erreur mise à jour statut:", error);
-            showToast('error', `Échec de la mise à jour : ${error.message}`);
+            showToast('error', `Échec : ${error.message}`);
         } finally {
             setLoadingAction(null);
         }
@@ -61,11 +73,26 @@ const MyReservations = () => {
             )}
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h2 className="text-white text-2xl md:text-3xl font-bold">Mes Réservations</h2>
+                <div className="flex flex-col">
+                    <h2 className="text-white text-2xl md:text-3xl font-bold">Mes Réservations</h2>
+                    <p className="text-[#cbad90] text-xs md:text-sm mt-1">
+                        {filteredReservations.length} réservation(s) correspond(ent) à vos filtres
+                    </p>
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <select
+                        value={timeFilter}
+                        onChange={(e) => { setTimeFilter(e.target.value); setVisibleCount(10); }}
+                        className="bg-[#493622] text-white border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#f27f0d]"
+                    >
+                        <option value="À venir">À venir</option>
+                        <option value="Passées">Passées</option>
+                        <option value="Toutes">Toutes</option>
+                    </select>
+
+                    <select
                         value={fieldFilter}
-                        onChange={(e) => setFieldFilter(e.target.value)}
+                        onChange={(e) => { setFieldFilter(e.target.value); setVisibleCount(10); }}
                         className="bg-[#2c241b] text-[#cbad90] border border-[#493622] rounded-lg px-3 md:px-4 py-2 text-sm outline-none focus:border-[#f27f0d] flex-1 md:flex-none"
                     >
                         <option>Tous les terrains</option>
@@ -76,7 +103,7 @@ const MyReservations = () => {
 
                     <select
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) => { setStatusFilter(e.target.value); setVisibleCount(10); }}
                         className="bg-[#2c241b] text-[#cbad90] border border-[#493622] rounded-lg px-3 md:px-4 py-2 text-sm outline-none focus:border-[#f27f0d] flex-1 md:flex-none"
                     >
                         <option>Tous les statuts</option>
@@ -113,15 +140,16 @@ const MyReservations = () => {
                 </div>
 
                 <div className="flex flex-col">
-                    {filteredReservations.length === 0 && (
+                    {paginatedReservations.length === 0 && (
                         <div className="p-8 text-center text-[#cbad90]">
-                            Aucune réservation trouvée.
+                            Aucune réservation trouvée dans cette catégorie.
                         </div>
                     )}
-                    {filteredReservations.map((booking) => {
+                    {paginatedReservations.map((booking) => {
                         const isLoading = loadingAction === booking.id;
+                        const isPast = new Date(booking.originalDate) < today;
                         return (
-                            <div key={booking.id} className={`grid grid-cols-[1.5fr_1fr_1.2fr_1fr_1fr] gap-4 p-4 items-center hover:bg-[#493622]/30 transition-colors border-b border-[#493622]/50 last:border-0 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <div key={booking.id} className={`grid grid-cols-[1.5fr_1fr_1.2fr_1fr_1fr] gap-4 p-4 items-center hover:bg-[#493622]/30 transition-colors border-b border-[#493622]/50 last:border-0 ${isLoading ? 'opacity-50 pointer-events-none' : ''} ${isPast ? 'opacity-60 grayscale-[0.3]' : ''}`}>
                                 <div className="flex items-center gap-3">
                                     <div className="size-10 rounded-full bg-[#493622] flex items-center justify-center text-[#f27f0d] font-bold shrink-0">
                                         {booking.initials}
@@ -134,6 +162,11 @@ const MyReservations = () => {
                                                 {booking.paymentMethod}
                                             </span>
                                         )}
+                                        {booking.reservationType === 'subscription' && (
+                                            <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded mt-1 ml-1 inline-block font-bold uppercase">
+                                                Abonnement
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="text-white text-sm truncate">{booking.fieldName}</div>
@@ -142,12 +175,13 @@ const MyReservations = () => {
                                     <div>{booking.time}</div>
                                 </div>
                                 <div>
-                                    <StatusTag status={booking.status} />
+                                    <StatusTag status={booking.status} isPast={isPast} />
                                 </div>
                                 <div className="flex justify-end gap-2">
                                     <ActionButtons
                                         booking={booking}
                                         isLoading={isLoading}
+                                        isPast={isPast}
                                         onStatusChange={handleStatusChange}
                                         onDownload={handleDownloadTicket}
                                         onArchive={toggleArchiveReservation}
@@ -162,15 +196,16 @@ const MyReservations = () => {
 
             {/* Mobile/Tablet Card View */}
             <div className="lg:hidden flex flex-col gap-4">
-                {filteredReservations.length === 0 && (
+                {paginatedReservations.length === 0 && (
                     <div className="bg-[#2c241b] rounded-2xl p-8 border border-[#493622] text-center text-[#cbad90]">
                         Aucune réservation trouvée.
                     </div>
                 )}
-                {filteredReservations.map((booking) => {
+                {paginatedReservations.map((booking) => {
                     const isLoading = loadingAction === booking.id;
+                    const isPast = new Date(booking.originalDate) < today;
                     return (
-                        <div key={booking.id} className={`bg-[#2c241b] rounded-2xl p-4 border border-[#493622] flex flex-col gap-4 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <div key={booking.id} className={`bg-[#2c241b] rounded-2xl p-4 border border-[#493622] flex flex-col gap-4 ${isLoading ? 'opacity-50 pointer-events-none' : ''} ${isPast ? 'opacity-70 grayscale-[0.2]' : ''}`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="size-10 rounded-full bg-[#493622] flex items-center justify-center text-[#f27f0d] font-bold">
@@ -179,9 +214,14 @@ const MyReservations = () => {
                                     <div>
                                         <h4 className="text-white font-bold">{booking.clientName}</h4>
                                         <p className="text-[#cbad90] text-xs">{booking.clientPhone}</p>
+                                        {booking.reservationType === 'subscription' && (
+                                            <span className="text-[8px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded mt-1 inline-block font-bold uppercase">
+                                                Abonnement
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                                <StatusTag status={booking.status} />
+                                <StatusTag status={booking.status} isPast={isPast} />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 py-3 border-y border-[#493622]/50">
@@ -206,6 +246,7 @@ const MyReservations = () => {
                                     <ActionButtons
                                         booking={booking}
                                         isLoading={isLoading}
+                                        isPast={isPast}
                                         onStatusChange={handleStatusChange}
                                         onDownload={handleDownloadTicket}
                                         onArchive={toggleArchiveReservation}
@@ -219,34 +260,59 @@ const MyReservations = () => {
                 })}
             </div>
 
-            <div className="p-4 flex justify-center mt-4">
-                <button className="text-[#f27f0d] text-sm font-bold hover:underline bg-[#f27f0d]/10 px-6 py-2 rounded-full border border-[#f27f0d]/20 transition-all hover:bg-[#f27f0d]/20">
-                    Charger plus de réservations
-                </button>
-            </div>
+            {(filteredReservations.length > visibleCount || visibleCount > 10) && (
+                <div className="p-4 flex flex-wrap justify-center items-center gap-4 md:gap-6 mt-4">
+                    {filteredReservations.length > visibleCount && (
+                        <button
+                            onClick={() => setVisibleCount(prev => prev + 10)}
+                            className="text-[#f27f0d] text-sm font-bold hover:underline bg-[#f27f0d]/10 px-8 py-2.5 rounded-full border border-[#f27f0d]/20 transition-all hover:bg-[#f27f0d]/20 flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">add</span>
+                            Charger plus
+                        </button>
+                    )}
+
+                    {visibleCount > 10 && (
+                        <button
+                            onClick={() => setVisibleCount(10)}
+                            className="text-[#cbad90] hover:text-white text-sm font-bold bg-white/5 px-8 py-2.5 rounded-full border border-white/10 transition-all flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">keyboard_arrow_up</span>
+                            Voir moins
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
 
 // Helper Components for cleaner code
-const StatusTag = ({ status }) => (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] md:text-xs font-bold border ${status === 'Payé' || status === 'Confirmé'
-        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-        : status === 'Annulé'
-            ? 'bg-red-500/10 text-red-500 border-red-500/20'
-            : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-        }`}>
-        <span className={`size-1.5 rounded-full ${status === 'Payé' || status === 'Confirmé'
-            ? 'bg-green-500'
-            : status === 'Annulé'
-                ? 'bg-red-500'
-                : 'bg-yellow-500'
-            }`}></span>
-        {status}
-    </span>
-);
+const StatusTag = ({ status, isPast }) => {
+    let label = status;
+    if (isPast && (status === 'Payé' || status === 'Confirmé')) {
+        label = 'Traité';
+    }
 
-const ActionButtons = ({ booking, isLoading, onStatusChange, onDownload, onArchive, archivedIds, isMobile }) => (
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] md:text-xs font-bold border ${status === 'Payé' || status === 'Confirmé'
+            ? 'bg-green-500/10 text-green-500 border-green-500/20'
+            : status === 'Annulé'
+                ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+            }`}>
+            <span className={`size-1.5 rounded-full ${status === 'Payé' || status === 'Confirmé'
+                ? 'bg-green-500'
+                : status === 'Annulé'
+                    ? 'bg-red-500'
+                    : 'bg-yellow-500'
+                }`}></span>
+            {label}
+        </span>
+    );
+};
+
+const ActionButtons = ({ booking, isLoading, isPast, onStatusChange, onDownload, onArchive, archivedIds, isMobile }) => (
     <>
         {isLoading && (
             <div className="flex items-center gap-2 text-[#cbad90] text-xs">
@@ -256,10 +322,10 @@ const ActionButtons = ({ booking, isLoading, onStatusChange, onDownload, onArchi
                 </svg>
             </div>
         )}
-        {!isLoading && booking.status === 'En attente de paiement' && (
+        {!isLoading && !isPast && (booking.status === 'En attente de paiement' || booking.status === 'En attente') && (
             <button
                 onClick={() => onStatusChange(booking.id, 'Confirmé')}
-                className="bg-green-500 hover:bg-green-600 text-white text-[10px] md:text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                className="bg-green-500 hover:bg-green-600 text-white text-[10px] md:text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-lg border border-white/10"
                 title="Valider la réservation"
             >
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
@@ -287,7 +353,7 @@ const ActionButtons = ({ booking, isLoading, onStatusChange, onDownload, onArchi
                 {archivedIds.includes(String(booking.id)) ? 'visibility' : 'visibility_off'}
             </span>
         </button>
-        {!isLoading && booking.status !== 'Annulé' && !archivedIds.includes(String(booking.id)) && (
+        {!isLoading && !isPast && booking.status !== 'Annulé' && !archivedIds.includes(String(booking.id)) && (
             <button
                 onClick={() => onStatusChange(booking.id, 'Annulé')}
                 className="size-8 flex items-center justify-center rounded-lg bg-[#493622] hover:bg-red-500/20 text-red-500/70 hover:text-red-500 transition-all"

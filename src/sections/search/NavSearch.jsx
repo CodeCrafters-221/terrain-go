@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import mainLogo from "../../assets/img/mainLogo.png";
 import {
   Trophy,
   Menu as MenuIcon,
@@ -19,13 +20,19 @@ const NavSearch = () => {
     <>
       <header className="fixed w-full top-0 z-[200] bg-background-dark/95 backdrop-blur-md border-b border-surface-highlight px-4 lg:px-10 py-3 transition-all duration-300">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 lg:gap-4 text-white ">
-            <Trophy className="text-primary w-8 h-8" strokeWidth={1.5} />
-
-            <h2 className="text-white text-xl font-bold leading-tight tracking-[-0.015em] hidden sm:block font-display">
-              Footbooking
+          <Link to="/" className="flex items-center gap-3 group">
+            <h2 className="text-2xl font-display font-bold text-white tracking-wide group-hover:text-primary/90 transition-colors">
+              {mainLogo ? (
+                <img
+                  src={mainLogo}
+                  alt="Logo"
+                  className="h-34 object-contain "
+                />
+              ) : (
+                "Footbooking"
+              )}
             </h2>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex flex-1 justify-center gap-8">
