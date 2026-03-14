@@ -68,9 +68,7 @@ export const DashboardProvider = ({ children }) => {
   // --- NOTIFICATIONS ---
   const processNotifications = (reservs, subs = []) => {
     const resNotifs = reservs
-      .filter(
-        (r) => r.status === "En attente de paiement",
-      )
+      .filter((r) => r.status === "En attente de paiement")
       .map((r) => ({
         id: r.id,
         title: "Nouvelle réservation",
@@ -83,8 +81,8 @@ export const DashboardProvider = ({ children }) => {
       }));
 
     const subNotifs = subs
-      .filter(s => s.status === 'En attente de paiement')
-      .map(s => ({
+      .filter((s) => s.status === "En attente de paiement")
+      .map((s) => ({
         id: s.id,
         title: "Nouvel Abonnement",
         message: `${s.clientName} s'est abonné à ${s.fieldName}`,
@@ -95,7 +93,9 @@ export const DashboardProvider = ({ children }) => {
         original: s,
       }));
 
-    const activeNotifs = [...resNotifs, ...subNotifs].sort((a,b) => new Date(b.original.createdAt) - new Date(a.original.createdAt));
+    const activeNotifs = [...resNotifs, ...subNotifs].sort(
+      (a, b) => new Date(b.original.createdAt) - new Date(a.original.createdAt),
+    );
 
     setNotifications(activeNotifs);
     setUnreadCount(activeNotifs.length);
@@ -146,8 +146,8 @@ export const DashboardProvider = ({ children }) => {
           paymentMethod: r.payment_method || "Non spécifié",
           initials,
           createdAt: r.created_at,
-          reservationType: r.subscription_id ? 'subscription' : 'single',
-          subscriptionId: r.subscription_id
+          reservationType: r.subscription_id ? "subscription" : "single",
+          subscriptionId: r.subscription_id,
         };
       });
 
@@ -166,10 +166,12 @@ export const DashboardProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select(`
+        .select(
+          `
           *,
           fields!inner (name, proprietaire_id)
-        `)
+        `,
+        )
         .eq("fields.proprietaire_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -177,7 +179,12 @@ export const DashboardProvider = ({ children }) => {
 
       const mappedSubscriptions = data.map((s) => {
         const clientName = s.client_name || "Client Inconnu";
-        const initials = clientName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+        const initials = clientName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
         return {
           id: s.id,
           clientName,
@@ -193,7 +200,7 @@ export const DashboardProvider = ({ children }) => {
           paymentMethod: s.payment_method || "Non spécifié",
           initials,
           createdAt: s.created_at,
-          reservationType: 'subscription',
+          reservationType: "subscription",
         };
       });
 
@@ -282,17 +289,22 @@ export const DashboardProvider = ({ children }) => {
 
       if (fieldError) throw fieldError;
 
-      if (newFieldData.images && newFieldData.images.length > 0 && fieldData?.id) {
-        const imageInserts = newFieldData.images.map(url => ({
+      if (
+        newFieldData.images &&
+        newFieldData.images.length > 0 &&
+        fieldData?.id
+      ) {
+        const imageInserts = newFieldData.images.map((url) => ({
           terrain_id: fieldData.id,
           url_image: url,
         }));
-        
+
         const { error: imagesError } = await supabase
           .from("field_images")
           .insert(imageInserts);
-          
-        if (imagesError) console.error("Error inserting multiple images:", imagesError);
+
+        if (imagesError)
+          console.error("Error inserting multiple images:", imagesError);
       }
 
       await fetchFields();
@@ -398,16 +410,26 @@ export const DashboardProvider = ({ children }) => {
       }
 
       if (!data || data.length === 0) {
-        throw new Error("Mise à jour refusée par la base de données (Vérifiez vos RLS).");
+        throw new Error(
+          "Mise à jour refusée par la base de données (Vérifiez vos RLS).",
+        );
       }
 
       // 2. Proactively update the status of all linked reservations
       const { error: resError } = await supabase
         .from("reservations")
-        .update({ status: status === 'Confirmé' ? 'Confirmé' : (status === 'Annulé' ? 'Annulé' : status) })
+        .update({
+          status:
+            status === "Confirmé"
+              ? "Confirmé"
+              : status === "Annulé"
+                ? "Annulé"
+                : status,
+        })
         .eq("subscription_id", id);
-      
-      if (resError) console.warn("Failed to update linked reservations:", resError.message);
+
+      if (resError)
+        console.warn("Failed to update linked reservations:", resError.message);
 
       await fetchSubscriptions();
       await fetchReservations();
@@ -475,7 +497,7 @@ export const DashboardProvider = ({ children }) => {
     const attendanceData = days.map((day, index) => {
       const dayDate = new Date(startOfWeek);
       dayDate.setDate(startOfWeek.getDate() + index);
-      const dateStrIso = dayDate.toISOString().split('T')[0];
+      const dateStrIso = dayDate.toISOString().split("T")[0];
 
       const count = reservations.filter(
         (r) => r.originalDate === dateStrIso && r.status !== "Annulé",
@@ -507,7 +529,9 @@ export const DashboardProvider = ({ children }) => {
 
     const distribution = fields
       .map((f) => {
-        const count = reservations.filter((r) => r.fieldId === f.id && r.status !== "Annulé").length;
+        const count = reservations.filter(
+          (r) => r.fieldId === f.id && r.status !== "Annulé",
+        ).length;
         return { name: f.name, value: count };
       })
       .filter((d) => d.value > 0);
@@ -520,45 +544,43 @@ export const DashboardProvider = ({ children }) => {
       return { hour: h, count: count };
     });
 
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = now.toISOString().split("T")[0];
     const todayObj = new Date(todayStr);
 
     const activeReservationsCount = reservations.filter(
-      (r) =>
-        new Date(r.originalDate) >= todayObj &&
-        r.status !== "Annulé"
+      (r) => new Date(r.originalDate) >= todayObj && r.status !== "Annulé",
     ).length;
 
-    const monthlyRevenue = reservations.reduce(
-      (acc, curr) => {
-        const rDate = new Date(curr.originalDate);
-        return acc + (
-          rDate >= startOfMonth && (curr.status === "Payé" || curr.status === "Confirmé")
-            ? Number(curr.amount || 0)
-            : 0
-        );
-      },
-      0,
-    );
-
-    const monthlyRevenueSubscriptions = subscriptions.reduce(
-        (acc, curr) => {
-          const sDate = new Date(curr.createdAt);
-          const isConfirmed = ['Confirmé', 'active', 'Payé', 'En attente de paiement'].includes(curr.status); // Adjusted to include all revenue-generating statuses
-          return acc + (
-            sDate >= startOfMonth && isConfirmed
-              ? Number(curr.amount || 0)
-              : 0
-          );
-        },
-        0,
+    const monthlyRevenue = reservations.reduce((acc, curr) => {
+      const rDate = new Date(curr.originalDate);
+      return (
+        acc +
+        (rDate >= startOfMonth &&
+        (curr.status === "Payé" || curr.status === "Confirmé")
+          ? Number(curr.amount || 0)
+          : 0)
       );
+    }, 0);
+
+    const monthlyRevenueSubscriptions = subscriptions.reduce((acc, curr) => {
+      const sDate = new Date(curr.createdAt);
+      const isConfirmed = [
+        "Confirmé",
+        "active",
+        "Payé",
+        "En attente de paiement",
+      ].includes(curr.status); // Adjusted to include all revenue-generating statuses
+      return (
+        acc +
+        (sDate >= startOfMonth && isConfirmed ? Number(curr.amount || 0) : 0)
+      );
+    }, 0);
 
     const uniqueClientsCount = new Set(
       reservations
-        .filter(r => r.status !== "Annulé")
-        .map(r => r.clientName)
-        .concat(subscriptions.map(s => s.clientName)) // Include clients from subscriptions
+        .filter((r) => r.status !== "Annulé")
+        .map((r) => r.clientName)
+        .concat(subscriptions.map((s) => s.clientName)), // Include clients from subscriptions
     ).size;
 
     return {
