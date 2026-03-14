@@ -306,10 +306,10 @@ export default function ReservationModal({
 
       console.log("SENDING RESERVATION:", reservationData);
 
-      if (formData.reservationType === 'subscription') {
+      if (formData.reservationType === "subscription") {
         const startDate = new Date(formData.date);
         const months = parseInt(formData.subscriptionMonths || "1");
-        
+
         // Calculate the end date based on EXACTLY 4 sessions per month.
         // If there are 4 sessions, the last one is 3 weeks (21 days) after the first one.
         // Formula: (Total Sessions - 1) * 7 days
@@ -326,28 +326,33 @@ export default function ReservationModal({
           start_time: formData.timeSlot,
           end_time: endTime,
           start_date: formData.date,
-          end_date: endDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split("T")[0],
           total_amount: calculateTotal() * 4 * months, // Simple estimation: 4 matches per month
-          payment_method: formData.paymentMethod || "Wave"
+          payment_method: formData.paymentMethod || "Wave",
         };
 
         const newSub = await ReservationService.createSubscription(subData);
-        if (!newSub) throw new Error("Erreur lors de la création de l'abonnement : aucune donnée retournée. Vérifiez vos politiques RLS.");
+        if (!newSub)
+          throw new Error(
+            "Erreur lors de la création de l'abonnement : aucune donnée retournée. Vérifiez vos politiques RLS.",
+          );
 
         // CREATE FIRST RESERVATION ENTRY LINKED TO THIS SUB
-        await supabase.from("reservations").insert([{
-          user_id: user?.id,
-          field_id: stadium.id,
-          date: formData.date,
-          start_time: formData.timeSlot,
-          end_time: endTime,
-          total_price: 0, // Subscription amount is tracked in sub table
-          status: "En attente de paiement",
-          payment_method: formData.paymentMethod || "Wave",
-          client_name: formData.playerName,
-          client_phone: formData.phone,
-          subscription_id: newSub.id // THIS LINKS TO THE NEW SUB
-        }]);
+        await supabase.from("reservations").insert([
+          {
+            user_id: user?.id,
+            field_id: stadium.id,
+            date: formData.date,
+            start_time: formData.timeSlot,
+            end_time: endTime,
+            total_price: 0, // Subscription amount is tracked in sub table
+            status: "En attente de paiement",
+            payment_method: formData.paymentMethod || "Wave",
+            client_name: formData.playerName,
+            client_phone: formData.phone,
+            subscription_id: newSub.id, // THIS LINKS TO THE NEW SUB
+          },
+        ]);
 
         setStep(3);
         return;
@@ -357,7 +362,6 @@ export default function ReservationModal({
         .from("reservations")
         .insert([reservationData])
         .select();
-
 
       if (insertError) {
         console.error("DETAILED INSERT ERROR:", insertError);
@@ -769,7 +773,8 @@ export default function ReservationModal({
                   {/* Type de réservation (Abonnement vs Unique) */}
                   <div className="mt-6">
                     <label className="block text-white text-sm sm:text-base font-semibold mb-2">
-                      Type de réservation <span className="text-red-500">*</span>
+                      Type de réservation{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -861,26 +866,54 @@ export default function ReservationModal({
                             <ul className="text-text-secondary text-xs space-y-1">
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Récurrence : <span className="text-white font-bold">1 match par semaine</span>
+                                Récurrence :{" "}
+                                <span className="text-white font-bold">
+                                  1 match par semaine
+                                </span>
                               </li>
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Total : <span className="text-white font-bold">{parseInt(formData.subscriptionMonths || "1") * 4} séances</span> ({parseInt(formData.subscriptionMonths || "1")} mois)
+                                Total :{" "}
+                                <span className="text-white font-bold">
+                                  {parseInt(
+                                    formData.subscriptionMonths || "1",
+                                  ) * 4}{" "}
+                                  séances
+                                </span>{" "}
+                                ({parseInt(formData.subscriptionMonths || "1")}{" "}
+                                mois)
                               </li>
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Fin de l'abonnement : <span className="text-white font-bold">{
-                                  (() => {
+                                Fin de l'abonnement :{" "}
+                                <span className="text-white font-bold">
+                                  {(() => {
                                     const d = new Date(formData.date);
-                                    const months = parseInt(formData.subscriptionMonths || "1");
-                                    d.setDate(d.getDate() + (months * 4 - 1) * 7);
-                                    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-                                  })()
-                                }</span>
+                                    const months = parseInt(
+                                      formData.subscriptionMonths || "1",
+                                    );
+                                    d.setDate(
+                                      d.getDate() + (months * 4 - 1) * 7,
+                                    );
+                                    return d.toLocaleDateString("fr-FR", {
+                                      day: "numeric",
+                                      month: "long",
+                                      year: "numeric",
+                                    });
+                                  })()}
+                                </span>
                               </li>
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Montant total : <span className="text-primary font-bold">{(calculateTotal() * 4 * parseInt(formData.subscriptionMonths || "1")).toLocaleString()} CFA</span>
+                                Montant total :{" "}
+                                <span className="text-primary font-bold">
+                                  {(
+                                    calculateTotal() *
+                                    4 *
+                                    parseInt(formData.subscriptionMonths || "1")
+                                  ).toLocaleString()}{" "}
+                                  CFA
+                                </span>
                               </li>
                             </ul>
                           </div>
