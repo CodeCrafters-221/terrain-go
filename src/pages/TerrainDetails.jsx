@@ -335,21 +335,20 @@ export default function TerrainDetails() {
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-10 h-[400px] md:h-[480px] rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-10 h-auto md:h-[480px] rounded-2xl overflow-hidden">
           {/* Main Image */}
-          <div className="md:col-span-2 md:row-span-2 relative group cursor-pointer">
+          <div className="col-span-2 md:row-span-2 h-[200px] md:h-auto relative group cursor-pointer">
             <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
               style={{
                 backgroundImage: `url('${terrain.field_images?.[0]?.url_image || "https://placehold.co/600x400?text=No+Image"}')`,
               }}
             ></div>
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
             {user?.id === terrain.proprietaire_id && terrain.field_images?.[0] && (
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                 {/* <button
                   onClick={(e) => { e.stopPropagation(); handleDeleteImage(terrain.field_images[0].url_image); }}
-                  className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg shadow-black/50"
+                  className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg shadow-black/50 pointer-events-auto"
                   title="Supprimer l'image"
                 >
                   <span className="material-symbols-outlined">delete</span>
@@ -361,17 +360,17 @@ export default function TerrainDetails() {
           {terrain.field_images?.slice(1, 4).map((img, idx) => (
             <div
               key={idx}
-              className="relative group cursor-pointer hidden md:block"
+              className="relative group cursor-pointer h-[100px] md:h-auto"
             >
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                 style={{ backgroundImage: `url('${img.url_image}')` }}
               ></div>
               {user?.id === terrain.proprietaire_id && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.url_image); }}
-                    className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg shadow-black/50"
+                    className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg shadow-black/50 pointer-events-auto"
                     title="Supprimer l'image"
                   >
                     <span className="material-symbols-outlined text-sm">delete</span>
@@ -389,7 +388,7 @@ export default function TerrainDetails() {
               <div
                 key={`empty-${idx}`}
                 onClick={handleImageClick}
-                className={`relative group hidden md:flex bg-surface-dark/50 items-center justify-center border border-dashed border-surface-highlight ${user?.id === terrain.proprietaire_id ? "cursor-pointer hover:bg-surface-light/10" : "opacity-50 cursor-not-allowed"}`}
+                className={`relative group flex h-[100px] md:h-auto bg-surface-dark/50 items-center justify-center border border-dashed border-surface-highlight ${user?.id === terrain.proprietaire_id ? "cursor-pointer hover:bg-surface-light/10" : "opacity-50 cursor-not-allowed"}`}
               >
                 {isUploadingImage ? (
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -412,7 +411,7 @@ export default function TerrainDetails() {
           />
 
           {terrain.field_images?.length >= 5 && (
-            <div className="relative group cursor-pointer hidden md:block">
+            <div className="relative group cursor-pointer h-[100px] md:h-auto">
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                 style={{
@@ -425,10 +424,10 @@ export default function TerrainDetails() {
                 </span>
               </div>
               {user?.id === terrain.proprietaire_id && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteImage(terrain.field_images[4].url_image); }}
-                    className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg shadow-black/50"
+                    className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg shadow-black/50 pointer-events-auto"
                     title="Supprimer l'image"
                   >
                     <span className="material-symbols-outlined text-sm">delete</span>
