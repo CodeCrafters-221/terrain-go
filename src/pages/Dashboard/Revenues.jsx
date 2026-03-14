@@ -4,10 +4,11 @@ import { useDashboard } from '../../context/DashboardContext';
 import { toast } from 'react-toastify';
 
 const Revenues = () => {
-    const { reservations, stats, isLoadingReservations } = useDashboard();
+    const { reservations, subscriptions, stats, isLoadingReservations, isLoadingSubscriptions } = useDashboard();
     const [filterStatus, setFilterStatus] = useState('Tous');
+    const [visibleCount, setVisibleCount] = useState(10);
 
-    if (isLoadingReservations) {
+    if (isLoadingReservations || isLoadingSubscriptions) {
         return <div className="h-[400px] flex items-center justify-center text-primary font-bold">Chargement des transactions...</div>;
     }
 
@@ -19,21 +20,46 @@ const Revenues = () => {
         amount: d.revenue
     }));
 
-    const allTransactions = (reservations || []).map(r => ({
-        id: `#${String(r.id).substring(0, 4)}`,
-        date: r.date,
-        client: r.clientName,
-        desc: `Réservation ${r.fieldName}`,
-        method: r.paymentMethod || 'Non spécifié',
-        icon: r.paymentMethod === 'Wave' ? 'account_balance_wallet' : 'smartphone',
-        numericAmount: r.amount || 0,
-        amountText: `+ ${(r.amount || 0).toLocaleString()}`,
-        status: r.status === 'Payé' ? 'Réussi' : (r.status === 'Confirmé' ? 'Réussi' : (r.status === 'Annulé' ? 'Annulé' : 'En attente'))
-    }));
+    const mappedReservations = (reservations || [])
+        .filter(r => r.status !== 'Annulé')
+        .map(r => ({
+            id: `#${String(r.id).substring(0, 4)}`,
+            date: r.date,
+            client: r.clientName,
+            desc: `Match Unique ${r.fieldName}`,
+            method: r.paymentMethod || 'Non spécifié',
+            icon: r.paymentMethod === 'Wave' ? 'account_balance_wallet' : 'smartphone',
+            numericAmount: r.amount || 0,
+            amountText: `+ ${(r.amount || 0).toLocaleString()}`,
+            status: r.status === 'Payé' ? 'Réussi' : (r.status === 'Confirmé' ? 'Réussi' : 'En attente'),
+            isSubscription: false,
+            createdAt: r.createdAt
+        }));
+
+    const mappedSubscriptions = (subscriptions || [])
+        .filter(s => s.status !== 'Annulé')
+        .map(s => ({
+            id: `#${String(s.id).substring(0, 4)}`,
+            date: new Date(s.createdAt).toLocaleDateString('fr-FR'),
+            client: s.clientName,
+            desc: `Abo Mensuel ${s.fieldName}`,
+            method: s.paymentMethod || 'Non spécifié',
+            icon: 'autorenew',
+            numericAmount: s.amount || 0,
+            amountText: `+ ${(s.amount || 0).toLocaleString()}`,
+            status: (s.status === 'Confirmé' || s.status === 'active' || s.status === 'Payé') ? 'Réussi' : 'En attente',
+            isSubscription: true,
+            createdAt: s.createdAt
+        }));
+
+    const allTransactions = [...mappedReservations, ...mappedSubscriptions]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     const filteredTransactions = filterStatus === 'Tous'
         ? allTransactions
         : allTransactions.filter(tx => tx.status === 'Réussi');
+
+    const paginatedTransactions = filteredTransactions.slice(0, visibleCount);
 
     const handleExportCSV = () => {
         if (allTransactions.length === 0) {
@@ -75,7 +101,10 @@ const Revenues = () => {
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <button
-                        onClick={() => setFilterStatus(filterStatus === 'Tous' ? 'Réussi' : 'Tous')}
+                        onClick={() => {
+                            setFilterStatus(filterStatus === 'Tous' ? 'Réussi' : 'Tous');
+                            setVisibleCount(10);
+                        }}
                         className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-full font-bold text-xs md:text-sm transition-all border ${filterStatus === 'Réussi'
                             ? 'bg-[#f27f0d]/10 text-[#f27f0d] border-[#f27f0d]/30'
                             : 'bg-[#493622] text-white border-white/5 hover:bg-white/10'
@@ -92,6 +121,34 @@ const Revenues = () => {
                         <span className="hidden sm:inline">Exporter (CSV)</span>
                         <span className="sm:hidden">Exporter</span>
                     </button>
+                </div>
+            </div>
+
+            {/* Financial Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 shadow-lg">
+                    <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">Revenus Matches</span>
+                    <div className="flex items-end gap-2">
+                        <span className="text-white text-3xl font-black">{(stats.weeklyRevenue || 0).toLocaleString()}</span>
+                        <span className="text-primary text-xs font-bold mb-1">CFA</span>
+                    </div>
+                </div>
+                <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 shadow-lg">
+                    <div className="flex justify-between items-start">
+                        <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">Revenus Abonnements</span>
+                        <span className="bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded font-black">MENSUEL</span>
+                    </div>
+                    <div className="flex items-end gap-2">
+                        <span className="text-white text-3xl font-black">{(stats.subscriptionRevenue || 0).toLocaleString()}</span>
+                        <span className="text-primary text-xs font-bold mb-1">CFA</span>
+                    </div>
+                </div>
+                <div className="bg-[#f27f0d] p-6 rounded-3xl shadow-[0_0_30px_rgba(242,127,13,0.2)] flex flex-col gap-2">
+                    <span className="text-[#231a10] text-xs font-black uppercase tracking-widest">Total Trésorerie</span>
+                    <div className="flex items-end gap-2">
+                        <span className="text-[#231a10] text-3xl font-black">{( (stats.weeklyRevenue || 0) + (stats.subscriptionRevenue || 0) ).toLocaleString()}</span>
+                        <span className="text-[#342618] text-xs font-bold mb-1 uppercase">CFA</span>
+                    </div>
                 </div>
             </div>
 
@@ -157,7 +214,9 @@ const Revenues = () => {
                     <h3 className="text-white text-lg md:text-xl font-bold">Historique des Transactions</h3>
                     <div className="flex items-center gap-2">
                         <span className="size-2 rounded-full bg-[#f27f0d] animate-pulse"></span>
-                        <span className="text-[#cbad90] text-xs md:text-sm font-medium">{filteredTransactions.length} transactions trouvées</span>
+                        <span className="text-[#cbad90] text-xs md:text-sm font-medium">
+                            {paginatedTransactions.length} affichées sur {filteredTransactions.length}
+                        </span>
                     </div>
                 </div>
 
@@ -173,8 +232,8 @@ const Revenues = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#493622]/30">
-                            {filteredTransactions.length > 0 ? (
-                                filteredTransactions.map((tx, i) => (
+                            {paginatedTransactions.length > 0 ? (
+                                paginatedTransactions.map((tx, i) => (
                                     <tr key={i} className="hover:bg-[#493622]/20 transition-all group">
                                         <td className="px-4 md:px-8 py-4 md:py-6">
                                             <div className="flex flex-col">
@@ -185,7 +244,12 @@ const Revenues = () => {
                                         <td className="px-4 md:px-8 py-4 md:py-6">
                                             <div className="flex flex-col">
                                                 <span className="text-white text-xs md:text-sm font-black group-hover:text-[#f27f0d] transition-colors">{tx.client}</span>
-                                                <span className="text-[#cbad90] text-[10px] md:text-xs mt-1 font-medium">{tx.desc}</span>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[#cbad90] text-[10px] md:text-xs font-medium">{tx.desc}</span>
+                                                    {tx.isSubscription && (
+                                                        <span className="bg-primary/10 text-primary text-[8px] px-1.5 py-0.5 rounded font-black uppercase">Abo</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-4 md:px-8 py-4 md:py-6">
@@ -225,12 +289,28 @@ const Revenues = () => {
                     </table>
                 </div>
 
-                <div className="p-6 bg-[#231a10]/40 border-t border-[#493622] flex justify-center">
-                    <button className="text-[#f27f0d] text-xs font-black uppercase tracking-widest hover:tracking-[0.3em] transition-all flex items-center gap-2">
-                        Charger l'historique complet
-                        <span className="material-symbols-outlined text-sm">arrow_downward</span>
-                    </button>
-                </div>
+                {(filteredTransactions.length > visibleCount || visibleCount > 10) && (
+                    <div className="p-6 bg-[#231a10]/40 border-t border-[#493622] flex justify-center gap-6">
+                        {filteredTransactions.length > visibleCount && (
+                            <button
+                                onClick={() => setVisibleCount(prev => prev + 10)}
+                                className="text-[#f27f0d] text-xs font-black uppercase tracking-widest hover:tracking-[0.3em] transition-all flex items-center gap-2"
+                            >
+                                Charger plus
+                                <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                            </button>
+                        )}
+                        {visibleCount > 10 && (
+                            <button
+                                onClick={() => setVisibleCount(10)}
+                                className="text-[#cbad90] hover:text-white text-xs font-black uppercase tracking-widest hover:tracking-[0.3em] transition-all flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined text-sm">arrow_upward</span>
+                                Voir moins
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

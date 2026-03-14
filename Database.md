@@ -18,7 +18,7 @@ erDiagram
     }
 
     TERRAINS {
-        UUID id PK
+        BIGINT id PK
         UUID proprietaire_id FK
         TEXT nom
         TEXT localisation
@@ -51,6 +51,7 @@ erDiagram
         TIME heure_fin
         NUMERIC prix_total
         TEXT statut
+        TEXT reservation_type
         TIMESTAMP date_creation
     }
 

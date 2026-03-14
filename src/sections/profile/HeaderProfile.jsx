@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabaseClient";
 import { toast } from "react-toastify";
+import mainLogo from "../../assets/img/mainLogo.png";
+import { useAuth } from "../../context/AuthContext";
 
 import {
   Trophy,
@@ -18,6 +20,8 @@ import {
 const HeaderProfile = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const defaultAvatar = "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn";
 
   const handleLogout = async () => {
     try {
@@ -35,19 +39,19 @@ const HeaderProfile = () => {
 
   return (
     <>
-      <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-surface-highlight bg-[#231a10] px-4 py-3 lg:px-10  w-full top-0 z-50 transition-all duration-300">
+      <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-surface-highlight bg-[#231a10] px-4 py-3 lg:px-10  w-full top-0 z-50 transition-all duration-300 h-[104px]">
         <div className="flex items-center gap-4 lg:gap-8">
-          <Link
-            to="/"
-            className="flex items-center gap-2 lg:gap-4 text-white group"
-          >
-            <Trophy
-              className="text-primary w-8 h-8 transition-transform group-hover:scale-110"
-              strokeWidth={1.5}
-            />
-
-            <h2 className="text-white text-xl font-bold leading-tight tracking-[-0.015em] hidden sm:block font-display">
-              Footbooking
+          <Link to="/" className="flex items-center gap-3 group border-none">
+            <h2 className="text-2xl font-display font-bold text-white tracking-wide group-hover:text-primary/90 transition-colors">
+              {mainLogo ? (
+                <img
+                  src={mainLogo}
+                  alt="Logo"
+                  className="h-34 object-contain "
+                />
+              ) : (
+                "Footbooking"
+              )}
             </h2>
           </Link>
           {/* Search Bar Desktop */}
@@ -93,7 +97,7 @@ const HeaderProfile = () => {
 
           <button
             onClick={handleLogout}
-            className="text-text-secondary hover:text-white transition-colors"
+            className="hidden lg:flex items-center justify-center text-text-secondary hover:text-white transition-colors"
             title="Se déconnecter"
           >
             <LogOutIcon className="w-5 h-5" />
@@ -158,6 +162,26 @@ const HeaderProfile = () => {
               <Users className="w-6 h-6" />
               Communauté
             </a>
+            <Link
+              className="text-white text-xl font-bold hover:text-primary transition-colors flex items-center gap-4 p-2 w-full text-left"
+              to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <div
+                className="bg-center bg-no-repeat bg-cover rounded-full size-6 border border-white"
+                style={{
+                  backgroundImage: `url("${profile?.image || defaultAvatar}")`,
+                }}
+              ></div>
+              Mon Profil
+            </Link>
+            <button
+              className="text-[#ef4444] text-xl font-bold hover:text-[#dc2626] transition-colors flex items-center gap-4 p-2 w-full text-left"
+              onClick={handleLogout}
+            >
+              <LogOutIcon className="w-6 h-6" />
+              Déconnexion
+            </button>
           </nav>
 
           <button
