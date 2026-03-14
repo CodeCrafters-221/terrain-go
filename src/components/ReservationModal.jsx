@@ -12,13 +12,15 @@ export default function ReservationModal({
   isOpen,
   onClose,
   stadium,
+  initialDate = "",
+  initialTimeSlot = "",
   // user = null,
 }) {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    date: "",
-    timeSlot: "",
+    date: initialDate,
+    timeSlot: initialTimeSlot,
     duration: "1",
     playerName: "",
     phone: "",
@@ -58,8 +60,8 @@ export default function ReservationModal({
     if (isOpen) {
       setFormData((prev) => ({
         ...prev,
-        date: "",
-        timeSlot: "",
+        date: initialDate || "",
+        timeSlot: initialTimeSlot || "",
         duration: "1",
       }));
       setStep(1);

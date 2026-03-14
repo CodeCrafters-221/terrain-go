@@ -282,13 +282,17 @@ export const DashboardProvider = ({ children }) => {
 
       if (fieldError) throw fieldError;
 
-      if (newFieldData.image && fieldData?.id) {
-        await supabase.from("field_images").insert([
-          {
-            terrain_id: fieldData.id,
-            url_image: newFieldData.image,
-          },
-        ]);
+      if (newFieldData.images && newFieldData.images.length > 0 && fieldData?.id) {
+        const imageInserts = newFieldData.images.map(url => ({
+          terrain_id: fieldData.id,
+          url_image: url,
+        }));
+        
+        const { error: imagesError } = await supabase
+          .from("field_images")
+          .insert(imageInserts);
+          
+        if (imagesError) console.error("Error inserting multiple images:", imagesError);
       }
 
       await fetchFields();

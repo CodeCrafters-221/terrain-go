@@ -12,7 +12,7 @@ const initialFormState = {
     price: "",
     description: "",
     hours: "08:00 - 00:00",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnNGA34sSndyAJAfENjmbZRG81TkS1IJSCHEAHafu1htOaj2cazf9VkAzI4xERiSDtxWleAt9uDNrVFcRvfQi2e-ZpTSJYfagli4b3vXbzcv-rH7Q5Hg_1kWirsvM-dr52fv7Qh2gJkNCmn1sXhB7fAXoinUFHJS8fJreTbxZNS322Vr3gPJfaiK-kkfmRlO9tuQrnujBbkoXIQGn-vRNGKl3Nfod6xatgMQk7J7RS2Mq-SVffZwiNQfZH1tY4ghFAAs5v8BYF1w"
+    images: [] // Changed from image to images array
 };
 
 const CreateFieldModal = () => {
@@ -62,33 +62,53 @@ const CreateFieldModal = () => {
     const handleImageChange = async (e) => {
         try {
             setUploading(true);
-            const file = e.target.files[0];
-            if (!file) return;
+            const files = Array.from(e.target.files);
+            if (!files || files.length === 0) return;
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            const uploadedUrls = [];
 
-            const { error: uploadError } = await supabase.storage
-                .from('terrain-images')
-                .upload(filePath, file);
+            for (const file of files) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                const filePath = `${fileName}`;
 
-            if (uploadError) {
-                throw uploadError;
+                const { error: uploadError } = await supabase.storage
+                    .from('terrain-images')
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    console.error("Upload error for file", file.name, uploadError);
+                    toast.error(`Erreur pour ${file.name}`);
+                    continue; // Skip failed uploads but continue other files
+                }
+
+                const { data } = supabase.storage
+                    .from('terrain-images')
+                    .getPublicUrl(filePath);
+
+                uploadedUrls.push(data.publicUrl);
             }
 
-            const { data } = supabase.storage
-                .from('terrain-images')
-                .getPublicUrl(filePath);
-
-            setFormData({ ...formData, image: data.publicUrl });
-            toast.success("Image téléchargée !");
+            setFormData(prev => ({ 
+                ...prev, 
+                images: [...prev.images, ...uploadedUrls] 
+            }));
+            toast.success(`${uploadedUrls.length} image(s) téléchargée(s) !`);
         } catch (error) {
             console.error(error);
-            toast.error("Erreur lors du téléchargement de l'image");
+            toast.error("Erreur lors du téléchargement des images");
         } finally {
             setUploading(false);
+            // Reset input so same file can be selected again if needed
+            e.target.value = null;
         }
+    };
+
+    const removeImage = (indexToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter((_, index) => index !== indexToRemove)
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -250,15 +270,37 @@ const CreateFieldModal = () => {
 
                         {/* Image Upload */}
                         <div>
-                            <label htmlFor="image" className={labelClasses}>Photo du terrain</label>
+                            <label htmlFor="image" className={labelClasses}>Photos du terrain (Plusieurs possibles)</label>
                             <input
                                 type="file"
                                 id="image"
                                 accept="image/*"
+                                multiple
                                 onChange={handleImageChange}
                                 className="w-full text-[#cbad90] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f27f0d] file:text-[#231a10] hover:file:bg-[#d9720b] cursor-pointer"
                             />
-                            {uploading && <p className="text-sm text-[#cbad90] mt-2">Téléchargement de l'image...</p>}
+                            {uploading && <p className="text-sm text-[#cbad90] mt-2">Téléchargement en cours...</p>}
+                            
+                            {/* Image Preview Grid */}
+                            {formData.images && formData.images.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
+                                    {formData.images.map((url, idx) => (
+                                        <div key={idx} className="relative group aspect-video rounded-lg overflow-hidden border border-[#493622]">
+                                            <img src={url} alt={`preview ${idx}`} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(idx)}
+                                                    className="bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                                                    title="Supprimer l'image"
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* ═══ SECTION DISPONIBILITÉS ═══ */}

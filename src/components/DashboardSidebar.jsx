@@ -66,6 +66,8 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
               <NavItem to="/dashboard/abonnements" icon="autorenew" label="Mes Abonnements" onClick={onClose} />
               <NavItem to="/dashboard/stats" icon="bar_chart" label="Statistiques" onClick={onClose} />
               <NavItem to="/dashboard/revenues" icon="payments" label="Revenus" onClick={onClose} />
+              <div className="h-px bg-[#493622] my-2" />
+              <NavItem to="/" icon="public" label="Retour au site" onClick={onClose} />
             </nav>
           </div>
 

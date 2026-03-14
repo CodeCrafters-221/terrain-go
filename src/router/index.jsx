@@ -81,8 +81,6 @@ export const router = createBrowserRouter([
       </OwnerRedirect>
     ),
     children: [
-      { path: "/", element: <Home /> },
-
       {
         path: "/compte",
         element: (
@@ -92,13 +90,19 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      {
-        path: "/terrain-details/:id",
-        element: <TerrainDetails />,
-      },
+    ],
+  },
+  {
+    element: <AppLayout />,
+    children: [
+      { path: "/", element: <Home /> },
       {
         path: "/search",
         element: <SearchPage />,
+      },
+      {
+        path: "/terrain-details/:id",
+        element: <TerrainDetails />,
       },
     ],
   },
