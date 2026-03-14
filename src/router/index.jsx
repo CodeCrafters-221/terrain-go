@@ -22,6 +22,7 @@ import Revenues from "../pages/Dashboard/Revenues";
 import CreateFieldPage from "../pages/Dashboard/CreateFieldPage";
 import EditFieldPage from "../pages/Dashboard/EditFieldPage";
 import Settings from "../pages/Dashboard/Settings";
+import MySubscriptions from "../pages/Dashboard/MySubscriptions";
 import Owners from "../pages/Owners";
 
 import OwnerRedirect from "../components/OwnerRedirect";
@@ -46,6 +47,10 @@ export const router = createBrowserRouter([
       {
         path: "reservations",
         element: <MyReservations />,
+      },
+      {
+        path: "abonnements",
+        element: <MySubscriptions />,
       },
       {
         path: "stats",

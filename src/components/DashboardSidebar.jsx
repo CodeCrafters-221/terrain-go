@@ -63,6 +63,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
               <NavItem to="/dashboard" icon="dashboard" label="Tableau de bord" end onClick={onClose} />
               <NavItem to="/dashboard/terrains" icon="stadium" label="Mes Terrains" onClick={onClose} />
               <NavItem to="/dashboard/reservations" icon="calendar_month" label="Mes Réservations" onClick={onClose} />
+              <NavItem to="/dashboard/abonnements" icon="autorenew" label="Mes Abonnements" onClick={onClose} />
               <NavItem to="/dashboard/stats" icon="bar_chart" label="Statistiques" onClick={onClose} />
               <NavItem to="/dashboard/revenues" icon="payments" label="Revenus" onClick={onClose} />
             </nav>

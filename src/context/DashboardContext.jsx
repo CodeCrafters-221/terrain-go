@@ -11,8 +11,10 @@ export const DashboardProvider = ({ children }) => {
   const { user } = useAuth();
   const [fields, setFields] = useState([]);
   const [reservations, setReservations] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
-  const [isLoadingReservations, setIsLoadingReservations] = useState(false);
+  const [isLoadingReservations, setIsLoadingReservations] = useState(true);
+  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -64,10 +66,10 @@ export const DashboardProvider = ({ children }) => {
   };
 
   // --- NOTIFICATIONS ---
-  const processNotifications = (reservs) => {
-    const activeNotifs = reservs
+  const processNotifications = (reservs, subs = []) => {
+    const resNotifs = reservs
       .filter(
-        (r) => r.status === "En attente de paiement" || r.status === "Payé",
+        (r) => r.status === "En attente de paiement",
       )
       .map((r) => ({
         id: r.id,
@@ -79,6 +81,21 @@ export const DashboardProvider = ({ children }) => {
         type: "reservation",
         original: r,
       }));
+
+    const subNotifs = subs
+      .filter(s => s.status === 'En attente de paiement')
+      .map(s => ({
+        id: s.id,
+        title: "Nouvel Abonnement",
+        message: `${s.clientName} s'est abonné à ${s.fieldName}`,
+        time: s.time,
+        date: "Hebdomadaire",
+        status: s.status,
+        type: "subscription",
+        original: s,
+      }));
+
+    const activeNotifs = [...resNotifs, ...subNotifs].sort((a,b) => new Date(b.original.createdAt) - new Date(a.original.createdAt));
 
     setNotifications(activeNotifs);
     setUnreadCount(activeNotifs.length);
@@ -122,17 +139,20 @@ export const DashboardProvider = ({ children }) => {
             month: "short",
             year: "numeric",
           }),
+          originalDate: r.date, // ISO string 'YYYY-MM-DD'
           time: `${(r.start_time || "").substring(0, 5)} - ${(r.end_time || "").substring(0, 5)}`,
           status: r.status,
-          amount: r.total_price,
+          amount: r.total_price || 0,
           paymentMethod: r.payment_method || "Non spécifié",
           initials,
           createdAt: r.created_at,
+          reservationType: r.subscription_id ? 'subscription' : 'single',
+          subscriptionId: r.subscription_id
         };
       });
 
       setReservations(mappedReservations);
-      processNotifications(mappedReservations);
+      processNotifications(mappedReservations, subscriptions);
     } catch (error) {
       console.error("Error fetching reservations:", error.message);
     } finally {
@@ -140,12 +160,61 @@ export const DashboardProvider = ({ children }) => {
     }
   };
 
+  const fetchSubscriptions = async () => {
+    if (!user) return;
+    setIsLoadingSubscriptions(true);
+    try {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select(`
+          *,
+          fields!inner (name, proprietaire_id)
+        `)
+        .eq("fields.proprietaire_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const mappedSubscriptions = data.map((s) => {
+        const clientName = s.client_name || "Client Inconnu";
+        const initials = clientName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+        return {
+          id: s.id,
+          clientName,
+          clientPhone: s.client_phone || "-",
+          fieldId: s.field_id,
+          fieldName: s.fields?.name || "Terrain inconnu",
+          dayOfWeek: s.day_of_week,
+          time: `${(s.start_time || "").substring(0, 5)} - ${(s.end_time || "").substring(0, 5)}`,
+          startDate: s.start_date,
+          endDate: s.end_date,
+          status: s.status,
+          amount: s.total_amount || 0,
+          paymentMethod: s.payment_method || "Non spécifié",
+          initials,
+          createdAt: s.created_at,
+          reservationType: 'subscription',
+        };
+      });
+
+      setSubscriptions(mappedSubscriptions);
+      processNotifications(reservations, mappedSubscriptions);
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error.message);
+    } finally {
+      setIsLoadingSubscriptions(false);
+    }
+  };
+
   // --- REALTIME SUBSCRIPTION ---
   useEffect(() => {
     if (!user) return;
 
-    const subscription = supabase
-      .channel("reservations-owner-changes")
+    fetchReservations();
+    fetchSubscriptions();
+
+    const channel = supabase
+      .channel("dashboard-changes")
       .on(
         "postgres_changes",
         {
@@ -154,24 +223,39 @@ export const DashboardProvider = ({ children }) => {
           table: "reservations",
         },
         async (payload) => {
-          console.log("Realtime change detected:", payload);
+          console.log("Realtime change detected for reservations:", payload);
           await fetchReservations();
           if (payload.eventType === "INSERT") {
             toast.info("Une nouvelle réservation vient d'arriver !");
           }
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "subscriptions",
+        },
+        async (payload) => {
+          console.log("Realtime change detected for subscriptions:", payload);
+          await fetchSubscriptions();
+          if (payload.eventType === "INSERT") {
+            toast.info("Un nouvel abonnement vient d'être créé !");
+          }
+        },
+      )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(channel);
     };
   }, [user]);
 
   useEffect(() => {
     if (user) {
       fetchFields();
-      fetchReservations();
+      // fetchReservations() and fetchSubscriptions() are now called in the realtime useEffect
     }
   }, [user]);
 
@@ -241,7 +325,7 @@ export const DashboardProvider = ({ children }) => {
       if (updatedAttributes.type) dbPayload.pelouse = updatedAttributes.type;
       if (updatedAttributes.hours)
         dbPayload.opening_hours = updatedAttributes.hours;
-      if (numericPrice !== undefined) dbPayload.price = numericPrice;
+      if (numericPrice !== undefined) dbPayload.price_per_hour = numericPrice; // Corrected field name
 
       const { error } = await supabase
         .from("fields")
@@ -294,6 +378,43 @@ export const DashboardProvider = ({ children }) => {
     }
   };
 
+  const updateSubscriptionStatus = async (id, status) => {
+    try {
+      console.log(`Updating subscription ${id} to status: ${status}`);
+      // 1. Update the subscription itself
+      const { data, error: subError } = await supabase
+        .from("subscriptions")
+        .update({ status: status })
+        .eq("id", id)
+        .select();
+
+      if (subError) {
+        console.error("Supabase error (sub):", subError);
+        throw subError;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error("Mise à jour refusée par la base de données (Vérifiez vos RLS).");
+      }
+
+      // 2. Proactively update the status of all linked reservations
+      const { error: resError } = await supabase
+        .from("reservations")
+        .update({ status: status === 'Confirmé' ? 'Confirmé' : (status === 'Annulé' ? 'Annulé' : status) })
+        .eq("subscription_id", id);
+      
+      if (resError) console.warn("Failed to update linked reservations:", resError.message);
+
+      await fetchSubscriptions();
+      await fetchReservations();
+      return true;
+    } catch (error) {
+      console.error("Error updating subscription status:", error.message);
+      toast.error(`Erreur : ${error.message}`);
+      throw error;
+    }
+  };
+
   const addManualReservation = async (data) => {
     try {
       const { error } = await supabase.from("reservations").insert({
@@ -303,6 +424,7 @@ export const DashboardProvider = ({ children }) => {
         end_time: data.endTime,
         total_price: data.amount || 0,
         status: "Confirmé",
+        reservation_type: data.reservationType || "single",
       });
 
       if (error) throw error;
@@ -336,6 +458,9 @@ export const DashboardProvider = ({ children }) => {
   // --- STATS & DATA PROCESSING ---
   const getStats = () => {
     const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // For weekly charts
     const startOfWeek = new Date(now);
     startOfWeek.setDate(
       now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1),
@@ -346,14 +471,10 @@ export const DashboardProvider = ({ children }) => {
     const attendanceData = days.map((day, index) => {
       const dayDate = new Date(startOfWeek);
       dayDate.setDate(startOfWeek.getDate() + index);
-      const dateStr = dayDate.toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      const dateStrIso = dayDate.toISOString().split('T')[0];
 
       const count = reservations.filter(
-        (r) => r.date === dateStr && r.status !== "Annulé",
+        (r) => r.originalDate === dateStrIso && r.status !== "Annulé",
       ).length;
 
       return { name: day, players: count * 10 };
@@ -366,13 +487,13 @@ export const DashboardProvider = ({ children }) => {
       end.setDate(now.getDate() - (weeksAgo - 1) * 7);
 
       const weeklyTotal = reservations.reduce((acc, r) => {
-        const rDate = new Date(r.date.split(" ").reverse().join("-"));
+        const rDate = new Date(r.originalDate);
         if (
           rDate >= start &&
           rDate < end &&
           (r.status === "Payé" || r.status === "Confirmé")
         ) {
-          return acc + (r.amount || 0);
+          return acc + Number(r.amount || 0);
         }
         return acc;
       }, 0);
@@ -382,7 +503,7 @@ export const DashboardProvider = ({ children }) => {
 
     const distribution = fields
       .map((f) => {
-        const count = reservations.filter((r) => r.fieldId === f.id).length;
+        const count = reservations.filter((r) => r.fieldId === f.id && r.status !== "Annulé").length;
         return { name: f.name, value: count };
       })
       .filter((d) => d.value > 0);
@@ -395,21 +516,56 @@ export const DashboardProvider = ({ children }) => {
       return { hour: h, count: count };
     });
 
+    const todayStr = now.toISOString().split('T')[0];
+    const todayObj = new Date(todayStr);
+
+    const activeReservationsCount = reservations.filter(
+      (r) =>
+        new Date(r.originalDate) >= todayObj &&
+        r.status !== "Annulé"
+    ).length;
+
+    const monthlyRevenue = reservations.reduce(
+      (acc, curr) => {
+        const rDate = new Date(curr.originalDate);
+        return acc + (
+          rDate >= startOfMonth && (curr.status === "Payé" || curr.status === "Confirmé")
+            ? Number(curr.amount || 0)
+            : 0
+        );
+      },
+      0,
+    );
+
+    const monthlyRevenueSubscriptions = subscriptions.reduce(
+        (acc, curr) => {
+          const sDate = new Date(curr.createdAt);
+          const isConfirmed = ['Confirmé', 'active', 'Payé', 'En attente de paiement'].includes(curr.status); // Adjusted to include all revenue-generating statuses
+          return acc + (
+            sDate >= startOfMonth && isConfirmed
+              ? Number(curr.amount || 0)
+              : 0
+          );
+        },
+        0,
+      );
+
+    const uniqueClientsCount = new Set(
+      reservations
+        .filter(r => r.status !== "Annulé")
+        .map(r => r.clientName)
+        .concat(subscriptions.map(s => s.clientName)) // Include clients from subscriptions
+    ).size;
+
     return {
       totalFields: fields.length,
-      activeReservations: reservations.filter((r) => r.status !== "Annulé")
-        .length,
-      weeklyRevenue: reservations.reduce(
-        (acc, curr) =>
-          acc +
-          (curr.status === "Payé" || curr.status === "Confirmé"
-            ? curr.amount
-            : 0),
-        0,
-      ),
+      activeReservations: activeReservationsCount,
+      weeklyRevenue: monthlyRevenue, // Matching the existing key to avoid breaking Statistics.jsx
+      totalClients: uniqueClientsCount,
+      subscriptionRevenue: monthlyRevenueSubscriptions, // Added new metric
       occupancyRate:
         fields.length > 0
-          ? `${Math.min(100, Math.round((reservations.length / (fields.length * 5)) * 100))}%`
+          ? `${Math.min(100, Math.round((activeReservationsCount / (fields.length * 5)) * 100))}%`
           : "0%",
       attendanceData,
       weeklyRevenueData,
@@ -457,6 +613,7 @@ export const DashboardProvider = ({ children }) => {
   const Value = {
     fields,
     reservations,
+    subscriptions,
     stats,
     notifications,
     unreadCount,
@@ -464,6 +621,7 @@ export const DashboardProvider = ({ children }) => {
     toggleArchiveReservation,
     isLoadingFields,
     isLoadingReservations,
+    isLoadingSubscriptions,
     isCreateModalOpen,
     openCreateModal,
     closeCreateModal,
@@ -475,6 +633,7 @@ export const DashboardProvider = ({ children }) => {
     deleteField,
     updateField,
     updateReservationStatus,
+    updateSubscriptionStatus,
     addManualReservation,
     toggleFieldStatus,
     fetchFields,

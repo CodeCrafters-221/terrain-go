@@ -4,6 +4,7 @@ import { MapPin, X, Star, Lock, LogIn, UserPlus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import { AvailabilityService } from "../services/AvailabilityService";
+import { ReservationService } from "../services/ReservationService";
 import { toast } from "react-toastify";
 import { CheckCircle2, Download } from "lucide-react";
 
@@ -23,6 +24,8 @@ export default function ReservationModal({
     phone: "",
     email: "",
     paymentMethod: "Wave",
+    reservationType: "single", // match unique par défaut
+    subscriptionMonths: "1", // Added default 1 month
   });
   const [step, setStep] = useState(1); // 1: Info, 2: Payment
   const [ownerProfile, setOwnerProfile] = useState(null);
@@ -296,14 +299,63 @@ export default function ReservationModal({
         payment_method: formData.paymentMethod || "Wave",
         client_name: formData.playerName,
         client_phone: formData.phone,
+        reservation_type: formData.reservationType || "single",
       };
 
       console.log("SENDING RESERVATION:", reservationData);
+
+      if (formData.reservationType === 'subscription') {
+        const startDate = new Date(formData.date);
+        const months = parseInt(formData.subscriptionMonths || "1");
+        
+        // Calculate the end date based on EXACTLY 4 sessions per month.
+        // If there are 4 sessions, the last one is 3 weeks (21 days) after the first one.
+        // Formula: (Total Sessions - 1) * 7 days
+        const totalSessions = months * 4;
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + (totalSessions - 1) * 7);
+
+        const subData = {
+          user_id: user?.id,
+          field_id: stadium.id,
+          client_name: formData.playerName,
+          client_phone: formData.phone,
+          day_of_week: startDate.getDay(),
+          start_time: formData.timeSlot,
+          end_time: endTime,
+          start_date: formData.date,
+          end_date: endDate.toISOString().split('T')[0],
+          total_amount: calculateTotal() * 4 * months, // Simple estimation: 4 matches per month
+          payment_method: formData.paymentMethod || "Wave"
+        };
+
+        const newSub = await ReservationService.createSubscription(subData);
+        if (!newSub) throw new Error("Erreur lors de la création de l'abonnement : aucune donnée retournée. Vérifiez vos politiques RLS.");
+
+        // CREATE FIRST RESERVATION ENTRY LINKED TO THIS SUB
+        await supabase.from("reservations").insert([{
+          user_id: user?.id,
+          field_id: stadium.id,
+          date: formData.date,
+          start_time: formData.timeSlot,
+          end_time: endTime,
+          total_price: 0, // Subscription amount is tracked in sub table
+          status: "En attente de paiement",
+          payment_method: formData.paymentMethod || "Wave",
+          client_name: formData.playerName,
+          client_phone: formData.phone,
+          subscription_id: newSub.id // THIS LINKS TO THE NEW SUB
+        }]);
+
+        setStep(3);
+        return;
+      }
 
       const { data: insertedData, error: insertError } = await supabase
         .from("reservations")
         .insert([reservationData])
         .select();
+
 
       if (insertError) {
         console.error("DETAILED INSERT ERROR:", insertError);
@@ -707,6 +759,129 @@ export default function ReservationModal({
                               formData.duration,
                             )}
                           </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Type de réservation (Abonnement vs Unique) */}
+                  <div className="mt-6">
+                    <label className="block text-white text-sm sm:text-base font-semibold mb-2">
+                      Type de réservation <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            reservationType: "single",
+                          }))
+                        }
+                        className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all border ${
+                          formData.reservationType === "single"
+                            ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)]"
+                            : "bg-[#342618] text-[#cbad90] border-[#493622] hover:border-primary/30"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-lg">
+                          calendar_today
+                        </span>
+                        Match Unique
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            reservationType: "subscription",
+                          }))
+                        }
+                        className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all border ${
+                          formData.reservationType === "subscription"
+                            ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)]"
+                            : "bg-[#342618] text-[#cbad90] border-[#493622] hover:border-primary/30"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-lg">
+                          autorenew
+                        </span>
+                        Abonnement
+                      </button>
+                    </div>
+
+                    {/* Durée de l'abonnement */}
+                    {formData.reservationType === "subscription" && (
+                      <div className="mt-4 animate-fade-in">
+                        <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-3">
+                          Durée de l'abonnement
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[
+                            { label: "1 Mois", value: "1" },
+                            { label: "3 Mois", value: "3" },
+                            { label: "4 Mois", value: "4" },
+                            { label: "5 Mois", value: "5" },
+                            { label: "6 Mois", value: "6" },
+                            { label: "12 Mois", value: "12" },
+                          ].map((month) => (
+                            <button
+                              key={month.value}
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  subscriptionMonths: month.value,
+                                }))
+                              }
+                              className={`py-2 rounded-lg text-xs font-black transition-all border ${
+                                formData.subscriptionMonths === month.value
+                                  ? "bg-primary/20 text-primary border-primary"
+                                  : "bg-[#2c241b] text-[#cbad90] border-[#493622]"
+                              }`}
+                            >
+                              {month.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {formData.reservationType === "subscription" && (
+                      <div className="mt-3 p-4 bg-primary/10 rounded-2xl border border-primary/30 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-start gap-3">
+                          <span className="material-symbols-outlined text-primary text-xl">
+                            info
+                          </span>
+                          <div className="flex-1">
+                            <p className="text-white text-sm font-bold mb-1">
+                              Récapitulatif de l'abonnement
+                            </p>
+                            <ul className="text-[#cbad90] text-xs space-y-1">
+                              <li className="flex items-center gap-2">
+                                <span className="size-1 rounded-full bg-primary"></span>
+                                Récurrence : <span className="text-white font-bold">1 match par semaine</span>
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <span className="size-1 rounded-full bg-primary"></span>
+                                Total : <span className="text-white font-bold">{parseInt(formData.subscriptionMonths || "1") * 4} séances</span> ({parseInt(formData.subscriptionMonths || "1")} mois)
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <span className="size-1 rounded-full bg-primary"></span>
+                                Fin de l'abonnement : <span className="text-white font-bold">{
+                                  (() => {
+                                    const d = new Date(formData.date);
+                                    const months = parseInt(formData.subscriptionMonths || "1");
+                                    d.setDate(d.getDate() + (months * 4 - 1) * 7);
+                                    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                                  })()
+                                }</span>
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <span className="size-1 rounded-full bg-primary"></span>
+                                Montant total : <span className="text-primary font-bold">{(calculateTotal() * 4 * parseInt(formData.subscriptionMonths || "1")).toLocaleString()} CFA</span>
+                              </li>
+                            </ul>
+                          </div>
                         </div>
                       </div>
                     )}
