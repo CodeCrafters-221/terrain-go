@@ -19,7 +19,7 @@ const NavSearch = () => {
   return (
     <>
       <header className="fixed w-full top-0 z-[200] bg-background-dark/95 backdrop-blur-md border-b border-surface-highlight px-4 lg:px-10 py-3 transition-all duration-300">
-        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4 h-20">
           <Link to="/" className="flex items-center gap-3 group">
             <h2 className="text-2xl font-display font-bold text-white tracking-wide group-hover:text-primary/90 transition-colors">
               {mainLogo ? (
@@ -80,7 +80,7 @@ const NavSearch = () => {
 
           <div className="flex items-center gap-4">
             {user ? (
-              <Link to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}>
+              <Link className="hidden md:block" to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}>
                 <div
                   className="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-surface-highlight hover:border-primary transition-colors cursor-pointer"
                   style={{
@@ -167,7 +167,21 @@ const NavSearch = () => {
               </Link>
             )}
 
-            {!user && (
+            {user ? (
+              <Link
+                to={profile?.role === "owner" ? "/dashboard/compte" : "/compte"}
+                className="w-full flex items-center justify-center gap-3 p-4 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-white text-lg font-bold rounded-xl mt-4 active:scale-95 transition-all"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <div
+                  className="bg-center bg-no-repeat bg-cover rounded-full size-8 border-2 border-primary"
+                  style={{
+                    backgroundImage: `url("${profile?.image || defaultAvatar}")`,
+                  }}
+                ></div>
+                Mon Profil
+              </Link>
+            ) : (
               <Link
                 to="/login"
                 className="w-full flex items-center justify-center h-14 bg-primary text-background-dark text-lg font-bold rounded-xl shadow-xl shadow-primary/20 mt-4 active:scale-95 transition-transform"
