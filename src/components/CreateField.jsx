@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
 export default function CreateField() {
-  const { profile } = useAuth();
+  const { profile } = useAuth(); 
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
