@@ -68,9 +68,7 @@ export const DashboardProvider = ({ children }) => {
   // --- NOTIFICATIONS ---
   const processNotifications = (reservs, subs = []) => {
     const resNotifs = reservs
-      .filter(
-        (r) => r.status === "En attente de paiement",
-      )
+      .filter((r) => r.status === "En attente de paiement")
       .map((r) => ({
         id: r.id,
         title: "Nouvelle réservation",
@@ -83,8 +81,8 @@ export const DashboardProvider = ({ children }) => {
       }));
 
     const subNotifs = subs
-      .filter(s => s.status === 'En attente de paiement')
-      .map(s => ({
+      .filter((s) => s.status === "En attente de paiement")
+      .map((s) => ({
         id: s.id,
         title: "Nouvel Abonnement",
         message: `${s.clientName} s'est abonné à ${s.fieldName}`,
@@ -95,7 +93,9 @@ export const DashboardProvider = ({ children }) => {
         original: s,
       }));
 
-    const activeNotifs = [...resNotifs, ...subNotifs].sort((a,b) => new Date(b.original.createdAt) - new Date(a.original.createdAt));
+    const activeNotifs = [...resNotifs, ...subNotifs].sort(
+      (a, b) => new Date(b.original.createdAt) - new Date(a.original.createdAt),
+    );
 
     setNotifications(activeNotifs);
     setUnreadCount(activeNotifs.length);
@@ -146,8 +146,8 @@ export const DashboardProvider = ({ children }) => {
           paymentMethod: r.payment_method || "Non spécifié",
           initials,
           createdAt: r.created_at,
-          reservationType: r.subscription_id ? 'subscription' : 'single',
-          subscriptionId: r.subscription_id
+          reservationType: r.subscription_id ? "subscription" : "single",
+          subscriptionId: r.subscription_id,
         };
       });
 
@@ -166,10 +166,12 @@ export const DashboardProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select(`
+        .select(
+          `
           *,
           fields!inner (name, proprietaire_id)
-        `)
+        `,
+        )
         .eq("fields.proprietaire_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -177,7 +179,12 @@ export const DashboardProvider = ({ children }) => {
 
       const mappedSubscriptions = data.map((s) => {
         const clientName = s.client_name || "Client Inconnu";
-        const initials = clientName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+        const initials = clientName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
         return {
           id: s.id,
           clientName,
@@ -193,7 +200,7 @@ export const DashboardProvider = ({ children }) => {
           paymentMethod: s.payment_method || "Non spécifié",
           initials,
           createdAt: s.created_at,
-          reservationType: 'subscription',
+          reservationType: "subscription",
         };
       });
 
@@ -282,17 +289,22 @@ export const DashboardProvider = ({ children }) => {
 
       if (fieldError) throw fieldError;
 
-      if (newFieldData.images && newFieldData.images.length > 0 && fieldData?.id) {
-        const imageInserts = newFieldData.images.map(url => ({
+      if (
+        newFieldData.images &&
+        newFieldData.images.length > 0 &&
+        fieldData?.id
+      ) {
+        const imageInserts = newFieldData.images.map((url) => ({
           terrain_id: fieldData.id,
           url_image: url,
         }));
-        
+
         const { error: imagesError } = await supabase
           .from("field_images")
           .insert(imageInserts);
-          
-        if (imagesError) console.error("Error inserting multiple images:", imagesError);
+
+        if (imagesError)
+          console.error("Error inserting multiple images:", imagesError);
       }
 
       await fetchFields();
@@ -305,12 +317,42 @@ export const DashboardProvider = ({ children }) => {
 
   const deleteField = async (id) => {
     try {
-      await supabase.from("field_images").delete().eq("terrain_id", id);
+      // 1. Clean up linked data (Foreign Key dependencies)
+      // We use both field_id and terrain_id in different tables to be safe
+      const cleanups = [
+        { table: "field_images", col: "terrain_id" },
+        { table: "field_images", col: "field_id" }, // Added to match inconsistent column names
+        { table: "disponibilite", col: "field_id" },
+        { table: "reservations", col: "field_id" },
+        { table: "subscriptions", col: "field_id" },
+        { table: "avis", col: "terrain_id" }
+      ];
+
+      for (const cleanup of cleanups) {
+        const { error: cleanupError } = await supabase
+          .from(cleanup.table)
+          .delete()
+          .eq(cleanup.col, id);
+        
+        if (cleanupError) {
+          console.warn(`Warning deleting from ${cleanup.table}:`, cleanupError.message);
+          // We don't throw here to try to delete as much as possible
+        }
+      }
+
+      // 2. Finally delete the field
       const { error } = await supabase.from("fields").delete().eq("id", id);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error deleting field:", error.message);
+        toast.error(`Impossible de supprimer le terrain : ${error.message}. Il reste peut-être des données liées que vous n'avez pas le droit de supprimer.`);
+        throw error;
+      }
+      
       setFields(fields.filter((f) => f.id !== id));
+      toast.success("Terrain supprimé avec succès !");
     } catch (error) {
-      console.error("Error deleting field:", error.message);
+      console.error("Delete operation failed:", error);
       throw error;
     }
   };
@@ -337,7 +379,7 @@ export const DashboardProvider = ({ children }) => {
         .eq("id", id);
       if (error) throw error;
 
-      if (updatedAttributes.image) {
+      if (updatedAttributes.image && !updatedAttributes.skipImageUpdate) {
         await supabase.from("field_images").delete().eq("terrain_id", id);
         await supabase
           .from("field_images")
@@ -398,16 +440,26 @@ export const DashboardProvider = ({ children }) => {
       }
 
       if (!data || data.length === 0) {
-        throw new Error("Mise à jour refusée par la base de données (Vérifiez vos RLS).");
+        throw new Error(
+          "Mise à jour refusée par la base de données (Vérifiez vos RLS).",
+        );
       }
 
       // 2. Proactively update the status of all linked reservations
       const { error: resError } = await supabase
         .from("reservations")
-        .update({ status: status === 'Confirmé' ? 'Confirmé' : (status === 'Annulé' ? 'Annulé' : status) })
+        .update({
+          status:
+            status === "Confirmé"
+              ? "Confirmé"
+              : status === "Annulé"
+                ? "Annulé"
+                : status,
+        })
         .eq("subscription_id", id);
-      
-      if (resError) console.warn("Failed to update linked reservations:", resError.message);
+
+      if (resError)
+        console.warn("Failed to update linked reservations:", resError.message);
 
       await fetchSubscriptions();
       await fetchReservations();
@@ -475,7 +527,7 @@ export const DashboardProvider = ({ children }) => {
     const attendanceData = days.map((day, index) => {
       const dayDate = new Date(startOfWeek);
       dayDate.setDate(startOfWeek.getDate() + index);
-      const dateStrIso = dayDate.toISOString().split('T')[0];
+      const dateStrIso = dayDate.toISOString().split("T")[0];
 
       const count = reservations.filter(
         (r) => r.originalDate === dateStrIso && r.status !== "Annulé",
@@ -507,7 +559,9 @@ export const DashboardProvider = ({ children }) => {
 
     const distribution = fields
       .map((f) => {
-        const count = reservations.filter((r) => r.fieldId === f.id && r.status !== "Annulé").length;
+        const count = reservations.filter(
+          (r) => r.fieldId === f.id && r.status !== "Annulé",
+        ).length;
         return { name: f.name, value: count };
       })
       .filter((d) => d.value > 0);
@@ -520,45 +574,43 @@ export const DashboardProvider = ({ children }) => {
       return { hour: h, count: count };
     });
 
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = now.toISOString().split("T")[0];
     const todayObj = new Date(todayStr);
 
     const activeReservationsCount = reservations.filter(
-      (r) =>
-        new Date(r.originalDate) >= todayObj &&
-        r.status !== "Annulé"
+      (r) => new Date(r.originalDate) >= todayObj && r.status !== "Annulé",
     ).length;
 
-    const monthlyRevenue = reservations.reduce(
-      (acc, curr) => {
-        const rDate = new Date(curr.originalDate);
-        return acc + (
-          rDate >= startOfMonth && (curr.status === "Payé" || curr.status === "Confirmé")
-            ? Number(curr.amount || 0)
-            : 0
-        );
-      },
-      0,
-    );
-
-    const monthlyRevenueSubscriptions = subscriptions.reduce(
-        (acc, curr) => {
-          const sDate = new Date(curr.createdAt);
-          const isConfirmed = ['Confirmé', 'active', 'Payé', 'En attente de paiement'].includes(curr.status); // Adjusted to include all revenue-generating statuses
-          return acc + (
-            sDate >= startOfMonth && isConfirmed
-              ? Number(curr.amount || 0)
-              : 0
-          );
-        },
-        0,
+    const monthlyRevenue = reservations.reduce((acc, curr) => {
+      const rDate = new Date(curr.originalDate);
+      return (
+        acc +
+        (rDate >= startOfMonth &&
+        (curr.status === "Payé" || curr.status === "Confirmé")
+          ? Number(curr.amount || 0)
+          : 0)
       );
+    }, 0);
+
+    const monthlyRevenueSubscriptions = subscriptions.reduce((acc, curr) => {
+      const sDate = new Date(curr.createdAt);
+      const isConfirmed = [
+        "Confirmé",
+        "active",
+        "Payé",
+        "En attente de paiement",
+      ].includes(curr.status); // Adjusted to include all revenue-generating statuses
+      return (
+        acc +
+        (sDate >= startOfMonth && isConfirmed ? Number(curr.amount || 0) : 0)
+      );
+    }, 0);
 
     const uniqueClientsCount = new Set(
       reservations
-        .filter(r => r.status !== "Annulé")
-        .map(r => r.clientName)
-        .concat(subscriptions.map(s => s.clientName)) // Include clients from subscriptions
+        .filter((r) => r.status !== "Annulé")
+        .map((r) => r.clientName)
+        .concat(subscriptions.map((s) => s.clientName)), // Include clients from subscriptions
     ).size;
 
     return {
@@ -612,6 +664,80 @@ export const DashboardProvider = ({ children }) => {
     });
   };
 
+  const uploadFieldImage = async (fieldId, file) => {
+    try {
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("terrain-images")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("terrain-images").getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase.from("field_images").insert({
+        terrain_id: fieldId,
+        url_image: publicUrl,
+      });
+
+      if (dbError) throw dbError;
+
+      await fetchFields();
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error.message);
+      throw error;
+    }
+  };
+
+  const uploadMultipleFieldImages = async (fieldId, files) => {
+    try {
+      const uploadPromises = Array.from(files).map((file) =>
+        uploadFieldImage(fieldId, file),
+      );
+      const urls = await Promise.all(uploadPromises);
+      return urls;
+    } catch (error) {
+      console.error("Error uploading multiple images:", error.message);
+      throw error;
+    }
+  };
+
+  const deleteFieldImage = async (fieldId, imageUrl) => {
+    try {
+      // Extract filename from URL
+      const urlParts = imageUrl.split("/");
+      const fileName = urlParts[urlParts.length - 1];
+
+      // 1. Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("terrain-images")
+        .remove([fileName]);
+
+      if (storageError) {
+        console.warn("Storage delete error (continuing...):", storageError);
+      }
+
+      // 2. Delete from database
+      const { error: dbError } = await supabase
+        .from("field_images")
+        .delete()
+        .match({ url_image: imageUrl, terrain_id: fieldId });
+
+      if (dbError) throw dbError;
+
+      await fetchFields();
+      return true;
+    } catch (error) {
+      console.error("Error deleting image:", error.message);
+      throw error;
+    }
+  };
+
   const stats = getStats();
 
   const Value = {
@@ -642,6 +768,9 @@ export const DashboardProvider = ({ children }) => {
     toggleFieldStatus,
     fetchFields,
     fetchReservations,
+    uploadFieldImage,
+    uploadMultipleFieldImages,
+    deleteFieldImage,
   };
 
   return (

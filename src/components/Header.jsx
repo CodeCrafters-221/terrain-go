@@ -52,21 +52,25 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-8">
-              <Link
-                className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
-                to="/"
-              >
-                Accueil
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-              </Link>
+              {profile?.role !== "owner" && (
+                <>
+                  <Link
+                    className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
+                    to="/"
+                  >
+                    Accueil
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                  </Link>
 
-              <Link
-                className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
-                to="/search"
-              >
-                Trouver un terrain
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
-              </Link>
+                  <Link
+                    className="text-white/90 hover:text-primary text-sm font-medium transition-colors relative group py-2"
+                    to="/search"
+                  >
+                    Trouver un terrain
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                  </Link>
+                </>
+              )}
 
               {user ? (
                 profile?.role === "owner" ? (
@@ -139,27 +143,31 @@ export default function Header() {
 
         {/* Mobile Menu Overlay */}
         <div
-          className={`fixed inset-0 bg-[#231a10] z-[999] lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${
+          className={`fixed inset-0 bg-background-dark z-999 lg:hidden transition-all duration-300 flex flex-col pt-24 px-6 gap-8 ${
             isMenuOpen
               ? "opacity-100 visible"
               : "opacity-0 invisible pointer-events-none"
           }`}
         >
           <nav className="flex flex-col gap-6 items-center w-full">
-            <Link
-              className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
-              to="/"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Accueil
-            </Link>
-            <Link
-              className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
-              to="/search"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Trouver un terrain
-            </Link>
+            {profile?.role !== "owner" && (
+              <>
+                <Link
+                  className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
+                  to="/"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Accueil
+                </Link>
+                <Link
+                  className="text-white text-2xl font-bold hover:text-primary transition-colors flex items-center gap-3 w-full justify-center p-2"
+                  to="/search"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Trouver un terrain
+                </Link>
+              </>
+            )}
             {user ? (
               profile?.role === "owner" ? (
                 <Link
