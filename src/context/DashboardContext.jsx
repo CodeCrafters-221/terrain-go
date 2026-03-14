@@ -318,17 +318,41 @@ export const DashboardProvider = ({ children }) => {
   const deleteField = async (id) => {
     try {
       // 1. Clean up linked data (Foreign Key dependencies)
-      await supabase.from("field_images").delete().eq("terrain_id", id);
-      await supabase.from("disponibilite").delete().eq("field_id", id);
-      await supabase.from("reservations").delete().eq("field_id", id);
-      await supabase.from("subscriptions").delete().eq("field_id", id);
+      // We use both field_id and terrain_id in different tables to be safe
+      const cleanups = [
+        { table: "field_images", col: "terrain_id" },
+        { table: "field_images", col: "field_id" }, // Added to match inconsistent column names
+        { table: "disponibilite", col: "field_id" },
+        { table: "reservations", col: "field_id" },
+        { table: "subscriptions", col: "field_id" },
+        { table: "avis", col: "terrain_id" }
+      ];
+
+      for (const cleanup of cleanups) {
+        const { error: cleanupError } = await supabase
+          .from(cleanup.table)
+          .delete()
+          .eq(cleanup.col, id);
+        
+        if (cleanupError) {
+          console.warn(`Warning deleting from ${cleanup.table}:`, cleanupError.message);
+          // We don't throw here to try to delete as much as possible
+        }
+      }
 
       // 2. Finally delete the field
       const { error } = await supabase.from("fields").delete().eq("id", id);
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error deleting field:", error.message);
+        toast.error(`Impossible de supprimer le terrain : ${error.message}. Il reste peut-être des données liées que vous n'avez pas le droit de supprimer.`);
+        throw error;
+      }
+      
       setFields(fields.filter((f) => f.id !== id));
+      toast.success("Terrain supprimé avec succès !");
     } catch (error) {
-      console.error("Error deleting field:", error.message);
+      console.error("Delete operation failed:", error);
       throw error;
     }
   };
