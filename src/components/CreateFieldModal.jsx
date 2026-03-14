@@ -4,6 +4,7 @@ import { useDashboard } from '../context/DashboardContext';
 import { toast } from 'react-toastify';
 import { supabase } from '../services/supabaseClient';
 import { AvailabilityService } from '../services/AvailabilityService';
+import { Camera, Plus, Trash2 } from "lucide-react";
 
 const initialFormState = {
     name: "",
@@ -17,6 +18,7 @@ const initialFormState = {
 
 const CreateFieldModal = () => {
     const { addField, closeCreateModal, isCreateModalOpen } = useDashboard();
+    const fileInputRef = React.useRef(null);
 
     // Form State
     const [formData, setFormData] = useState(initialFormState);
@@ -268,39 +270,77 @@ const CreateFieldModal = () => {
                             />
                         </div>
 
-                        {/* Image Upload */}
-                        <div>
-                            <label htmlFor="image" className={labelClasses}>Photos du terrain (Plusieurs possibles)</label>
-                            <input
-                                type="file"
-                                id="image"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageChange}
-                                className="w-full text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-new file:text-background-dark hover:file:bg-[#d9720b] cursor-pointer"
-                            />
-                            {uploading && <p className="text-sm text-text-secondary mt-2">Téléchargement en cours...</p>}
-                            
-                            {/* Image Preview Grid */}
-                            {formData.images && formData.images.length > 0 && (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
-                                    {formData.images.map((url, idx) => (
-                                        <div key={idx} className="relative group aspect-video rounded-lg overflow-hidden border border-surface-highlight">
-                                            <img src={url} alt={`preview ${idx}`} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeImage(idx)}
-                                                    className="bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                                                    title="Supprimer l'image"
-                                                >
-                                                    <span className="material-symbols-outlined text-[16px]">delete</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                        {/* ═══ SECTION GALERIE PHOTOS ═══ */}
+                        <div className="border-t border-surface-highlight pt-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 className="text-white text-lg font-bold mb-1">
+                                        📸 Galerie Photos
+                                    </h3>
+                                    <p className="text-text-secondary text-xs">
+                                        Gérez les photos du terrain (Sélection multiple possible).
+                                    </p>
                                 </div>
-                            )}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="flex items-center gap-2 bg-primary-new/10 text-primary-new border border-primary-new/30 px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary-new/20 transition-all disabled:opacity-50"
+                                >
+                                    {uploading ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-new"></div>
+                                    ) : (
+                                        <Plus className="w-4 h-4" />
+                                    )}
+                                    Ajouter des photos
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {formData.images && formData.images.map((url, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative group aspect-video rounded-xl overflow-hidden border border-surface-highlight"
+                                    >
+                                        <img
+                                            src={url}
+                                            alt={`Terrain ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(idx)}
+                                                className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                                title="Supprimer"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!formData.images || formData.images.length === 0) && !uploading && (
+                                    <div className="col-span-full py-8 flex flex-col items-center justify-center border border-dashed border-surface-highlight rounded-xl bg-background-dark/50">
+                                        <Camera className="w-8 h-8 text-text-muted mb-2" />
+                                        <p className="text-text-secondary text-sm">
+                                            Aucune photo dans la galerie
+                                        </p>
+                                    </div>
+                                )}
+                                {uploading && (
+                                    <div className="aspect-video rounded-xl border border-dashed border-primary-new bg-primary-new/5 flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-new"></div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* ═══ SECTION DISPONIBILITÉS ═══ */}
@@ -321,7 +361,7 @@ const CreateFieldModal = () => {
                                         <button
                                             type="button"
                                             onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
-                                            className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-primary-new' : 'bg-surface-highlight'
+                                            className={`w-10 h-6 rounded-full relative transition-all shrink-0 ${day.enabled ? 'bg-primary-new' : 'bg-surface-highlight'
                                                 }`}
                                         >
                                             <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'
@@ -329,7 +369,7 @@ const CreateFieldModal = () => {
                                         </button>
 
                                         {/* Day name */}
-                                        <span className={`text-sm font-semibold w-20 flex-shrink-0 ${day.enabled ? 'text-white' : 'text-text-secondary'
+                                        <span className={`text-sm font-semibold w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-text-secondary'
                                             }`}>
                                             {day.label}
                                         </span>

@@ -317,7 +317,13 @@ export const DashboardProvider = ({ children }) => {
 
   const deleteField = async (id) => {
     try {
+      // 1. Clean up linked data (Foreign Key dependencies)
       await supabase.from("field_images").delete().eq("terrain_id", id);
+      await supabase.from("disponibilite").delete().eq("field_id", id);
+      await supabase.from("reservations").delete().eq("field_id", id);
+      await supabase.from("subscriptions").delete().eq("field_id", id);
+
+      // 2. Finally delete the field
       const { error } = await supabase.from("fields").delete().eq("id", id);
       if (error) throw error;
       setFields(fields.filter((f) => f.id !== id));
@@ -349,7 +355,7 @@ export const DashboardProvider = ({ children }) => {
         .eq("id", id);
       if (error) throw error;
 
-      if (updatedAttributes.image) {
+      if (updatedAttributes.image && !updatedAttributes.skipImageUpdate) {
         await supabase.from("field_images").delete().eq("terrain_id", id);
         await supabase
           .from("field_images")
@@ -634,6 +640,80 @@ export const DashboardProvider = ({ children }) => {
     });
   };
 
+  const uploadFieldImage = async (fieldId, file) => {
+    try {
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("terrain-images")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("terrain-images").getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase.from("field_images").insert({
+        terrain_id: fieldId,
+        url_image: publicUrl,
+      });
+
+      if (dbError) throw dbError;
+
+      await fetchFields();
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error.message);
+      throw error;
+    }
+  };
+
+  const uploadMultipleFieldImages = async (fieldId, files) => {
+    try {
+      const uploadPromises = Array.from(files).map((file) =>
+        uploadFieldImage(fieldId, file),
+      );
+      const urls = await Promise.all(uploadPromises);
+      return urls;
+    } catch (error) {
+      console.error("Error uploading multiple images:", error.message);
+      throw error;
+    }
+  };
+
+  const deleteFieldImage = async (fieldId, imageUrl) => {
+    try {
+      // Extract filename from URL
+      const urlParts = imageUrl.split("/");
+      const fileName = urlParts[urlParts.length - 1];
+
+      // 1. Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("terrain-images")
+        .remove([fileName]);
+
+      if (storageError) {
+        console.warn("Storage delete error (continuing...):", storageError);
+      }
+
+      // 2. Delete from database
+      const { error: dbError } = await supabase
+        .from("field_images")
+        .delete()
+        .match({ url_image: imageUrl, terrain_id: fieldId });
+
+      if (dbError) throw dbError;
+
+      await fetchFields();
+      return true;
+    } catch (error) {
+      console.error("Error deleting image:", error.message);
+      throw error;
+    }
+  };
+
   const stats = getStats();
 
   const Value = {
@@ -664,6 +744,9 @@ export const DashboardProvider = ({ children }) => {
     toggleFieldStatus,
     fetchFields,
     fetchReservations,
+    uploadFieldImage,
+    uploadMultipleFieldImages,
+    deleteFieldImage,
   };
 
   return (

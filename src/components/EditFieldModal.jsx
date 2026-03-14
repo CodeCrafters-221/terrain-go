@@ -3,6 +3,7 @@ import { useDashboard } from '../context/DashboardContext';
 import { toast } from 'react-toastify';
 import { supabase } from '../services/supabaseClient';
 import { AvailabilityService } from '../services/AvailabilityService';
+import { Camera, Trash2, Plus, Pencil } from "lucide-react";
 
 const DAYS = [
     { value: 1, label: "Lundi" },
@@ -15,7 +16,7 @@ const DAYS = [
 ];
 
 const EditFieldModal = () => {
-    const { updateField, closeEditModal, isEditModalOpen, editingField } = useDashboard();
+    const { updateField, closeEditModal, isEditModalOpen, editingField, uploadMultipleFieldImages, deleteFieldImage } = useDashboard();
 
     // Form State
     const [formData, setFormData] = useState({
@@ -40,7 +41,10 @@ const EditFieldModal = () => {
     );
 
     const [isLoading, setIsLoading] = useState(false);
-    const [uploading, setUploading] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [fieldImages, setFieldImages] = useState([]);
+    const [replacingImageUrl, setReplacingImageUrl] = useState(null);
+    const fileInputRef = React.useRef(null);
 
     const updateScheduleDay = (index, field, value) => {
         setSchedule(prev => {
@@ -50,35 +54,67 @@ const EditFieldModal = () => {
         });
     };
 
-    const handleImageChange = async (e) => {
+    const handleReplaceImageTrigger = (imageUrl) => {
+        setReplacingImageUrl(imageUrl);
+        fileInputRef.current?.click();
+    };
+
+    const handleAddImage = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setIsUploadingImage(true);
         try {
-            setUploading(true);
-            const file = e.target.files[0];
-            if (!file) return;
+            if (replacingImageUrl) {
+                // Replacement Logic
+                await deleteFieldImage(editingField.id, replacingImageUrl);
+                const urls = await uploadMultipleFieldImages(editingField.id, files);
+                const newImages = urls.map((url) => ({ url_image: url }));
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
+                setFieldImages((prev) => {
+                    const index = prev.findIndex(
+                        (img) => img.url_image === replacingImageUrl,
+                    );
+                    if (index === -1) return [...prev, ...newImages];
+                    const updated = [...prev];
+                    updated.splice(index, 1, ...newImages);
+                    return updated;
+                });
 
-            const { error: uploadError } = await supabase.storage
-                .from('terrain-images')
-                .upload(filePath, file);
-
-            if (uploadError) {
-                throw uploadError;
+                toast.success("Image remplacée !");
+            } else {
+                // Normal Add Logic
+                const urls = await uploadMultipleFieldImages(editingField.id, files);
+                const newImages = urls.map((url) => ({ url_image: url }));
+                setFieldImages((prev) => [...prev, ...newImages]);
+                toast.success(
+                    files.length > 1
+                        ? `${files.length} images ajoutées !`
+                        : "Image ajoutée !",
+                );
             }
-
-            const { data } = supabase.storage
-                .from('terrain-images')
-                .getPublicUrl(filePath);
-
-            setFormData({ ...formData, image: data.publicUrl });
-            toast.success("Image téléchargée !");
         } catch (error) {
-            console.error(error);
-            toast.error("Erreur lors du téléchargement de l'image");
+            toast.error(
+                replacingImageUrl
+                    ? "Erreur lors du remplacement"
+                    : "Erreur lors de l'ajout des images",
+            );
         } finally {
-            setUploading(false);
+            setIsUploadingImage(false);
+            setReplacingImageUrl(null);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const handleDeleteImage = async (imageUrl) => {
+        if (!window.confirm("Supprimer cette image ?")) return;
+
+        try {
+            await deleteFieldImage(editingField.id, imageUrl);
+            setFieldImages((prev) => prev.filter((img) => img.url_image !== imageUrl));
+            toast.success("Image supprimée !");
+        } catch (error) {
+            toast.error("Erreur lors de la suppression");
         }
     };
 
@@ -94,6 +130,16 @@ const EditFieldModal = () => {
                 ...editingField,
                 price: priceValue
             });
+
+            // Set images from field data
+            if (editingField.field_images) {
+                setFieldImages(editingField.field_images);
+            } else if (
+                editingField.image &&
+                !editingField.image.includes("placehold.co")
+            ) {
+                setFieldImages([{ url_image: editingField.image }]);
+            }
 
             // Fetch existing availability
             const fetchAvailability = async () => {
@@ -158,7 +204,8 @@ const EditFieldModal = () => {
             const updatedField = {
                 ...formData,
                 hours: hoursSummary,
-                price: `${formData.price} CFA/h` // Re-format price
+                price: `${formData.price} CFA/h`, // Re-format price
+                skipImageUpdate: true, // Don't let updateField overwrite our gallery
             };
 
             await updateField(editingField.id, updatedField);
@@ -182,22 +229,22 @@ const EditFieldModal = () => {
         }
     };
 
-    const inputClasses = "w-full px-4 py-3 rounded-lg border border-[#493622] bg-[#231a10] text-[#cbad90] placeholder-[#5d452b] focus:outline-none focus:border-[#f27f0d] transition-colors";
+    const inputClasses = "w-full px-4 py-3 rounded-lg border border-surface-highlight bg-background-dark text-text-secondary placeholder-text-muted focus:outline-none focus:border-primary-new transition-colors";
     const labelClasses = "text-white text-sm font-medium mb-1 block";
 
     if (!isEditModalOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-[#2c241b] rounded-2xl border border-[#493622] w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+            <div className="bg-surface-dark rounded-2xl border border-surface-highlight w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-[0_0_40px_rgba(0,0,0,0.5)]">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-[#493622] sticky top-0 bg-[#2c241b] z-10">
+                <div className="flex items-center justify-between p-6 border-b border-surface-highlight sticky top-0 bg-surface-dark z-10">
                     <div className="flex flex-col">
                         <h2 className="text-white text-2xl font-bold">Modifier le Terrain</h2>
-                        <p className="text-[#cbad90] text-xs">Mettez à jour les informations et disponibilités</p>
+                        <p className="text-text-secondary text-xs">Mettez à jour les informations et disponibilités</p>
                     </div>
-                    <button onClick={closeEditModal} className="text-[#cbad90] hover:text-white transition-colors">
+                    <button onClick={closeEditModal} className="text-text-secondary hover:text-white transition-colors">
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -284,45 +331,106 @@ const EditFieldModal = () => {
                             />
                         </div>
 
-                        {/* Image Upload */}
-                        <div>
-                            <label htmlFor="image" className={labelClasses}>Photo du terrain</label>
-
-                            {formData.image && (
-                                <div className="mb-2">
-                                    <img src={formData.image} alt="Aperçu" className="w-full h-32 object-cover rounded-lg border border-[#493622]" />
+                        {/* ═══ SECTION GALERIE PHOTOS ═══ */}
+                        <div className="border-t border-surface-highlight pt-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 className="text-white text-lg font-bold mb-1">
+                                        📸 Galerie Photos
+                                    </h3>
+                                    <p className="text-text-secondary text-xs">
+                                        Gérez les photos du terrain (Sélection multiple possible).
+                                    </p>
                                 </div>
-                            )}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploadingImage}
+                                    className="flex items-center gap-2 bg-primary-new/10 text-primary-new border border-primary-new/30 px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary-new/20 transition-all disabled:opacity-50"
+                                >
+                                    {isUploadingImage ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-new"></div>
+                                    ) : (
+                                        <Plus className="w-4 h-4" />
+                                    )}
+                                    Ajouter des photos
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleAddImage}
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                />
+                            </div>
 
-                            <input
-                                type="file"
-                                id="image"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="w-full text-[#cbad90] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f27f0d] file:text-[#231a10] hover:file:bg-[#d9720b] cursor-pointer"
-                            />
-                            {uploading && <p className="text-sm text-[#cbad90] mt-2">Téléchargement de l'image...</p>}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {fieldImages.map((img, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative group aspect-video rounded-xl overflow-hidden border border-surface-highlight"
+                                    >
+                                        <img
+                                            src={img.url_image}
+                                            alt={`Terrain ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleReplaceImageTrigger(img.url_image)}
+                                                className="bg-primary-new text-background-dark p-2 rounded-full hover:bg-primary-new/80 transition-colors shadow-lg"
+                                                title="Modifier/Remplacer"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteImage(img.url_image)}
+                                                className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                                title="Supprimer"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {fieldImages.length === 0 && !isUploadingImage && (
+                                    <div className="col-span-full py-8 flex flex-col items-center justify-center border border-dashed border-surface-highlight rounded-xl bg-background-dark/50">
+                                        <Camera className="w-8 h-8 text-text-muted mb-2" />
+                                        <p className="text-text-secondary text-sm">
+                                            Aucune photo dans la galerie
+                                        </p>
+                                    </div>
+                                )}
+                                {isUploadingImage && (
+                                    <div className="aspect-video rounded-xl border border-dashed border-primary-new bg-primary-new/5 flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-new"></div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* ═══ SECTION DISPONIBILITÉS ═══ */}
-                        <div className="border-t border-[#493622] pt-6">
+                        <div className="border-t border-surface-highlight pt-6">
                             <h3 className="text-white text-lg font-bold mb-1">📅 Disponibilités</h3>
-                            <p className="text-[#cbad90] text-xs mb-4">Définissez les jours et heures d'ouverture du terrain.</p>
+                            <p className="text-text-secondary text-xs mb-4">Définissez les jours et heures d'ouverture du terrain.</p>
 
                             <div className="space-y-3">
                                 {schedule.map((day, index) => (
                                     <div
                                         key={day.day_of_week}
                                         className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.enabled
-                                            ? "bg-[#231a10] border-[#f27f0d]/40"
-                                            : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
+                                            ? "bg-background-dark border-primary-new/40"
+                                            : "bg-background-dark/50 border-surface-highlight/50 opacity-60"
                                             }`}
                                     >
                                         {/* Toggle */}
                                         <button
                                             type="button"
                                             onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
-                                            className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-[#f27f0d]' : 'bg-[#493622]'
+                                            className={`w-10 h-6 rounded-full relative transition-all shrink-0 ${day.enabled ? 'bg-primary-new' : 'bg-surface-highlight'
                                                 }`}
                                         >
                                             <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'
@@ -330,7 +438,7 @@ const EditFieldModal = () => {
                                         </button>
 
                                         {/* Day name */}
-                                        <span className={`text-sm font-semibold w-20 flex-shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
+                                        <span className={`text-sm font-semibold w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-text-muted'
                                             }`}>
                                             {day.label}
                                         </span>
@@ -342,14 +450,14 @@ const EditFieldModal = () => {
                                                     type="time"
                                                     value={day.start_time}
                                                     onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
-                                                    className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                    className="px-2 py-1.5 rounded-lg bg-surface-dark text-white text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-28"
                                                 />
-                                                <span className="text-[#cbad90] text-xs">à</span>
+                                                <span className="text-text-secondary text-xs">à</span>
                                                 <input
                                                     type="time"
                                                     value={day.end_time}
                                                     onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
-                                                    className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                    className="px-2 py-1.5 rounded-lg bg-surface-dark text-white text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-28"
                                                 />
                                             </div>
                                         )}
@@ -359,18 +467,18 @@ const EditFieldModal = () => {
                         </div>
 
                         {/* Submit Button */}
-                        <div className="flex justify-end gap-4 mt-2 pt-4 border-t border-[#493622]">
-                            <button
+                        <div className="flex justify-end gap-4 mt-2 pt-4 border-t border-surface-highlight">
+                             <button
                                 type="button"
                                 onClick={closeEditModal}
-                                className="px-6 py-3 rounded-xl border border-[#493622] text-[#cbad90] hover:bg-[#493622] hover:text-white transition-colors"
+                                className="px-6 py-3 rounded-xl border border-surface-highlight text-text-secondary hover:bg-surface-highlight hover:text-white transition-colors"
                             >
                                 Annuler
                             </button>
                             <button
                                 type="submit"
-                                disabled={isLoading || uploading}
-                                className="bg-[#f27f0d] text-[#231a10] px-8 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50"
+                                disabled={isLoading || isUploadingImage}
+                                className="bg-primary-new text-background-dark px-8 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50"
                             >
                                 {isLoading ? "Enregistrement..." : "Enregistrer les modifications"}
                             </button>
