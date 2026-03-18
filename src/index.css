@@ -4,18 +4,18 @@
   --color-bg: rgb(255 255 255);
   --color-text: rgb(15 15 15);
   --color-primary: rgb(255 122 0);
-  --color-mainBg: rgb(36, 27, 16);
+  --color-mainBg: rgb(
+    35,
+    26,
+    16
+  ); /* Updated to match #231a10 rgb(35, 26, 16) */
   --font-lexend: "lexend", sans-serif;
   --color-primary-new: #f27f0d;
   --color-background-light: #f8f7f5;
-  --color-background-dark: #221910;
-  --color-surface-dark: #2f2316;
+  --color-background-dark: #231a10;
+  --color-surface-dark: #2c241b;
   --color-surface-highlight: #493622;
   --color-text-secondary: #cbad90;
-}
-
-.header {
-  @apply fixed top-0 z-50 w-full border-b border-surface-highlight bg-mainBg backdrop-blur-sm px-5 md:px-10 lg:px-40 flex justify-around py-3;
 }
 
 .navigation {
@@ -63,4 +63,18 @@
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+html,
+body,
+#root {
+  width: 100%;
+  overflow-x: hidden;
+  /* Apply hide-scrollbar globally */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  display: none;
 }

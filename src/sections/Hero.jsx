@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Cta from "../components/Cta";
+import { useAuth } from "../context/AuthContext";
 import {
   LandPlot,
   Users,
@@ -14,8 +15,14 @@ export default function Hero() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
 
+  const { user: currentUser } = useAuth();
+
   useEffect(() => {
-    setIsVisible(true);
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const stats = [
@@ -62,18 +69,30 @@ export default function Hero() {
         </h2>
 
         {/* Badge */}
-        <Link
-          to="/register"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
-        >
-          <PartyPopper className="text-primary w-4 h-4" />
-          <span className="text-primary text-sm font-semibold">
-            Envie de jouer? - Réservez maintenant !
-          </span>
-        </Link>
+        {currentUser ? (
+          <Link
+            to="/search"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
+          >
+            <PartyPopper className="text-primary w-4 h-4" />
+            <span className="text-primary text-sm font-semibold">
+              Envie de jouer? - Réservez maintenant !
+            </span>
+          </Link>
+        ) : (
+          <div
+            onClick={() => navigate("/login")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
+          >
+            <PartyPopper className="text-primary w-4 h-4" />
+            <span className="text-primary text-sm font-semibold">
+              Envie de jouer? - Connectez-vous pour réserver !
+            </span>
+          </div>
+        )}
 
         {/* Statistiques */}
-        <div className="grid grid-cols-3 md:grid-cols-3 gap-4 mt-5">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 mt-5 w-full max-w-4xl">
           {stats.map((stat) => (
             <div
               key={stat.label}

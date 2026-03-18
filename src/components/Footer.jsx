@@ -1,24 +1,87 @@
 import React from "react";
-import { Link } from "react-router";
-import { Trophy, MapPin, Mail, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
+import mainLogo from "../assets/img/mainLogo.png";
+import {
+  MapPin,
+  Mail,
+  Phone,
+  Facebook,
+  Instagram,
+  Twitter,
+} from "lucide-react";
 
 export default function Footer() {
   return (
-    <div className="w-full bg-[#1a130c] border-t border-surface-highlight pt-16 pb-8 px-5 lg:px-40">
-      <div className="max-w-300 mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-          <div className="col-span-1 md:col-span-1">
-            <div className="flex items-center gap-3 text-white mb-6">
-              <div className="size-8 flex items-center justify-center text-primary">
-                <Trophy className="w-8 h-8" strokeWidth={1.5} />
-              </div>
-              <h2 className="text-white text-xl font-bold">Footbooking</h2>
-            </div>
-            <p className="text-text-secondary text-sm leading-relaxed mb-6">
-              La plateforme de référence pour réserver vos matchs de football à
-              Dakar. Simple, rapide et fiable.
+    <footer className="w-full bg-[#1a130c] border-t border-surface-highlight pt-16 pb-8 px-6 sm:px-12 lg:px-24">
+      <div className="max-w-4xl mx-auto">
+        {/* TOP FOOTER */}
+        <div className="flex flex-col md:flex-row justify-between items-start gap-12">
+          {/* LOGO + DESCRIPTION */}
+          <div className="flex flex-col gap-2 max-w-xs">
+            <Link to="/" className="inline-block">
+              <img
+                src={mainLogo}
+                alt="Footbooking"
+                className="h-16 md:h-20 w-auto object-contain"
+              />
+            </Link>
+
+            <p className="text-text-secondary text-sm leading-relaxed">
+              Réservez facilement vos terrains de football à Dakar. Rapide,
+              simple et fiable.
             </p>
-            <div className="flex gap-4">
+          </div>
+
+          {/* NAVIGATION */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-white font-semibold text-lg">Navigation</h3>
+            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
+              <li>
+                <Link to="/" className="hover:text-primary transition-colors">
+                  Accueil
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/search"
+                  className="hover:text-primary transition-colors"
+                >
+                  Trouver un terrain
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/owners"
+                  className="hover:text-primary transition-colors"
+                >
+                  Espace Propriétaire
+                </Link>
+              </li>
+            </ul>
+          </div>
+          {/* CONTACT */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-white font-semibold text-lg">Contact</h3>
+
+            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
+              <li className="flex items-center gap-2">
+                <MapPin className="text-primary w-4 h-4" />
+                Dakar, Sénégal
+              </li>
+
+              <li className="flex items-center gap-2">
+                <Mail className="text-primary w-4 h-4" />
+                contact@footbooking.sn
+              </li>
+
+              <li className="flex items-center gap-2">
+                <Phone className="text-primary w-4 h-4" />
+                +221 77 123 45 67
+              </li>
+            </ul>
+
+            {/* SOCIAL */}
+            <div className="flex gap-3 mt-2">
               <a
                 className="size-10 rounded-full bg-[#2e2318] flex items-center justify-center text-text-secondary hover:bg-primary hover:text-[#231a10] transition-colors"
                 href="#"
@@ -47,96 +110,25 @@ export default function Footer() {
               </a>
             </div>
           </div>
-          <div className="col-span-1">
-            <h3 className="text-white font-bold mb-4">Navigation</h3>
-            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
-              <li>
-                <a className="hover:text-primary transition-colors" href="#">
-                  Accueil
-                </a>
-              </li>
-              <li>
-                <Link
-                  to="/search"
-                  className="hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Trouver un terrain
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/"
-                  className="hover:text-primary transition-colors"
-                  href="#"
-                >
-                  Ajouter un terrain
-                </Link>
-              </li>
-              <li>
-                <a className="hover:text-primary transition-colors" href="#">
-                  À propos
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div className="col-span-1">
-            <h3 className="text-white font-bold mb-4">Support</h3>
-            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
-              <li>
-                <a className="hover:text-primary transition-colors" href="#">
-                  Centre d'aide
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-primary transition-colors" href="#">
-                  Conditions d'utilisation
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-primary transition-colors" href="#">
-                  Politique de confidentialité
-                </a>
-              </li>
-              <li>
-                <a className="hover:text-primary transition-colors" href="#">
-                  Contact
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div className="col-span-1">
-            <h3 className="text-white font-bold mb-4">Contact</h3>
-            <ul className="flex flex-col gap-3 text-text-secondary text-sm">
-              <li className="flex items-start gap-2">
-                <MapPin className="text-primary w-4 h-4 mt-0.5" />
-                <span>Dakar, Sénégal</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail className="text-primary w-4 h-4" />
-                <span>contact@footbooking.sn</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="text-primary w-4 h-4" />
-                <span>+221 77 123 45 67</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-surface-highlight pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[#684d31] text-xs">
-            © 2023 Réservation Foot. Tous droits réservés.
-          </p>
-          <div className="flex gap-6 text-[#684d31] text-xs">
-            <a className="hover:text-text-secondary" href="#">
-              Français
-            </a>
-            <a className="hover:text-text-secondary" href="#">
-              Wolof
-            </a>
-          </div>
         </div>
       </div>
-    </div>
+
+      {/* BOTTOM FOOTER */}
+      <div className="border-t border-surface-highlight mt-12 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <p className="text-[#684d31] text-xs text-center md:text-left">
+          © 2026 Footbooking — Tous droits réservés
+        </p>
+
+        <div className="flex gap-6 text-[#684d31] text-xs">
+          <a href="#" className="hover:text-text-secondary">
+            Français
+          </a>
+
+          <a href="#" className="hover:text-text-secondary">
+            Wolof
+          </a>
+        </div>
+      </div>
+    </footer>
   );
 }

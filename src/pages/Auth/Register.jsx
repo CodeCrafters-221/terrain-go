@@ -49,36 +49,35 @@ export default function Register() {
     try {
       setIsLoading(true);
 
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
       });
 
-      if (error) {
-        toast.error(error.message);
+      if (signUpError) {
+        if (signUpError.message.includes("User already registered")) {
+          toast.info("Un compte existe déjà avec cet email. Connectez-vous !");
+          navigate("/login");
+        } else {
+          toast.error(signUpError.message);
+        }
         return;
       }
 
-      // Log in user
-      const { loginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
+      // If signUp is successful and auto-login is on (default), user might already be in session
+      // However, we navigate to create-profile to ensure they complete their data
+      toast.success("Compte créé avec succès !");
       navigate("/create-profile");
 
-      if(loginError) {
-        toast.error(loginError.message);
-        return;
-      }
-    } 
+    }
     catch (err) {
       console.error(err);
       toast.error("Erreur serveur, réessaie plus tard");
-    } 
+    }
     finally {
       setIsLoading(false);
     }
+
   };
 
 
