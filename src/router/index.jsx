@@ -83,22 +83,6 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       {
-<<<<<<< HEAD
-        path: "/profile",
-        element: (
-          <ProtectedRoute>
-            {" "}
-            <UserProfile />{" "}
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "/terrain-details",
-        element: <TerrainDetails />,
-      },
-      {
-=======
->>>>>>> c1eb517d823af4dfa0650358f8eaa659c67727b4
         path: "/search",
         element: <SearchPage />,
       },
