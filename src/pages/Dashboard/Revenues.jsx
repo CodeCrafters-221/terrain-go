@@ -21,7 +21,7 @@ const Revenues = () => {
     }));
 
     const mappedReservations = (reservations || [])
-        .filter(r => r.status !== 'Annulé')
+        .filter(r => r.status !== 'Annulé' && r.reservationType !== 'subscription')
         .map(r => ({
             id: `#${String(r.id).substring(0, 4)}`,
             date: r.date,
@@ -68,27 +68,32 @@ const Revenues = () => {
         }
 
         const headers = ["ID", "Date", "Client", "Description", "Méthode", "Montant (CFA)", "Statut"];
+        // Use semicolon separator for French Excel compatibility
         const rows = allTransactions.map(tx => [
-            tx.id,
-            tx.date,
-            tx.client,
-            tx.desc,
-            tx.method,
+            `"${tx.id}"`,
+            `"${tx.date}"`,
+            `"${tx.client}"`,
+            `"${tx.desc}"`,
+            `"${tx.method}"`,
             tx.numericAmount,
-            tx.status
+            `"${tx.status}"`
         ]);
 
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + headers.join(",") + "\n"
-            + rows.map(e => e.join(",")).join("\n");
+        // Add BOM \uFEFF for proper UTF-8 decoding in Excel
+        const csvContent = "\uFEFF"
+            + headers.join(";") + "\n"
+            + rows.map(e => e.join(";")).join("\n");
 
-        const encodedUri = encodeURI(csvContent);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `rapport_finances_${new Date().toLocaleDateString()}.csv`);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `rapport_finances_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         toast.success("Rapport exporté avec succès !");
     };
 
