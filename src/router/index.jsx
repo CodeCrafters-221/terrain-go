@@ -25,11 +25,8 @@ import Settings from "../pages/Dashboard/Settings";
 import MySubscriptions from "../pages/Dashboard/MySubscriptions";
 import Owners from "../pages/Owners";
 
-<<<<<<< HEAD
-=======
 import OwnerRedirect from "../components/OwnerRedirect";
 
->>>>>>> c1eb517d823af4dfa0650358f8eaa659c67727b4
 export const router = createBrowserRouter([
   {
     path: "/dashboard",
@@ -120,18 +117,6 @@ export const router = createBrowserRouter([
     ],
   },
   {
-<<<<<<< HEAD
-    element: <UserProfile />,
-    children: [{ path: "/user-profile", element: <UserProfile /> }],
-  },
-  {
-    element: <TerrainDetails />,
-    children: [{ path: "/terrain-details", element: <TerrainDetails /> }],
-  },
-  {
-    element: <SearchPage />,
-    children: [{ path: "/search", element: <SearchPage /> }],
-=======
     element: <AuthLayout />,
     children: [
       {
@@ -175,14 +160,5 @@ export const router = createBrowserRouter([
         ),
       },
     ],
-  },
-  {
-    path: "/owners",
-    element: (
-      <OwnerRedirect>
-        <Owners />
-      </OwnerRedirect>
-    ),
->>>>>>> c1eb517d823af4dfa0650358f8eaa659c67727b4
   },
 ]);
