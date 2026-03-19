@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-import React from "react";
-import AboutUser from "../sections/AboutUser";
-export default function UserProfile() {
-  return (
-    <>
-      <div className=" bg-mainBg ">
-        <AboutUser />
-        {/* <TabNavigation /> */}
-      </div>
-    </>
-  );
-}
-=======
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import Avis, { ReviewModal } from "../sections/profile/Avis";
@@ -330,4 +316,3 @@ const UserProfile = () => {
 
 export default UserProfile;
 
->>>>>>> df9fd2d58e80b1addc8291110a6eb6558500b6b4
