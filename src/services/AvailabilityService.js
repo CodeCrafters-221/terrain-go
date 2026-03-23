@@ -128,7 +128,7 @@ export const AvailabilityService = {
         const EXPIRATION_LIMIT_MINUTES = 20;
         const BUFFER_TIME_MINUTES = 10;
 
-        const DEFAULT_HOURS = [{ start_time: "08:00:00", end_time: "23:00:00" }];
+        const DEFAULT_HOURS = [{ start_time: "08:00:00", end_time: "00:00:00" }];
         let availability = []; // On part d'un terrain FERMÉ par défaut pour les vrais terrains
 
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId);
@@ -323,14 +323,14 @@ export const AvailabilityService = {
                     }
                 } else {
                     // Fallback pour terrains non configurés
-                    availability = [{ start_time: "08:00", end_time: "23:00" }];
+                    availability = [{ start_time: "08:00", end_time: "00:00" }];
                 }
             } catch (err) {
                 return { available: false, reason: "Erreur lors de la vérification des disponibilités." };
             }
         } else {
             // Demo
-            availability = [{ start_time: "08:00", end_time: "23:00" }];
+            availability = [{ start_time: "08:00", end_time: "00:00" }];
         }
 
         let endM = this.toMinutes(endTime);

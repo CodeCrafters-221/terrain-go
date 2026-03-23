@@ -41,7 +41,7 @@ const CreateFieldModal = () => {
             label: d.label,
             enabled: d.value >= 1 && d.value <= 6, // Lundi-Samedi par défaut
             start_time: "08:00",
-            end_time: "22:00",
+            end_time: "00:00",
         }))
     );
 
@@ -352,42 +352,42 @@ const CreateFieldModal = () => {
                                 {schedule.map((day, index) => (
                                     <div
                                         key={day.day_of_week}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.enabled
+                                        className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-all ${day.enabled
                                             ? "bg-background-dark border-primary-new/40"
                                             : "bg-background-dark/50 border-surface-highlight/50 opacity-60"
                                             }`}
                                     >
                                         {/* Checkbox */}
-                                        <div className="flex items-center justify-center w-10 shrink-0">
+                                        <div className="flex items-center justify-center w-6 sm:w-10 shrink-0">
                                             <input
                                                 type="checkbox"
                                                 checked={day.enabled}
                                                 onChange={(e) => updateScheduleDay(index, 'enabled', e.target.checked)}
-                                                className="w-5 h-5 rounded border-surface-highlight text-primary-new focus:ring-primary-new cursor-pointer accent-primary-new bg-surface-dark"
+                                                className="w-4 h-4 sm:w-5 sm:h-5 rounded border-surface-highlight text-primary-new focus:ring-primary-new cursor-pointer accent-primary-new bg-surface-dark"
                                             />
                                         </div>
 
                                         {/* Day name */}
-                                        <span className={`text-sm font-semibold w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-text-secondary'
+                                        <span className={`text-[11px] sm:text-sm font-semibold w-16 sm:w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-text-secondary'
                                             }`}>
                                             {day.label}
                                         </span>
 
                                         {/* Time inputs */}
                                         {day.enabled && (
-                                            <div className="flex items-center gap-2 flex-1">
+                                            <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
                                                 <input
                                                     type="time"
                                                     value={day.start_time}
                                                     onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
-                                                    className="px-2 py-1.5 rounded-lg bg-surface-dark text-white text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-28"
+                                                    className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
                                                 />
-                                                <span className="text-text-secondary text-xs">à</span>
+                                                <span className="text-text-secondary text-[10px] sm:text-xs">à</span>
                                                 <input
                                                     type="time"
                                                     value={day.end_time}
                                                     onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
-                                                    className="px-2 py-1.5 rounded-lg bg-surface-dark text-white text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-28"
+                                                    className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
                                                 />
                                             </div>
                                         )}
