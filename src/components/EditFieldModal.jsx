@@ -426,16 +426,15 @@ const EditFieldModal = () => {
                                             : "bg-background-dark/50 border-surface-highlight/50 opacity-60"
                                             }`}
                                     >
-                                        {/* Toggle */}
-                                        <button
-                                            type="button"
-                                            onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
-                                            className={`w-10 h-6 rounded-full relative transition-all shrink-0 ${day.enabled ? 'bg-primary-new' : 'bg-surface-highlight'
-                                                }`}
-                                        >
-                                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'
-                                                }`} />
-                                        </button>
+                                        {/* Checkbox */}
+                                        <div className="flex items-center justify-center w-10 shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                checked={day.enabled}
+                                                onChange={(e) => updateScheduleDay(index, 'enabled', e.target.checked)}
+                                                className="w-5 h-5 rounded border-surface-highlight text-primary-new focus:ring-primary-new cursor-pointer accent-primary-new bg-surface-dark"
+                                            />
+                                        </div>
 
                                         {/* Day name */}
                                         <span className={`text-sm font-semibold w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-text-muted'
