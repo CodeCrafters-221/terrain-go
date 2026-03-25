@@ -145,12 +145,4 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  {
-    path: "/owners",
-    element: (
-      <OwnerRedirect>
-        <Owners />
-      </OwnerRedirect>
-    ),
-  },
 ]);
