@@ -4,16 +4,19 @@ import Footer from "../components/Footer";
 
 export default function AppLayout() {
   const location = useLocation();
+
   const hideHeaderRoutes = ["/search", "/compte"];
   const shouldShowHeader = !hideHeaderRoutes.includes(location.pathname);
 
   return (
-    <>
-      <Header />
-      <main>
+    <div className="min-h-screen bg-background-dark overflow-x-hidden flex flex-col">
+      {shouldShowHeader && <Header />}
+
+      <main className={`flex-1 ${shouldShowHeader ? "pt-20 md:pt-24" : ""}`}>
         <Outlet />
       </main>
+
       <Footer />
-    </>
+    </div>
   );
 }

@@ -10,6 +10,7 @@ import secondStadiumCard from "../assets/features4.png";
 import thirdStadiumCard from "../assets/features5.png";
 
 import { supabase } from "../services/supabaseClient";
+import { toast } from "react-toastify";
 
 export default function Features() {
   const [searchParams] = useSearchParams();
@@ -138,11 +139,16 @@ export default function Features() {
   };
 
   const handleFavorite = (stadiumId) => {
-    setFavorites((prev) =>
-      prev.includes(stadiumId)
-        ? prev.filter((id) => id !== stadiumId)
-        : [...prev, stadiumId],
-    );
+    setFavorites((prev) => {
+      const isFav = prev.includes(stadiumId);
+      if (isFav) {
+        toast.info("Terrain retiré des favoris.");
+        return prev.filter((id) => id !== stadiumId);
+      } else {
+        toast.success("Terrain ajouté aux favoris !");
+        return [...prev, stadiumId];
+      }
+    });
   };
 
   return (

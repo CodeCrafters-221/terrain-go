@@ -17,14 +17,25 @@ const Statistics = () => {
 
     const fieldDistributionData = stats.fieldDistributionData || [];
     const hourlyAffluenceData = stats.hourlyAffluenceData || [];
-    const weeklyRevenue = stats.weeklyRevenue || 0;
+    const monthlyRevenue = stats.weeklyRevenue || 0;
     const activeReservations = stats.activeReservations || 0;
+    const totalClients = stats.totalClients || 0;
     const occupancyRate = stats.occupancyRate || "0%";
+
+    const formatCurrency = (val) => {
+        if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+        if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
+        return val.toLocaleString();
+    };
+
     return (
         <div className="flex flex-col gap-10">
             <div className="flex flex-col">
-                <h2 className="text-white text-2xl md:text-3xl font-black tracking-tight leading-tight">Analyse Approfondie</h2>
-                <p className="text-[#cbad90] text-xs md:text-sm mt-1">Gérez la croissance de votre complexe sportif</p>
+                <div className="flex items-center gap-2">
+                    <h2 className="text-white text-2xl md:text-3xl font-black tracking-tight leading-tight">Analyse Approfondie</h2>
+                    <span className="size-2 rounded-full bg-[#0bda16] animate-pulse mt-1"></span>
+                </div>
+                <p className="text-[#cbad90] text-xs md:text-sm mt-1">Mise à jour en temps réel • Ce mois-ci</p>
             </div>
 
             {/* Top Cards */}
@@ -32,34 +43,34 @@ const Statistics = () => {
                 <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2">
                     <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">Revenu Mensuel</span>
                     <div className="flex items-end gap-2">
-                        <h3 className="text-3xl font-black text-white leading-none">{(weeklyRevenue / 1000000).toFixed(1)}M</h3>
+                        <h3 className="text-3xl font-black text-white leading-none">{formatCurrency(monthlyRevenue)}</h3>
                         <span className="text-[#cbad90] text-sm mb-0.5">CFA</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#0bda16] text-xs font-bold mt-2">
                         <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                        +12% vs. mois dernier
+                        Performance du mois
                     </div>
                 </div>
                 <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2">
-                    <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">Heures Réservées</span>
+                    <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">Réservations</span>
                     <div className="flex items-end gap-2">
                         <h3 className="text-3xl font-black text-white leading-none">{activeReservations}</h3>
-                        <span className="text-[#cbad90] text-sm mb-0.5">heures</span>
+                        <span className="text-[#cbad90] text-sm mb-0.5">actives</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#0bda16] text-xs font-bold mt-2">
                         <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                        +5% vs. mois dernier
+                        {activeReservations > 0 ? 'À venir' : 'Aucune réservation'}
                     </div>
                 </div>
                 <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2">
-                    <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">Nouveaux Clients</span>
+                    <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">Clients Uniques</span>
                     <div className="flex items-end gap-2">
-                        <h3 className="text-3xl font-black text-white leading-none">45</h3>
+                        <h3 className="text-3xl font-black text-white leading-none">{totalClients}</h3>
                         <span className="text-[#cbad90] text-sm mb-0.5">joueurs</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#cbad90] text-xs font-bold mt-2">
-                        <span className="material-symbols-outlined text-[16px]">remove</span>
-                        Stable
+                        <span className="material-symbols-outlined text-[16px]">group</span>
+                        Base de données
                     </div>
                 </div>
                 <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2">
@@ -69,7 +80,7 @@ const Statistics = () => {
                     </div>
                     <div className="flex items-center gap-1.5 text-[#0bda16] text-xs font-bold mt-2">
                         <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                        Excellent
+                        {parseInt(occupancyRate) > 30 ? 'Très bon' : 'En croissance'}
                     </div>
                 </div>
             </div>

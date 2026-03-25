@@ -4,6 +4,7 @@ import { useDashboard } from '../context/DashboardContext';
 import { toast } from 'react-toastify';
 import { supabase } from '../services/supabaseClient';
 import { AvailabilityService } from '../services/AvailabilityService';
+import { Camera, Plus, Trash2 } from "lucide-react";
 
 const initialFormState = {
     name: "",
@@ -12,11 +13,12 @@ const initialFormState = {
     price: "",
     description: "",
     hours: "08:00 - 00:00",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnNGA34sSndyAJAfENjmbZRG81TkS1IJSCHEAHafu1htOaj2cazf9VkAzI4xERiSDtxWleAt9uDNrVFcRvfQi2e-ZpTSJYfagli4b3vXbzcv-rH7Q5Hg_1kWirsvM-dr52fv7Qh2gJkNCmn1sXhB7fAXoinUFHJS8fJreTbxZNS322Vr3gPJfaiK-kkfmRlO9tuQrnujBbkoXIQGn-vRNGKl3Nfod6xatgMQk7J7RS2Mq-SVffZwiNQfZH1tY4ghFAAs5v8BYF1w"
+    images: [] // Changed from image to images array
 };
 
 const CreateFieldModal = () => {
     const { addField, closeCreateModal, isCreateModalOpen } = useDashboard();
+    const fileInputRef = React.useRef(null);
 
     // Form State
     const [formData, setFormData] = useState(initialFormState);
@@ -39,7 +41,7 @@ const CreateFieldModal = () => {
             label: d.label,
             enabled: d.value >= 1 && d.value <= 6, // Lundi-Samedi par défaut
             start_time: "08:00",
-            end_time: "22:00",
+            end_time: "00:00",
         }))
     );
 
@@ -62,33 +64,53 @@ const CreateFieldModal = () => {
     const handleImageChange = async (e) => {
         try {
             setUploading(true);
-            const file = e.target.files[0];
-            if (!file) return;
+            const files = Array.from(e.target.files);
+            if (!files || files.length === 0) return;
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            const uploadedUrls = [];
 
-            const { error: uploadError } = await supabase.storage
-                .from('terrain-images')
-                .upload(filePath, file);
+            for (const file of files) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                const filePath = `${fileName}`;
 
-            if (uploadError) {
-                throw uploadError;
+                const { error: uploadError } = await supabase.storage
+                    .from('terrain-images')
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    console.error("Upload error for file", file.name, uploadError);
+                    toast.error(`Erreur pour ${file.name}`);
+                    continue; // Skip failed uploads but continue other files
+                }
+
+                const { data } = supabase.storage
+                    .from('terrain-images')
+                    .getPublicUrl(filePath);
+
+                uploadedUrls.push(data.publicUrl);
             }
 
-            const { data } = supabase.storage
-                .from('terrain-images')
-                .getPublicUrl(filePath);
-
-            setFormData({ ...formData, image: data.publicUrl });
-            toast.success("Image téléchargée !");
+            setFormData(prev => ({ 
+                ...prev, 
+                images: [...prev.images, ...uploadedUrls] 
+            }));
+            toast.success(`${uploadedUrls.length} image(s) téléchargée(s) !`);
         } catch (error) {
             console.error(error);
-            toast.error("Erreur lors du téléchargement de l'image");
+            toast.error("Erreur lors du téléchargement des images");
         } finally {
             setUploading(false);
+            // Reset input so same file can be selected again if needed
+            e.target.value = null;
         }
+    };
+
+    const removeImage = (indexToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter((_, index) => index !== indexToRemove)
+        }));
     };
 
     const handleSubmit = async (e) => {
@@ -149,19 +171,19 @@ const CreateFieldModal = () => {
         }
     };
 
-    const inputClasses = "w-full px-4 py-3 rounded-lg border border-[#493622] bg-[#231a10] text-[#cbad90] placeholder-[#5d452b] focus:outline-none focus:border-[#f27f0d] transition-colors";
+    const inputClasses = "w-full px-4 py-3 rounded-lg border border-surface-highlight bg-background-dark text-[#cbad90] placeholder-[#5d452b] focus:outline-none focus:border-[#f27f0d] transition-colors";
     const labelClasses = "text-white text-sm font-medium mb-1 block";
 
     if (!isCreateModalOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-[#2c241b] rounded-2xl border border-[#493622] w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+            <div className="bg-surface-dark rounded-2xl border border-surface-highlight w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-[0_0_40px_rgba(0,0,0,0.5)]">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-[#493622] sticky top-0 bg-[#2c241b] z-10">
+                <div className="flex items-center justify-between p-6 border-b border-surface-highlight sticky top-0 bg-surface-dark z-10">
                     <h2 className="text-white text-2xl font-bold">Ajouter un Nouveau Terrain</h2>
-                    <button onClick={closeCreateModal} className="text-[#cbad90] hover:text-white transition-colors">
+                    <button onClick={closeCreateModal} className="text-text-secondary hover:text-white transition-colors">
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -248,65 +270,124 @@ const CreateFieldModal = () => {
                             />
                         </div>
 
-                        {/* Image Upload */}
-                        <div>
-                            <label htmlFor="image" className={labelClasses}>Photo du terrain</label>
-                            <input
-                                type="file"
-                                id="image"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="w-full text-[#cbad90] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#f27f0d] file:text-[#231a10] hover:file:bg-[#d9720b] cursor-pointer"
-                            />
-                            {uploading && <p className="text-sm text-[#cbad90] mt-2">Téléchargement de l'image...</p>}
+                        {/* ═══ SECTION GALERIE PHOTOS ═══ */}
+                        <div className="border-t border-surface-highlight pt-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 className="text-white text-lg font-bold mb-1">
+                                        📸 Galerie Photos
+                                    </h3>
+                                    <p className="text-text-secondary text-xs">
+                                        Gérez les photos du terrain (Sélection multiple possible).
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="flex items-center gap-2 bg-primary-new/10 text-primary-new border border-primary-new/30 px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary-new/20 transition-all disabled:opacity-50"
+                                >
+                                    {uploading ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-new"></div>
+                                    ) : (
+                                        <Plus className="w-4 h-4" />
+                                    )}
+                                    Ajouter des photos
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {formData.images && formData.images.map((url, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="relative group aspect-video rounded-xl overflow-hidden border border-surface-highlight"
+                                    >
+                                        <img
+                                            src={url}
+                                            alt={`Terrain ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(idx)}
+                                                className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                                title="Supprimer"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!formData.images || formData.images.length === 0) && !uploading && (
+                                    <div className="col-span-full py-8 flex flex-col items-center justify-center border border-dashed border-surface-highlight rounded-xl bg-background-dark/50">
+                                        <Camera className="w-8 h-8 text-text-muted mb-2" />
+                                        <p className="text-text-secondary text-sm">
+                                            Aucune photo dans la galerie
+                                        </p>
+                                    </div>
+                                )}
+                                {uploading && (
+                                    <div className="aspect-video rounded-xl border border-dashed border-primary-new bg-primary-new/5 flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-new"></div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* ═══ SECTION DISPONIBILITÉS ═══ */}
-                        <div className="border-t border-[#493622] pt-6">
+                        <div className="border-t border-surface-highlight pt-6">
                             <h3 className="text-white text-lg font-bold mb-1">📅 Disponibilités</h3>
-                            <p className="text-[#cbad90] text-xs mb-4">Définissez les jours et heures d'ouverture du terrain.</p>
+                            <p className="text-text-secondary text-xs mb-4">Définissez les jours et heures d'ouverture du terrain.</p>
 
                             <div className="space-y-3">
                                 {schedule.map((day, index) => (
                                     <div
                                         key={day.day_of_week}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.enabled
-                                            ? "bg-[#231a10] border-[#f27f0d]/40"
-                                            : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
+                                        className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-all ${day.enabled
+                                            ? "bg-background-dark border-primary-new/40"
+                                            : "bg-background-dark/50 border-surface-highlight/50 opacity-60"
                                             }`}
                                     >
-                                        {/* Toggle */}
-                                        <button
-                                            type="button"
-                                            onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
-                                            className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-[#f27f0d]' : 'bg-[#493622]'
-                                                }`}
-                                        >
-                                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'
-                                                }`} />
-                                        </button>
+                                        {/* Checkbox */}
+                                        <div className="flex items-center justify-center w-6 sm:w-10 shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                checked={day.enabled}
+                                                onChange={(e) => updateScheduleDay(index, 'enabled', e.target.checked)}
+                                                className="w-4 h-4 sm:w-5 sm:h-5 rounded border-surface-highlight text-primary-new focus:ring-primary-new cursor-pointer accent-primary-new bg-surface-dark"
+                                            />
+                                        </div>
 
                                         {/* Day name */}
-                                        <span className={`text-sm font-semibold w-20 flex-shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
+                                        <span className={`text-[11px] sm:text-sm font-semibold w-16 sm:w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-text-secondary'
                                             }`}>
                                             {day.label}
                                         </span>
 
                                         {/* Time inputs */}
                                         {day.enabled && (
-                                            <div className="flex items-center gap-2 flex-1">
+                                            <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
                                                 <input
                                                     type="time"
                                                     value={day.start_time}
                                                     onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
-                                                    className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                    className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
                                                 />
-                                                <span className="text-[#cbad90] text-xs">à</span>
+                                                <span className="text-text-secondary text-[10px] sm:text-xs">à</span>
                                                 <input
                                                     type="time"
                                                     value={day.end_time}
                                                     onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
-                                                    className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                    className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
                                                 />
                                             </div>
                                         )}
@@ -316,18 +397,18 @@ const CreateFieldModal = () => {
                         </div>
 
                         {/* Submit Button */}
-                        <div className="flex justify-end gap-4 mt-4 pt-4 border-t border-[#493622]">
+                        <div className="flex justify-end gap-4 mt-4 pt-4 border-t border-surface-highlight">
                             <button
                                 type="button"
                                 onClick={closeCreateModal}
-                                className="px-6 py-3 rounded-xl border border-[#493622] text-[#cbad90] hover:bg-[#493622] hover:text-white transition-colors"
+                                className="px-6 py-3 rounded-xl border border-surface-highlight text-text-secondary hover:bg-surface-highlight hover:text-white transition-colors"
                             >
                                 Annuler
                             </button>
                             <button
                                 type="submit"
                                 disabled={isLoading || uploading}
-                                className="bg-[#f27f0d] text-[#231a10] px-8 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50"
+                                className="bg-primary-new text-background-dark px-8 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50"
                             >
                                 {isLoading ? "Création..." : "Créer le Terrain"}
                             </button>

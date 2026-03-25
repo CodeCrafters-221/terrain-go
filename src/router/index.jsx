@@ -22,6 +22,8 @@ import Revenues from "../pages/Dashboard/Revenues";
 import CreateFieldPage from "../pages/Dashboard/CreateFieldPage";
 import EditFieldPage from "../pages/Dashboard/EditFieldPage";
 import Settings from "../pages/Dashboard/Settings";
+import MySubscriptions from "../pages/Dashboard/MySubscriptions";
+import Owners from "../pages/Owners";
 
 import OwnerRedirect from "../components/OwnerRedirect";
 
@@ -45,6 +47,10 @@ export const router = createBrowserRouter([
       {
         path: "reservations",
         element: <MyReservations />,
+      },
+      {
+        path: "abonnements",
+        element: <MySubscriptions />,
       },
       {
         path: "stats",
@@ -76,31 +82,43 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/", element: <Home /> },
-
       {
-        path: "/compte",
-        element: (
-          <ProtectedRoute>
-            {" "}
-            <UserProfile />{" "}
-          </ProtectedRoute>
-        ),
+        path: "/search",
+        element: <SearchPage />,
       },
       {
         path: "/terrain-details/:id",
         element: <TerrainDetails />,
       },
       {
-        path: "/search",
-        element: <SearchPage />,
+        path: "/compte",
+        element: (
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
   {
     element: <AuthLayout />,
     children: [
-      { path: "/login", element: <Login /> },
-      { path: "/register", element: <Register /> },
+      {
+        path: "/login",
+        element: (
+          <OwnerRedirect>
+            <Login />
+          </OwnerRedirect>
+        ),
+      },
+      {
+        path: "/register",
+        element: (
+          <OwnerRedirect>
+            <Register />
+          </OwnerRedirect>
+        ),
+      },
       {
         path: "/create-profile",
         element: (
@@ -126,5 +144,13 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  {
+    path: "/owners",
+    element: (
+      <OwnerRedirect>
+        <Owners />
+      </OwnerRedirect>
+    ),
   },
 ]);

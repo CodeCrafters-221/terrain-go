@@ -1,7 +1,7 @@
 import { SearchX, Zap, Heart, MapPin, Star, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const CardSearch = ({ terrains, onReserve }) => {
+const CardSearch = ({ terrains, onReserve, onFavorite, favorites = [] }) => {
   if (terrains.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in-up">
@@ -39,8 +39,19 @@ const CardSearch = ({ terrains, onReserve }) => {
                 )}
               </div>
 
-              <button className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/40 text-white hover:bg-white hover:text-red-500 transition-all duration-300 backdrop-blur-sm border border-white/10 hover:border-white hover:scale-110 active:scale-90 group/btn">
-                <Heart className="w-[18px] h-[18px] transition-transform group-hover/btn:scale-110" />
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onFavorite && onFavorite(terrain.id);
+                }}
+                className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-110 active:scale-90 group/btn ${
+                  favorites.includes(terrain.id) 
+                    ? "bg-primary text-white border-primary" 
+                    : "bg-black/40 text-white hover:bg-white hover:text-red-500"
+                }`}
+              >
+                <Heart className={`w-[18px] h-[18px] transition-transform group-hover/btn:scale-110 ${favorites.includes(terrain.id) ? "fill-current" : ""}`} />
               </button>
 
               <div className="absolute inset-0 bg-linear-to-t from-background-dark/90 via-transparent to-transparent z-5 opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
@@ -79,7 +90,7 @@ const CardSearch = ({ terrains, onReserve }) => {
                 </div>
               </div>
 
-              <div className="h-px bg-linear-to-r from-transparent via-border-dark to-transparent w-full my-1 opacity-50"></div>
+              <div className="h-px bg-linear-to-r from-transparent via-surface-highlight to-transparent w-full my-1 opacity-50"></div>
 
               <div className="flex justify-between items-center mt-auto pt-1">
                 <div className="flex flex-col">

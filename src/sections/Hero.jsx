@@ -15,10 +15,14 @@ export default function Hero() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
 
-  const { user:currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    setIsVisible(true);
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const stats = [
@@ -67,7 +71,7 @@ export default function Hero() {
         {/* Badge */}
         {currentUser ? (
           <Link
-            to="/search" 
+            to="/search"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
           >
             <PartyPopper className="text-primary w-4 h-4" />
@@ -88,7 +92,7 @@ export default function Hero() {
         )}
 
         {/* Statistiques */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 w-full max-w-4xl">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 mt-5 w-full max-w-4xl">
           {stats.map((stat) => (
             <div
               key={stat.label}

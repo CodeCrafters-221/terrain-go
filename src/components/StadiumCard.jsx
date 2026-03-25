@@ -20,7 +20,8 @@ export default function StadiumCard({
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleReserve = async () => {
+  const handleReserve = async (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     if (isPlaceholder) {
       navigate("/search");
       return;
@@ -39,14 +40,23 @@ export default function StadiumCard({
     }
   };
 
-  const handleFavorite = () => {
+  const handleFavorite = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     if (onFavorite) {
       onFavorite(id);
     }
   };
 
   return (
-    <div className={`w-full h-full flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] transition-all duration-300 hover:border-primary/50`}>
+    <div 
+      onClick={() => {
+        if (!isPlaceholder) {
+          navigate(`/terrain-details/${id}`);
+        } else {
+          navigate("/search");
+        }
+      }}
+      className={`w-full h-full flex flex-col bg-[#2e2318] rounded-2xl overflow-hidden shadow-lg border border-[#493622] transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/20 cursor-pointer`}>
       {/* Image Container */}
       <figure className="relative h-44 sm:h-48 flex-shrink-0 group overflow-hidden">
         <img

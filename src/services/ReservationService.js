@@ -33,7 +33,8 @@ export const ReservationService = {
             terrainName: r.fields?.name || "Terrain Inconnu",
             clientName: "Client App",
             clientPhone: "-",
-            isManual: !r.user_id
+            isManual: !r.user_id,
+            reservationType: r.reservation_type || "single"
         }));
     },
 
@@ -76,7 +77,8 @@ export const ReservationService = {
                 terrainName: terrain.name || "Terrain inconnu",
                 location: terrain.adress || "Lieu non renseigné",
                 image: images.length > 0 ? images[0].url_image : null,
-                fields: terrain
+                fields: terrain,
+                reservationType: r.reservation_type || "single"
             };
         });
     },
@@ -101,13 +103,63 @@ export const ReservationService = {
         if (error) throw error;
     },
 
-    // --- DELETE/CANCEL ---
-    async cancelReservation(id) {
-        const { error } = await supabase
-            .from("reservations")
-            .delete() // Start with delete for simplicity, or update status to 'Cancelled'
-            .eq("id", id);
+    // --- SUBSCRIPTIONS (Abonnements) ---
+    async createSubscription(data) {
+        const { data: insertedData, error } = await supabase
+            .from("subscriptions")
+            .insert({
+                user_id: data.user_id,
+                field_id: data.field_id,
+                client_name: data.client_name,
+                client_phone: data.client_phone,
+                day_of_week: data.day_of_week,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                start_date: data.start_date,
+                end_date: data.end_date,
+                total_amount: data.total_amount,
+                status: 'En attente de paiement',
+                payment_method: data.payment_method
+            })
+            .select();
+        if (error) throw error;
+        return (insertedData || [])[0];
+    },
 
+    async getOwnerSubscriptions(ownerId) {
+        const { data, error } = await supabase
+            .from("subscriptions")
+            .select(`
+                *,
+                fields (name)
+            `)
+            .eq("user_id", ownerId)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        return (data || []).map(s => ({
+            id: s.id,
+            clientName: s.client_name,
+            clientPhone: s.client_phone,
+            fieldName: s.fields?.name,
+            fieldId: s.field_id,
+            dayOfWeek: s.day_of_week,
+            startTime: s.start_time,
+            endTime: s.end_time,
+            startDate: s.start_date,
+            endDate: s.end_date,
+            amount: s.total_amount,
+            status: s.status,
+            createdAt: s.created_at,
+            reservationType: 'subscription'
+        }));
+    },
+
+    async cancelSubscription(id) {
+        const { error } = await supabase
+            .from("subscriptions")
+            .update({ status: 'cancelled' })
+            .eq("id", id);
         if (error) throw error;
     }
 };
