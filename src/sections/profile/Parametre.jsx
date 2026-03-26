@@ -108,6 +108,20 @@ const Parametre = () => {
     }
   }, [profile, user]);
 
+  // Fonction utilitaire pour formater la date de modification
+  const formatLastModified = (dateString) => {
+    if (!dateString) return "Date inconnue";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "aujourd'hui";
+    if (diffDays < 30) return `il y a ${diffDays} jours`;
+    const diffMonths = Math.floor(diffDays / 30);
+    return `il y a ${diffMonths} mois`;
+  };
+
   const inputClasses = "w-full min-w-0 bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-base md:text-sm text-white placeholder:text-text-secondary/70 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors";
 
   return (
@@ -203,7 +217,7 @@ const Parametre = () => {
                 <div className="text-left">
                   <p className="text-white text-sm font-medium">Mot de passe</p>
                   <p className="text-text-secondary text-xs">
-                    Dernière modif. il y a 3 mois
+                    Dernière modif. {formatLastModified(user?.updated_at)}
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-text-secondary group-hover:text-white" />
