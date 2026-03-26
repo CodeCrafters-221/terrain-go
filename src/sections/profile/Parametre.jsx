@@ -108,7 +108,7 @@ const Parametre = () => {
     }
   }, [profile, user]);
 
-  const inputClasses = "bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors";
+  const inputClasses = "w-full min-w-0 bg-background-dark border border-surface-highlight rounded-xl px-4 py-3 text-base md:text-sm text-white placeholder:text-text-secondary/70 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors";
 
   return (
     <>
@@ -119,14 +119,14 @@ const Parametre = () => {
         <h2 className="text-white text-2xl font-bold leading-tight">
           Mes Informations
         </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
           {/* Personal Info Form */}
-          <div className="lg:col-span-2 bg-surface-dark p-6 rounded-2xl border border-surface-highlight">
+          <div className="lg:col-span-2 bg-surface-dark p-4 sm:p-6 rounded-2xl border border-surface-highlight">
             <h3 className="text-white font-bold text-lg mb-6 flex items-center gap-2">
               <UserIcon className="w-5 h-5 text-primary" />
               Informations Personnelles
             </h3>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-text-secondary">
                   Nom complet
@@ -184,8 +184,8 @@ const Parametre = () => {
                   <span className="text-red-500 text-xs">{errors.ville}</span>
                 )}
               </div>
-              <div className="mt-6 col-span-2 flex justify-end">
-                <button type="submit" className="bg-surface-highlight hover:bg-primary hover:text-background-dark text-white font-bold py-2.5 px-6 rounded-full transition-colors shadow-lg">
+              <div className="mt-2 md:mt-6 md:col-span-2 flex justify-stretch md:justify-end">
+                <button type="submit" className="w-full md:w-auto bg-surface-highlight hover:bg-primary hover:text-background-dark text-white font-bold py-3 px-6 rounded-full transition-colors shadow-lg">
                   {isLoading ? "Modification..." : "Modifier mon profil"}
                 </button>
               </div>
@@ -194,7 +194,7 @@ const Parametre = () => {
           {/* Side Settings (Password & Notifications) */}
           <div className="flex flex-col gap-6">
             {/* Security */}
-            <div className="bg-surface-dark p-6 rounded-2xl border border-surface-highlight">
+            <div className="bg-surface-dark p-4 sm:p-6 rounded-2xl border border-surface-highlight">
               <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
                 <Lock className="w-5 h-5 text-primary" />
                 Sécurité
