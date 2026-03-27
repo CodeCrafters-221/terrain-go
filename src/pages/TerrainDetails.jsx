@@ -6,6 +6,8 @@ import { ReviewService } from "../services/ReviewService";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import {
+  Trophy,
+  Search,
   ChevronRight,
   ChevronLeft,
   MapPin,
@@ -27,7 +29,7 @@ export default function TerrainDetails() {
   const [terrain, setTerrain] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReservationOpen, setIsReservationOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [ratingStats, setRatingStats] = useState({ average: 0, count: 0 });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -147,8 +149,56 @@ export default function TerrainDetails() {
   };
   return (
     <div className="bg-background-dark relative  text-text-main font-display antialiased overflow-x-hidden selection:bg-primary selection:text-white min-h-screen">
+      {/* Navigation */}
+      <div className="w-full border-b border-[#493622] bg-background-dark/95 backdrop-blur-sm sticky top-0 z-50">
+        <header className="flex items-center justify-between whitespace-nowrap px-6 lg:px-10 py-4 max-w-7xl mx-auto w-full">
+          <div className="flex items-center gap-8">
+            <a
+              className="flex items-center gap-3 text-white hover:opacity-80 transition-opacity"
+              href="#"
+            >
+              <Trophy className="w-8 h-8 text-primary" strokeWidth={1.5} />
+              <h2 className="text-white text-xl font-bold leading-tight tracking-tight">
+                Footbooking
+              </h2>
+            </a>
+            <div className="hidden md:flex items-center gap-8">
+              <a
+                className="text-white text-sm font-medium hover:text-primary transition-colors"
+                href="#"
+              >
+                Terrains
+              </a>
+              <a
+                className="text-text-secondary text-sm font-medium hover:text-primary transition-colors"
+                href="#"
+              >
+                Tournois
+              </a>
+              <a
+                className="text-text-secondary text-sm font-medium hover:text-primary transition-colors"
+                href="#"
+              >
+                Clubs
+              </a>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="hidden sm:flex items-center bg-surface-light rounded-full px-4 h-10 w-64 border border-b-surface-dark focus-within:border-primary/50 transition-all">
+              <Search className="text-text-secondary w-5 h-5" />
+              <input
+                className="bg-transparent border-none text-white text-sm w-full outline-0 px-4 focus:ring-0 placeholder:text-text-secondary/70"
+                placeholder="Rechercher un terrain..."
+              />
+            </div>
+            <button className="flex items-center justify-center rounded-full h-10 px-6 bg-primary hover:bg-primary-hover text-[#231a10] text-sm font-bold transition-all shadow-lg shadow-primary/20">
+              <span>Connexion</span>
+            </button>
+          </div>
+        </header>
+      </div>
       {/* Main Content */}
-      <main className="w-full max-w-7xl mx-auto px-4 md:px-10 pt-32 pb-20">
+      <main className="w-full max-w-7xl mx-auto px-4 md:px-10 py-6 pb-20">
         {/* Breadcrumbs */}
         <div className="flex flex-wrap items-center gap-2 mb-6 text-sm">
           <a
