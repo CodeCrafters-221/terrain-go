@@ -18,14 +18,13 @@ const CreateFieldPage = () => {
     const navigate = useNavigate();
     const { addField } = useDashboard();
 
-    // Form State
     const [formData, setFormData] = useState({
         name: "",
         type: "",
         location: "",
         price: "",
         description: "",
-        hours: "08:00 - 22:00",
+        hours: "08:00 - 00:00",
         image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnNGA34sSndyAJAfENjmbZRG81TkS1IJSCHEAHafu1htOaj2cazf9VkAzI4xERiSDtxWleAt9uDNrVFcRvfQi2e-ZpTSJYfagli4b3vXbzcv-rH7Q5Hg_1kWirsvM-dr52fv7Qh2gJkNCmn1sXhB7fAXoinUFHJS8fJreTbxZNS322Vr3gPJfaiK-kkfmRlO9tuQrnujBbkoXIQGn-vRNGKl3Nfod6xatgMQk7J7RS2Mq-SVffZwiNQfZH1tY4ghFAAs5v8BYF1w"
     });
 
@@ -36,7 +35,7 @@ const CreateFieldPage = () => {
             label: d.label,
             enabled: d.value >= 1 && d.value <= 6, // Lundi-Samedi par défaut
             start_time: "08:00",
-            end_time: "22:00",
+            end_time: "00:00",
         }))
     );
 
@@ -205,40 +204,42 @@ const CreateFieldPage = () => {
                             {schedule.map((day, index) => (
                                 <div
                                     key={day.day_of_week}
-                                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${day.enabled
+                                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-all ${day.enabled
                                         ? "bg-[#231a10] border-[#f27f0d]/40"
                                         : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
                                         }`}
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
-                                        className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-[#f27f0d]' : 'bg-[#493622]'
-                                            }`}
-                                    >
-                                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'
-                                            }`} />
-                                    </button>
+                                    <div className="flex items-center justify-center w-8 sm:w-10 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
+                                            className={`w-8 h-4 sm:w-10 sm:h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-[#f27f0d]' : 'bg-[#493622]'
+                                                }`}
+                                        >
+                                            <span className={`absolute top-0.5 w-3 h-3 sm:w-5 sm:h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-[18px] sm:translate-x-4' : 'translate-x-0.5'
+                                                }`} />
+                                        </button>
+                                    </div>
 
-                                    <span className={`text-sm font-semibold w-20 flex-shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
+                                    <span className={`text-[11px] sm:text-sm font-semibold w-16 sm:w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
                                         }`}>
                                         {day.label}
                                     </span>
 
                                     {day.enabled && (
-                                        <div className="flex items-center gap-2 flex-1">
+                                        <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
                                             <input
                                                 type="time"
                                                 value={day.start_time}
                                                 onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
-                                                className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-[#342618] text-white text-[11px] sm:text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-[68px] sm:w-28 text-center"
                                             />
-                                            <span className="text-[#cbad90] text-xs">à</span>
+                                            <span className="text-[#cbad90] text-[10px] sm:text-xs">à</span>
                                             <input
                                                 type="time"
                                                 value={day.end_time}
                                                 onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
-                                                className="px-2 py-1.5 rounded-lg bg-[#342618] text-white text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-28"
+                                                className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-[#342618] text-white text-[11px] sm:text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-[68px] sm:w-28 text-center"
                                             />
                                         </div>
                                     )}

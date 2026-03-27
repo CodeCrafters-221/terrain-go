@@ -29,7 +29,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
       )}
 
       <aside className={`
-        fixed inset-y-0 left-0 z-[70] w-[280px] flex flex-col border-r border-[#493622] bg-[#231a10] 
+        fixed inset-y-0 left-0 z-[70] w-[280px] flex flex-col border-r border-surface-highlight bg-background-dark 
         transition-all duration-300 transform 
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         md:translate-x-0 md:static md:z-0
@@ -41,18 +41,18 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
               <NavLink to="/dashboard/compte" onClick={onClose} className="flex items-center gap-3 group cursor-pointer">
                 <img
                   src={profile?.image || "https://imgs.search.brave.com/SU6DjXUVoDrdq7vpMSVNfbUFdVDH5Po5Tp5hxoZmMRg/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/dmVjdG9yc3RvY2su/Y29tL2kvNTAwcC84/Mi8wOC9tYWxlLWFu/ZC1mZW1hbGUtcHJv/ZmlsZS1zaWxob3Vl/dHRlcy12ZWN0b3It/Mzg1NzgyMDguanBn"}
-                  className="rounded-full object-cover size-12 shadow-lg border-2 border-[#f27f0d] transition-transform group-hover:scale-110"
+                  className="rounded-full object-cover size-12 shadow-lg border-2 border-primary-new transition-transform group-hover:scale-110"
                   alt="Profile"
                 />
                 <div className="flex flex-col">
-                  <h1 className="text-white text-lg font-bold leading-tight group-hover:text-[#f27f0d] transition-colors">Footbooking</h1>
-                  <p className="text-[#cbad90] text-xs font-normal">Mon Compte</p>
+                  <h1 className="text-white text-lg font-bold leading-tight group-hover:text-primary-new transition-colors">Footbooking</h1>
+                  <p className="text-text-secondary text-xs font-normal">Mon Compte</p>
                 </div>
               </NavLink>
               {/* Close Button Mobile */}
               <button
                 onClick={onClose}
-                className="md:hidden size-8 flex items-center justify-center rounded-full bg-[#493622] text-[#cbad90] hover:text-white transition-colors"
+                className="md:hidden size-8 flex items-center justify-center rounded-full bg-surface-highlight text-text-secondary hover:text-white transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -66,6 +66,8 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
               <NavItem to="/dashboard/abonnements" icon="autorenew" label="Mes Abonnements" onClick={onClose} />
               <NavItem to="/dashboard/stats" icon="bar_chart" label="Statistiques" onClick={onClose} />
               <NavItem to="/dashboard/revenues" icon="payments" label="Revenus" onClick={onClose} />
+              <div className="h-px bg-surface-highlight my-2" />
+              {/* <NavItem to="/" icon="public" label="Retour au site" onClick={onClose} /> */}
             </nav>
           </div>
 
@@ -73,7 +75,7 @@ const DashboardSidebar = ({ isOpen, onClose }) => {
           <div className="px-2">
             <button
               onClick={handleLogout}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full h-12 px-4 border border-[#493622] hover:bg-[#2c241b] text-[#cbad90] hover:text-white transition-colors"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full h-12 px-4 border border-surface-highlight hover:bg-surface-dark text-text-secondary hover:text-white transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]">logout</span>
               <span className="text-sm font-medium">Déconnexion</span>
@@ -94,8 +96,8 @@ const NavItem = ({ to, icon, label, end, onClick }) => {
       onClick={onClick}
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-3 rounded-full transition-all ${isActive
-          ? "bg-[#f27f0d] text-[#231a10] shadow-md hover:opacity-90"
-          : "text-[#cbad90] hover:bg-[#493622] hover:text-white"
+          ? "bg-primary-new text-background-dark shadow-md hover:opacity-90"
+          : "text-text-secondary hover:bg-surface-highlight hover:text-white"
         }`
       }
     >

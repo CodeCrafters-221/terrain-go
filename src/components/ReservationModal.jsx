@@ -12,13 +12,15 @@ export default function ReservationModal({
   isOpen,
   onClose,
   stadium,
+  initialDate = "",
+  initialTimeSlot = "",
   // user = null,
 }) {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    date: "",
-    timeSlot: "",
+    date: initialDate,
+    timeSlot: initialTimeSlot,
     duration: "1",
     playerName: "",
     phone: "",
@@ -58,8 +60,8 @@ export default function ReservationModal({
     if (isOpen) {
       setFormData((prev) => ({
         ...prev,
-        date: "",
-        timeSlot: "",
+        date: initialDate || "",
+        timeSlot: initialTimeSlot || "",
         duration: "1",
       }));
       setStep(1);
@@ -304,10 +306,10 @@ export default function ReservationModal({
 
       console.log("SENDING RESERVATION:", reservationData);
 
-      if (formData.reservationType === 'subscription') {
+      if (formData.reservationType === "subscription") {
         const startDate = new Date(formData.date);
         const months = parseInt(formData.subscriptionMonths || "1");
-        
+
         // Calculate the end date based on EXACTLY 4 sessions per month.
         // If there are 4 sessions, the last one is 3 weeks (21 days) after the first one.
         // Formula: (Total Sessions - 1) * 7 days
@@ -324,28 +326,33 @@ export default function ReservationModal({
           start_time: formData.timeSlot,
           end_time: endTime,
           start_date: formData.date,
-          end_date: endDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split("T")[0],
           total_amount: calculateTotal() * 4 * months, // Simple estimation: 4 matches per month
-          payment_method: formData.paymentMethod || "Wave"
+          payment_method: formData.paymentMethod || "Wave",
         };
 
         const newSub = await ReservationService.createSubscription(subData);
-        if (!newSub) throw new Error("Erreur lors de la création de l'abonnement : aucune donnée retournée. Vérifiez vos politiques RLS.");
+        if (!newSub)
+          throw new Error(
+            "Erreur lors de la création de l'abonnement : aucune donnée retournée. Vérifiez vos politiques RLS.",
+          );
 
         // CREATE FIRST RESERVATION ENTRY LINKED TO THIS SUB
-        await supabase.from("reservations").insert([{
-          user_id: user?.id,
-          field_id: stadium.id,
-          date: formData.date,
-          start_time: formData.timeSlot,
-          end_time: endTime,
-          total_price: 0, // Subscription amount is tracked in sub table
-          status: "En attente de paiement",
-          payment_method: formData.paymentMethod || "Wave",
-          client_name: formData.playerName,
-          client_phone: formData.phone,
-          subscription_id: newSub.id // THIS LINKS TO THE NEW SUB
-        }]);
+        await supabase.from("reservations").insert([
+          {
+            user_id: user?.id,
+            field_id: stadium.id,
+            date: formData.date,
+            start_time: formData.timeSlot,
+            end_time: endTime,
+            total_price: 0, // Subscription amount is tracked in sub table
+            status: "En attente de paiement",
+            payment_method: formData.paymentMethod || "Wave",
+            client_name: formData.playerName,
+            client_phone: formData.phone,
+            subscription_id: newSub.id, // THIS LINKS TO THE NEW SUB
+          },
+        ]);
 
         setStep(3);
         return;
@@ -355,7 +362,6 @@ export default function ReservationModal({
         .from("reservations")
         .insert([reservationData])
         .select();
-
 
       if (insertError) {
         console.error("DETAILED INSERT ERROR:", insertError);
@@ -395,7 +401,7 @@ export default function ReservationModal({
   if (user && profile?.role === "owner") {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-[#2e2318] rounded-2xl max-w-md w-full border border-[#493622] shadow-2xl relative overflow-hidden">
+        <div className="bg-surface-dark rounded-2xl max-w-md w-full border border-surface-highlight shadow-2xl relative overflow-hidden">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors p-1"
@@ -411,7 +417,7 @@ export default function ReservationModal({
             <h2 className="text-white text-2xl font-bold mb-3">
               Action non autorisée
             </h2>
-            <p className="text-[#cbad90] text-base mb-8 leading-relaxed">
+            <p className="text-text-secondary text-base mb-8 leading-relaxed">
               En tant que{" "}
               <span className="text-white font-semibold">propriétaire</span>,
               vous ne pouvez pas effectuer de réservation sur la plateforme.
@@ -420,7 +426,7 @@ export default function ReservationModal({
 
             <button
               onClick={onClose}
-              className="w-full bg-[#342618] text-white font-bold py-3.5 rounded-xl hover:bg-[#3d2d1d] border border-[#493622] transition-all"
+              className="w-full bg-surface-dark text-white font-bold py-3.5 rounded-xl hover:bg-surface-light border border-surface-highlight transition-all"
             >
               Fermer
             </button>
@@ -434,7 +440,7 @@ export default function ReservationModal({
   if (!user) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-[#2e2318] rounded-2xl max-w-md w-full border border-[#493622] shadow-2xl relative overflow-hidden">
+        <div className="bg-surface-dark rounded-2xl max-w-md w-full border border-surface-highlight shadow-2xl relative overflow-hidden">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors p-1"
@@ -450,7 +456,7 @@ export default function ReservationModal({
             <h2 className="text-white text-xl sm:text-2xl font-bold mb-2 sm:mb-3">
               Connexion requise
             </h2>
-            <p className="text-[#cbad90] text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed">
+            <p className="text-text-secondary text-sm sm:text-base mb-6 sm:mb-8 leading-relaxed">
               Pour réserver le terrain <br className="sm:hidden" />
               <span className="text-white font-semibold">{stadium.city}</span>,
               veuillez vous identifier.
@@ -467,7 +473,7 @@ export default function ReservationModal({
 
               <button
                 onClick={() => navigate("/register")}
-                className="flex items-center justify-center gap-2 w-full bg-transparent border-2 border-[#493622] text-white font-bold py-3 sm:py-3.5 rounded-xl hover:bg-[#342618] hover:border-primary/30 transition-all text-sm sm:text-base"
+                className="flex items-center justify-center gap-2 w-full bg-transparent border-2 border-surface-highlight text-white font-bold py-3 sm:py-3.5 rounded-xl hover:bg-surface-dark hover:border-primary/30 transition-all text-sm sm:text-base"
               >
                 <UserPlus className="w-5 h-5" />
                 Créer un compte
@@ -484,21 +490,21 @@ export default function ReservationModal({
     // 1. Container Principal : Flex centré avec padding
     <div className="fixed inset-0 z-50 flex top-15 items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 2. La Carte : Flex Column avec une hauteur MAX définie (85vh) */}
-      <div className="bg-[#2e2318] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col border border-[#493622] shadow-2xl">
+      <div className="bg-surface-dark rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col border border-surface-highlight shadow-2xl">
         {/* 3. HEADER : Reste FIXE (flex-none) */}
-        <div className="flex-none bg-[#2e2318] border-b border-[#493622] p-4 sm:p-6 flex justify-between items-center rounded-t-2xl z-10">
+        <div className="flex-none bg-surface-dark border-b border-surface-highlight p-4 sm:p-6 flex justify-between items-center rounded-t-2xl z-10">
           <div>
             <h2 className="text-white text-xl sm:text-2xl font-bold truncate max-w-[200px] sm:max-w-none">
               {stadium.city}
             </h2>
-            <div className="text-[#cbad90] text-xs sm:text-sm flex items-center mt-1">
+            <div className="text-text-secondary text-xs sm:text-sm flex items-center mt-1">
               <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
               <span className="truncate">{stadium.location}</span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:text-primary transition-colors bg-[#342618] sm:bg-transparent p-2 rounded-full sm:p-0"
+            className="text-white hover:text-primary transition-colors bg-surface-dark sm:bg-transparent p-2 rounded-full sm:p-0"
             aria-label="Fermer"
           >
             <X className="w-5 h-5 sm:w-8 sm:h-8" />
@@ -515,14 +521,14 @@ export default function ReservationModal({
               <h3 className="text-white text-xl font-bold mb-2">
                 Terrain Indisponible
               </h3>
-              <p className="text-[#cbad90] max-w-xs mx-auto">
+              <p className="text-text-secondary max-w-xs mx-auto">
                 Ce terrain a été temporairement mis hors ligne par le
                 propriétaire. Veuillez réessayer plus tard ou choisir un autre
                 terrain.
               </p>
               <button
                 onClick={onClose}
-                className="mt-8 px-8 py-3 bg-[#342618] text-white rounded-xl border border-[#493622] hover:bg-[#3d2d1d] font-bold transition-all"
+                className="mt-8 px-8 py-3 bg-surface-dark text-white rounded-xl border border-surface-highlight hover:bg-surface-light font-bold transition-all"
               >
                 Fermer
               </button>
@@ -532,16 +538,16 @@ export default function ReservationModal({
               {step === 1 ? (
                 <>
                   {/* Card détails Terrain */}
-                  <div className="bg-[#342618] rounded-xl p-3 sm:p-4 flex flex-row justify-between items-center border border-[#493622]/50 gap-2">
+                  <div className="bg-surface-dark rounded-xl p-3 sm:p-4 flex flex-row justify-between items-center border border-surface-highlight/50 gap-2">
                     <div className="space-y-1.5 sm:space-y-2">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="text-[#cbad90] text-[10px] sm:text-sm font-medium bg-[#2e2318] px-2 py-1 rounded whitespace-nowrap">
+                        <span className="text-text-secondary text-[10px] sm:text-sm font-medium bg-surface-dark px-2 py-1 rounded whitespace-nowrap">
                           {stadium.totalPlayers}
                         </span>
                         <span className="hidden sm:inline text-gray-500">
                           •
                         </span>
-                        <span className="text-[#cbad90] text-[10px] sm:text-sm font-medium bg-[#2e2318] px-2 py-1 rounded whitespace-nowrap">
+                        <span className="text-text-secondary text-[10px] sm:text-sm font-medium bg-surface-dark px-2 py-1 rounded whitespace-nowrap">
                           {stadium.fieldStadium}
                         </span>
                       </div>
@@ -562,15 +568,15 @@ export default function ReservationModal({
 
                   {/* Section Horaires d'ouverture */}
                   {loadingSchedule ? (
-                    <div className="bg-[#231a10] border border-[#493622]/30 rounded-xl p-3 flex items-center gap-2">
+                    <div className="bg-background-dark border border-surface-highlight/30 rounded-xl p-3 flex items-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                      <p className="text-[#cbad90] text-sm">
+                      <p className="text-text-secondary text-sm">
                         Chargement des horaires...
                       </p>
                     </div>
                   ) : (
                     fullSchedule.length > 0 && (
-                      <div className="bg-[#231a10] border border-[#493622]/30 rounded-xl p-3">
+                      <div className="bg-background-dark border border-surface-highlight/30 rounded-xl p-3">
                         <h4 className="text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
                           <span className="material-symbols-outlined text-sm text-primary">
                             schedule
@@ -599,7 +605,7 @@ export default function ReservationModal({
                                 >
                                   {dayName}
                                 </span>
-                                <span className="text-[8px] sm:text-[9px] text-[#cbad90]">
+                                <span className="text-[8px] sm:text-[9px] text-text-secondary">
                                   {dayAvail
                                     ? dayAvail.start_time.substring(0, 5)
                                     : "Fermé"}
@@ -625,7 +631,7 @@ export default function ReservationModal({
                         onChange={handleChange}
                         min={new Date().toISOString().split("T")[0]}
                         required
-                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-[#342618] text-white text-sm sm:text-base border border-[#493622] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-surface-dark text-white text-sm sm:text-base border border-surface-highlight focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
                       />
                     </div>
 
@@ -635,15 +641,15 @@ export default function ReservationModal({
                       </label>
 
                       {loadingSlots ? (
-                        <div className="flex flex-col items-center justify-center py-10 bg-[#342618]/30 rounded-xl border border-[#493622] animate-pulse">
+                        <div className="flex flex-col items-center justify-center py-10 bg-surface-dark/30 rounded-xl border border-surface-highlight animate-pulse">
                           <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-3"></div>
-                          <p className="text-sm text-[#cbad90] font-medium">
+                          <p className="text-sm text-text-secondary font-medium">
                             Vérification des disponibilités...
                           </p>
                         </div>
                       ) : !formData.date ? (
-                        <div className="text-center p-6 border-2 border-dashed border-[#493622] rounded-xl bg-[#342618]/30">
-                          <p className="text-[#cbad90] text-sm">
+                        <div className="text-center p-6 border-2 border-dashed border-surface-highlight rounded-xl bg-surface-dark/30">
+                          <p className="text-text-secondary text-sm">
                             Veuillez d'abord choisir une date
                           </p>
                         </div>
@@ -677,10 +683,10 @@ export default function ReservationModal({
                                 relative py-2.5 rounded-lg text-sm font-bold transition-all border
                                 ${
                                   !slot.available
-                                    ? "bg-[#231a10] border-[#493622] text-white/20 cursor-not-allowed overflow-hidden shadow-inner"
+                                    ? "bg-background-dark border-surface-highlight text-white/20 cursor-not-allowed overflow-hidden shadow-inner"
                                     : formData.timeSlot === slot.time
                                       ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)] scale-105 z-10"
-                                      : "bg-[#342618] text-white border-[#493622] hover:border-primary/50 hover:bg-[#3d2d1d]"
+                                      : "bg-surface-dark text-white border-surface-highlight hover:border-primary/50 hover:bg-surface-light"
                                 }
                               `}
                             >
@@ -732,7 +738,7 @@ export default function ReservationModal({
                           className={`py-2 sm:py-3 px-1 sm:px-4 rounded-lg font-semibold text-xs sm:text-base transition-all border ${
                             formData.duration === dur.value
                               ? "bg-primary text-black border-primary shadow-[0_0_10px_rgba(242,127,13,0.2)]"
-                              : "bg-[#342618] text-white border-[#493622] hover:border-primary/50"
+                              : "bg-surface-dark text-white border-surface-highlight hover:border-primary/50"
                           }`}
                         >
                           {dur.label}
@@ -743,7 +749,7 @@ export default function ReservationModal({
                     {/* Récapitulatif Heure */}
                     {formData.timeSlot && (
                       <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-between">
-                        <span className="text-[#cbad90] text-sm">
+                        <span className="text-text-secondary text-sm">
                           Créneau sélectionné :
                         </span>
                         <div className="flex items-center gap-2">
@@ -767,7 +773,8 @@ export default function ReservationModal({
                   {/* Type de réservation (Abonnement vs Unique) */}
                   <div className="mt-6">
                     <label className="block text-white text-sm sm:text-base font-semibold mb-2">
-                      Type de réservation <span className="text-red-500">*</span>
+                      Type de réservation{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -781,7 +788,7 @@ export default function ReservationModal({
                         className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all border ${
                           formData.reservationType === "single"
                             ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)]"
-                            : "bg-[#342618] text-[#cbad90] border-[#493622] hover:border-primary/30"
+                            : "bg-surface-dark text-text-secondary border-surface-highlight hover:border-primary/30"
                         }`}
                       >
                         <span className="material-symbols-outlined text-lg">
@@ -800,7 +807,7 @@ export default function ReservationModal({
                         className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all border ${
                           formData.reservationType === "subscription"
                             ? "bg-primary text-black border-primary shadow-[0_0_15px_rgba(242,127,13,0.3)]"
-                            : "bg-[#342618] text-[#cbad90] border-[#493622] hover:border-primary/30"
+                            : "bg-surface-dark text-text-secondary border-surface-highlight hover:border-primary/30"
                         }`}
                       >
                         <span className="material-symbols-outlined text-lg">
@@ -813,7 +820,7 @@ export default function ReservationModal({
                     {/* Durée de l'abonnement */}
                     {formData.reservationType === "subscription" && (
                       <div className="mt-4 animate-fade-in">
-                        <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-3">
+                        <label className="block text-text-secondary text-xs font-bold uppercase tracking-wider mb-3">
                           Durée de l'abonnement
                         </label>
                         <div className="grid grid-cols-4 gap-2">
@@ -837,7 +844,7 @@ export default function ReservationModal({
                               className={`py-2 rounded-lg text-xs font-black transition-all border ${
                                 formData.subscriptionMonths === month.value
                                   ? "bg-primary/20 text-primary border-primary"
-                                  : "bg-[#2c241b] text-[#cbad90] border-[#493622]"
+                                  : "bg-[#2c241b] text-text-secondary border-surface-highlight"
                               }`}
                             >
                               {month.label}
@@ -856,29 +863,57 @@ export default function ReservationModal({
                             <p className="text-white text-sm font-bold mb-1">
                               Récapitulatif de l'abonnement
                             </p>
-                            <ul className="text-[#cbad90] text-xs space-y-1">
+                            <ul className="text-text-secondary text-xs space-y-1">
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Récurrence : <span className="text-white font-bold">1 match par semaine</span>
+                                Récurrence :{" "}
+                                <span className="text-white font-bold">
+                                  1 match par semaine
+                                </span>
                               </li>
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Total : <span className="text-white font-bold">{parseInt(formData.subscriptionMonths || "1") * 4} séances</span> ({parseInt(formData.subscriptionMonths || "1")} mois)
+                                Total :{" "}
+                                <span className="text-white font-bold">
+                                  {parseInt(
+                                    formData.subscriptionMonths || "1",
+                                  ) * 4}{" "}
+                                  séances
+                                </span>{" "}
+                                ({parseInt(formData.subscriptionMonths || "1")}{" "}
+                                mois)
                               </li>
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Fin de l'abonnement : <span className="text-white font-bold">{
-                                  (() => {
+                                Fin de l'abonnement :{" "}
+                                <span className="text-white font-bold">
+                                  {(() => {
                                     const d = new Date(formData.date);
-                                    const months = parseInt(formData.subscriptionMonths || "1");
-                                    d.setDate(d.getDate() + (months * 4 - 1) * 7);
-                                    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-                                  })()
-                                }</span>
+                                    const months = parseInt(
+                                      formData.subscriptionMonths || "1",
+                                    );
+                                    d.setDate(
+                                      d.getDate() + (months * 4 - 1) * 7,
+                                    );
+                                    return d.toLocaleDateString("fr-FR", {
+                                      day: "numeric",
+                                      month: "long",
+                                      year: "numeric",
+                                    });
+                                  })()}
+                                </span>
                               </li>
                               <li className="flex items-center gap-2">
                                 <span className="size-1 rounded-full bg-primary"></span>
-                                Montant total : <span className="text-primary font-bold">{(calculateTotal() * 4 * parseInt(formData.subscriptionMonths || "1")).toLocaleString()} CFA</span>
+                                Montant total :{" "}
+                                <span className="text-primary font-bold">
+                                  {(
+                                    calculateTotal() *
+                                    4 *
+                                    parseInt(formData.subscriptionMonths || "1")
+                                  ).toLocaleString()}{" "}
+                                  CFA
+                                </span>
                               </li>
                             </ul>
                           </div>
@@ -889,7 +924,7 @@ export default function ReservationModal({
 
                   {/* Infos Perso */}
                   <div className="space-y-4 pt-2">
-                    <h3 className="text-white font-bold text-base sm:text-lg border-b border-[#493622] pb-2">
+                    <h3 className="text-white font-bold text-base sm:text-lg border-b border-surface-highlight pb-2">
                       Vos informations
                     </h3>
 
@@ -905,7 +940,7 @@ export default function ReservationModal({
                           onChange={handleChange}
                           placeholder="Ex: Moussa Diop"
                           required
-                          className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-[#342618] text-white text-sm sm:text-base border border-[#493622] focus:border-primary focus:outline-none placeholder-gray-500"
+                          className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-surface-dark text-white text-sm sm:text-base border border-surface-highlight focus:border-primary focus:outline-none placeholder-gray-500"
                         />
                       </div>
 
@@ -920,7 +955,7 @@ export default function ReservationModal({
                           onChange={handleChange}
                           placeholder="Ex: 77 123 45 67"
                           required
-                          className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-[#342618] text-white text-sm sm:text-base border border-[#493622] focus:border-primary focus:outline-none placeholder-gray-500"
+                          className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-surface-dark text-white text-sm sm:text-base border border-surface-highlight focus:border-primary focus:outline-none placeholder-gray-500"
                         />
                       </div>
                     </div>
@@ -938,7 +973,7 @@ export default function ReservationModal({
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="Ex: moussa@example.com"
-                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-[#342618] text-white text-sm sm:text-base border border-[#493622] focus:border-primary focus:outline-none placeholder-gray-500"
+                        className="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg bg-surface-dark text-white text-sm sm:text-base border border-surface-highlight focus:border-primary focus:outline-none placeholder-gray-500"
                       />
                     </div>
                   </div>
@@ -949,7 +984,7 @@ export default function ReservationModal({
                     <h3 className="text-white text-xl font-bold mb-2">
                       Dernière étape : Paiement
                     </h3>
-                    <p className="text-[#cbad90] text-sm">
+                    <p className="text-text-secondary text-sm">
                       Choisissez votre mode de paiement préféré
                     </p>
                   </div>
@@ -966,7 +1001,7 @@ export default function ReservationModal({
                       className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${
                         formData.paymentMethod === "Wave"
                           ? "bg-[#1e40af]/20 border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                          : "bg-[#342618] border-[#493622] hover:border-[#3b82f6]/50"
+                          : "bg-surface-dark border-surface-highlight hover:border-[#3b82f6]/50"
                       }`}
                     >
                       <div className="w-12 h-12 bg-[#3b82f6] rounded-full flex items-center justify-center">
@@ -988,7 +1023,7 @@ export default function ReservationModal({
                       className={`p-4 rounded-2xl flex flex-col items-center gap-3 transition-all border-2 ${
                         formData.paymentMethod === "Orange Money"
                           ? "bg-[#ea580c]/20 border-[#f97316] shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-                          : "bg-[#342618] border-[#493622] hover:border-[#f97316]/50"
+                          : "bg-surface-dark border-surface-highlight hover:border-[#f97316]/50"
                       }`}
                     >
                       <div className="w-12 h-12 bg-[#f97316] rounded-full flex items-center justify-center">
@@ -1000,9 +1035,9 @@ export default function ReservationModal({
                     </button>
                   </div>
 
-                  <div className="bg-[#231a10] border border-primary/20 rounded-2xl p-6 space-y-4">
+                  <div className="bg-background-dark border border-primary/20 rounded-2xl p-6 space-y-4">
                     <div className="flex flex-col items-center text-center gap-2">
-                      <p className="text-[#cbad90] text-sm font-medium">
+                      <p className="text-text-secondary text-sm font-medium">
                         Envoyez exactement
                       </p>
                       <p className="text-primary text-3xl font-black">
@@ -1016,12 +1051,12 @@ export default function ReservationModal({
                       <p className="text-white/60 text-xs text-center uppercase tracking-widest font-bold">
                         Numéro de transfert
                       </p>
-                      <div className="bg-[#342618] rounded-xl p-4 flex items-center justify-center gap-3 border border-[#493622]">
+                      <div className="bg-surface-dark rounded-xl p-4 flex items-center justify-center gap-3 border border-surface-highlight">
                         <span className="text-white text-2xl font-black tracking-wider">
                           {ownerProfile?.phone || "Non renseigné"}
                         </span>
                       </div>
-                      <p className="text-[#cbad90] text-[10px] text-center italic mt-1">
+                      <p className="text-text-secondary text-[10px] text-center italic mt-1">
                         Destinataire :{" "}
                         <span className="text-white not-italic font-bold">
                           {ownerProfile?.name || "Propriétaire"}
@@ -1033,7 +1068,7 @@ export default function ReservationModal({
                       <div className="size-5 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
                         <X className="size-3 text-black rotate-45" />
                       </div>
-                      <p className="text-[#cbad90] text-xs leading-relaxed">
+                      <p className="text-text-secondary text-xs leading-relaxed">
                         Une fois le transfert effectué, cliquez sur{" "}
                         <strong>"Confirmer la réservation"</strong>. Le
                         propriétaire validera votre créneau dès réception.
@@ -1049,7 +1084,7 @@ export default function ReservationModal({
                   <h3 className="text-white text-2xl font-bold mb-2">
                     Demande de réservation envoyée !
                   </h3>
-                  <p className="text-[#cbad90] max-w-sm mx-auto mb-8">
+                  <p className="text-text-secondary max-w-sm mx-auto mb-8">
                     Votre demande pour{" "}
                     <span className="text-white font-bold">{stadium.city}</span>{" "}
                     a bien été enregistrée avec le statut{" "}
@@ -1085,7 +1120,7 @@ export default function ReservationModal({
                         onClose();
                         setStep(1);
                       }}
-                      className="text-[#cbad90] text-sm font-bold py-2 hover:text-white transition-all underline"
+                      className="text-text-secondary text-sm font-bold py-2 hover:text-white transition-all underline"
                     >
                       Retourner à l'accueil
                     </button>
@@ -1104,7 +1139,7 @@ export default function ReservationModal({
 
               {/* Footer Actions */}
               {step !== 3 && (
-                <div className="border-t border-[#493622] pt-4 sm:pt-6 space-y-4 pb-2">
+                <div className="border-t border-surface-highlight pt-4 sm:pt-6 space-y-4 pb-2">
                   {step === 1 && (
                     <div className="flex justify-between items-center">
                       <span className="text-white text-base sm:text-lg">
@@ -1120,7 +1155,7 @@ export default function ReservationModal({
                     <button
                       type="button"
                       onClick={step === 1 ? onClose : () => setStep(1)}
-                      className="flex-1 py-3 sm:py-3.5 px-4 rounded-xl border border-[#493622] text-white text-sm sm:text-base font-bold hover:bg-[#342618] transition-colors"
+                      className="flex-1 py-3 sm:py-3.5 px-4 rounded-xl border border-surface-highlight text-white text-sm sm:text-base font-bold hover:bg-surface-dark transition-colors"
                     >
                       {step === 1 ? "Annuler" : "Retour"}
                     </button>

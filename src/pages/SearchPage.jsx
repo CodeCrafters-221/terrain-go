@@ -5,7 +5,9 @@ import FilterSidebar from "../sections/search/FilterSidebar";
 import { ListFilter, LayoutGrid, Map } from "lucide-react";
 import ReservationModal from "../components/ReservationModal";
 import { supabase } from "../services/supabaseClient";
-import Header from "../components/Header";
+import { toast } from "react-toastify";
+
+const initialTerrains = [];
 
 const SearchPage = () => {
   const [filters, setFilters] = useState({
@@ -29,6 +31,20 @@ const SearchPage = () => {
   const [isReservationOpen, setIsReservationOpen] = useState(false);
   const [stadiums, setStadiums] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [favorites, setFavorites] = useState([]);
+
+  const handleFavorite = (stadiumId) => {
+    setFavorites((prev) => {
+      const isFav = prev.includes(stadiumId);
+      if (isFav) {
+        toast.info("Terrain retiré des favoris.");
+        return prev.filter((id) => id !== stadiumId);
+      } else {
+        toast.success("Terrain ajouté aux favoris !");
+        return [...prev, stadiumId];
+      }
+    });
+  };
 
   useEffect(() => {
     const fetchRealStadiums = async () => {
@@ -192,6 +208,8 @@ const SearchPage = () => {
                 <CardSearch
                   terrains={paginatedTerrains}
                   onReserve={handleReserve}
+                  onFavorite={handleFavorite}
+                  favorites={favorites}
                 />
               )}
               <div className="mt-8">

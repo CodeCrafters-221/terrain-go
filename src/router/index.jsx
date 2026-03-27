@@ -82,31 +82,43 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/", element: <Home /> },
-
       {
-        path: "/compte",
-        element: (
-          <ProtectedRoute>
-            {" "}
-            <UserProfile />{" "}
-          </ProtectedRoute>
-        ),
+        path: "/search",
+        element: <SearchPage />,
       },
       {
         path: "/terrain-details/:id",
         element: <TerrainDetails />,
       },
       {
-        path: "/search",
-        element: <SearchPage />,
+        path: "/compte",
+        element: (
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
   {
     element: <AuthLayout />,
     children: [
-      { path: "/login", element: <Login /> },
-      { path: "/register", element: <Register /> },
+      {
+        path: "/login",
+        element: (
+          <OwnerRedirect>
+            <Login />
+          </OwnerRedirect>
+        ),
+      },
+      {
+        path: "/register",
+        element: (
+          <OwnerRedirect>
+            <Register />
+          </OwnerRedirect>
+        ),
+      },
       {
         path: "/create-profile",
         element: (
@@ -135,6 +147,10 @@ export const router = createBrowserRouter([
   },
   {
     path: "/owners",
-    element: <Owners />,
+    element: (
+      <OwnerRedirect>
+        <Owners />
+      </OwnerRedirect>
+    ),
   },
 ]);
