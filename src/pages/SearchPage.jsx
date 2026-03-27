@@ -6,6 +6,7 @@ import { ListFilter, LayoutGrid, Map } from "lucide-react";
 import ReservationModal from "../components/ReservationModal";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
+import Header from "../components/Header";
 
 const initialTerrains = [];
 
@@ -141,7 +142,7 @@ const SearchPage = () => {
         />
 
         {/* Main Content (Results) */}
-        <main className="flex-1 flex flex-col gap-6 w-full">
+        <main className="flex-1 flex flex-col gap-6 w-full p-4">
           {/* Page Header */}
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 mb-2">
             <div className="text-center md:text-left w-full md:w-auto">
@@ -202,7 +203,7 @@ const SearchPage = () => {
             <>
               {isLoading ? (
                 <div className="flex justify-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2  border-primary"></div>
                 </div>
               ) : (
                 <CardSearch
@@ -230,7 +231,6 @@ const SearchPage = () => {
                     "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80')",
                 }}
               ></div>
-              <div className="absolute inset-0 bg-linear-to-t from-background-dark via-transparent to-transparent opacity-60"></div>
 
               {/* Map UI Elements */}
               <div className="absolute inset-0 flex items-center justify-center">

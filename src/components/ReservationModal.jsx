@@ -223,9 +223,15 @@ export default function ReservationModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const calculateTotal = () => {
+  const SERVICE_FEE = 1000;
+
+  const calculateBasePrice = () => {
     if (!stadium) return 0;
-    return stadium.price * parseFloat(formData.duration);
+    return (stadium.price || 0) * parseFloat(formData.duration);
+  };
+
+  const calculateTotal = () => {
+    return calculateBasePrice() + SERVICE_FEE;
   };
 
   const calculateEndTime = (startTime, durationHours) => {
@@ -1140,14 +1146,27 @@ export default function ReservationModal({
               {/* Footer Actions */}
               {step !== 3 && (
                 <div className="border-t border-surface-highlight pt-4 sm:pt-6 space-y-4 pb-2">
-                  {step === 1 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-white text-base sm:text-lg">
-                        Total
-                      </span>
-                      <span className="text-primary text-2xl sm:text-3xl font-bold">
-                        {(calculateTotal() || 0).toLocaleString()} F
-                      </span>
+                  {step === 1 && stadium && (
+                    <div className="space-y-2 mb-2">
+                      <div className="flex justify-between text-text-secondary text-sm">
+                        <span>Prix terrain ({formData.duration}h)</span>
+                        <span>
+                          {calculateBasePrice().toLocaleString()} FCFA
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-text-secondary text-sm">
+                        <span>Frais de service</span>
+                        <span>{SERVICE_FEE.toLocaleString()} FCFA</span>
+                      </div>
+                      <div className="h-px bg-surface-highlight/30 my-1"></div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white text-base sm:text-lg font-bold">
+                          Total à payer
+                        </span>
+                        <span className="text-primary text-2xl sm:text-3xl font-bold">
+                          {calculateTotal().toLocaleString()} FCFA
+                        </span>
+                      </div>
                     </div>
                   )}
 

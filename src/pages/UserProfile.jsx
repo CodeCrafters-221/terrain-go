@@ -14,6 +14,8 @@ import {
   Clock,
   QrCode,
   MessageSquarePlus,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
 } from "lucide-react";
 import Header from "../components/Header";
@@ -26,6 +28,11 @@ const UserProfile = () => {
     useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [refreshReviewsCounter, setRefreshReviewsCounter] = useState(0);
+
+  // États pour la pagination des réservations
+  const [upcomingPage, setUpcomingPage] = useState(1);
+  const [pastPage, setPastPage] = useState(1);
+  const reservationsPerPage = 1;
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -87,6 +94,23 @@ const UserProfile = () => {
       }
     }
   });
+
+  // Calcul de la pagination
+  const totalUpcomingPages = Math.ceil(
+    upcomingReservations.length / reservationsPerPage,
+  );
+  const paginatedUpcoming = upcomingReservations.slice(
+    (upcomingPage - 1) * reservationsPerPage,
+    upcomingPage * reservationsPerPage,
+  );
+
+  const totalPastPages = Math.ceil(
+    pastReservations.length / reservationsPerPage,
+  );
+  const paginatedPast = pastReservations.slice(
+    (pastPage - 1) * reservationsPerPage,
+    pastPage * reservationsPerPage,
+  );
 
   return (
     <div className="bg-[#231a10] min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-white selection:bg-primary selection:text-white font-display pt-22">
@@ -179,15 +203,15 @@ const UserProfile = () => {
           >
             <div className="flex items-center justify-between">
               <h2 className="text-white text-2xl font-bold leading-tight tracking-tight">
-                Prochaines Réservations
+                Matchs à venir
               </h2>
               <p className="text-primary text-sm font-bold">
                 ({upcomingReservations.length})
               </p>
             </div>
 
-            {upcomingReservations.length > 0 ? (
-              upcomingReservations.map((res) => (
+            {paginatedUpcoming.length > 0 ? (
+              paginatedUpcoming.map((res) => (
                 <div
                   key={res.id}
                   className="flex flex-col md:flex-row items-stretch justify-between gap-6 rounded-2xl bg-surface-dark p-1 border border-surface-highlight/50 hover:border-primary/50 transition-all shadow-lg hover:shadow-2xl group"
@@ -300,9 +324,32 @@ const UserProfile = () => {
               ))
             ) : (
               <div className="text-center py-10 bg-surface-dark/50 rounded-2xl border border-dashed border-surface-highlight">
-                <p className="text-text-secondary">
-                  Aucune réservation à venir.
-                </p>
+                <p className="text-text-secondary">Aucun match à venir.</p>
+              </div>
+            )}
+
+            {/* Pagination Prochaines Réservations */}
+            {totalUpcomingPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-2">
+                <button
+                  onClick={() => setUpcomingPage((p) => Math.max(1, p - 1))}
+                  disabled={upcomingPage === 1}
+                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <span className="text-text-secondary text-sm font-bold">
+                  Page {upcomingPage} sur {totalUpcomingPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setUpcomingPage((p) => Math.min(totalUpcomingPages, p + 1))
+                  }
+                  disabled={upcomingPage === totalUpcomingPages}
+                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
             )}
 
@@ -312,8 +359,8 @@ const UserProfile = () => {
               </h2>
             </div>
 
-            {pastReservations.length > 0 ? (
-              pastReservations.map((res) => (
+            {paginatedPast.length > 0 ? (
+              paginatedPast.map((res) => (
                 <div
                   key={res.id}
                   className="flex flex-col md:flex-row items-stretch justify-between gap-4 rounded-2xl bg-surface-dark p-3 border border-surface-highlight/30 opacity-80 hover:opacity-100 transition-all group"
@@ -360,6 +407,31 @@ const UserProfile = () => {
               <p className="text-text-secondary text-center py-4">
                 Pas d'historique de matchs.
               </p>
+            )}
+
+            {/* Pagination Historique */}
+            {totalPastPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-2">
+                <button
+                  onClick={() => setPastPage((p) => Math.max(1, p - 1))}
+                  disabled={pastPage === 1}
+                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <span className="text-text-secondary text-sm font-bold">
+                  Page {pastPage} sur {totalPastPages}
+                </span>
+                <button
+                  onClick={() =>
+                    setPastPage((p) => Math.min(totalPastPages, p + 1))
+                  }
+                  disabled={pastPage === totalPastPages}
+                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             )}
           </div>
 

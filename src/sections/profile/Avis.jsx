@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { MessageSquarePlus, Star, Loader2, X, Send } from "lucide-react";
+import {
+  MessageSquarePlus,
+  Star,
+  Loader2,
+  X,
+  Send,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { ReviewService } from "../../services/ReviewService";
 import { ReservationService } from "../../services/ReservationService";
@@ -31,7 +39,7 @@ export const ReviewModal = ({ isOpen, onClose, terrain, onReviewed }) => {
         utilisateur_id: user.id,
         terrain_id: terrain?.field_id || terrain?.id,
         note: note,
-        commentaire: commentaire
+        commentaire: commentaire,
       });
       toast.success("Merci pour votre avis !");
       if (onReviewed) onReviewed();
@@ -48,15 +56,22 @@ export const ReviewModal = ({ isOpen, onClose, terrain, onReviewed }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-[#2e2318] border border-surface-highlight w-full max-w-lg rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-white text-xl font-bold">Avis : {terrain?.terrainName || terrain?.name}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <h3 className="text-white text-xl font-bold">
+            Avis : {terrain?.terrainName || terrain?.name}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
             <X className="w-6 h-6 text-white" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center gap-3">
-            <p className="text-text-secondary text-sm">Votre note pour ce terrain</p>
+            <p className="text-text-secondary text-sm">
+              Votre note pour ce terrain
+            </p>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((i) => (
                 <button
@@ -65,14 +80,18 @@ export const ReviewModal = ({ isOpen, onClose, terrain, onReviewed }) => {
                   onClick={() => setNote(i)}
                   className="focus:outline-none transition-transform active:scale-95"
                 >
-                  <Star className={`w-10 h-10 ${i <= note ? "text-primary fill-current" : "text-text-secondary"}`} />
+                  <Star
+                    className={`w-10 h-10 ${i <= note ? "text-primary fill-current" : "text-text-secondary"}`}
+                  />
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Votre commentaire</label>
+            <label className="text-sm font-medium text-white">
+              Votre commentaire
+            </label>
             <textarea
               className="w-full bg-background-dark/50 border border-surface-highlight rounded-2xl p-4 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none min-h-[120px] resize-none"
               placeholder="Comment s'est passé votre match ? Pelouse, accueil, éclairage..."
@@ -104,12 +123,17 @@ const Avis = () => {
   const [newReview, setNewReview] = useState({ note: 0, commentaire: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // États pagination avis
+  const [currentPage, setCurrentPage] = useState(1);
+  const reviewsPerPage = 1;
+
   const fetchUserReviews = async () => {
     if (!user) return;
     setIsLoading(true);
     try {
       // 1. Récupérer les avis
-      const { data: reviewsData, error: reviewsError } = await ReviewService.getUserReviews(user.id);
+      const { data: reviewsData, error: reviewsError } =
+        await ReviewService.getUserReviews(user.id);
       if (reviewsError) throw reviewsError;
       const reviews = reviewsData || [];
       setUserReviews(reviews);
@@ -118,8 +142,10 @@ const Avis = () => {
       const reservations = await ReservationService.getUserReservations();
 
       // 3. Matcher
-      const reviewedTerrainIds = reviews.map(r => r.terrain_id);
-      const toReview = (reservations || []).find(res => res.field_id && !reviewedTerrainIds.includes(res.field_id));
+      const reviewedTerrainIds = reviews.map((r) => r.terrain_id);
+      const toReview = (reservations || []).find(
+        (res) => res.field_id && !reviewedTerrainIds.includes(res.field_id),
+      );
 
       setLatestPendingMatch(toReview || null);
     } catch (err) {
@@ -136,7 +162,9 @@ const Avis = () => {
   const handlePublish = async (e) => {
     e.preventDefault();
     if (!latestPendingMatch) {
-      toast.info("Veuillez sélectionner un match dans votre historique pour laisser un avis");
+      toast.info(
+        "Veuillez sélectionner un match dans votre historique pour laisser un avis",
+      );
       return;
     }
     if (newReview.note === 0) {
@@ -154,10 +182,11 @@ const Avis = () => {
         utilisateur_id: user.id,
         terrain_id: latestPendingMatch.field_id,
         note: newReview.note,
-        commentaire: newReview.commentaire
+        commentaire: newReview.commentaire,
       });
       toast.success("Avis publié !");
       setNewReview({ note: 0, commentaire: "" });
+      setCurrentPage(1);
       fetchUserReviews();
     } catch (err) {
       console.error("Erreur publication:", err);
@@ -167,11 +196,23 @@ const Avis = () => {
     }
   };
 
+  // Calcul pagination avis
+  const totalPages = Math.ceil(userReviews.length / reviewsPerPage);
+  const paginatedReviews = userReviews.slice(
+    (currentPage - 1) * reviewsPerPage,
+    currentPage * reviewsPerPage,
+  );
+
   return (
     <>
-      <div className="flex flex-col gap-6 pt-6 border-t border-surface-highlight" id="avis">
+      <div
+        className="flex flex-col gap-6 pt-6 border-t border-surface-highlight"
+        id="avis"
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-white text-2xl font-bold leading-tight">Mes Avis Publiés</h2>
+          <h2 className="text-white text-2xl font-bold leading-tight">
+            Mes Avis Publiés
+          </h2>
           <span className="bg-surface-highlight/50 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider">
             {userReviews.length} avis
           </span>
@@ -188,7 +229,9 @@ const Avis = () => {
                   <MessageSquarePlus className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg">Laisser un avis</h3>
+                  <h3 className="text-white font-bold text-lg">
+                    Laisser un avis
+                  </h3>
                   <p className="text-text-secondary text-xs">
                     {latestPendingMatch
                       ? `Évaluez votre dernier match à ${latestPendingMatch.terrainName}`
@@ -198,7 +241,9 @@ const Avis = () => {
               </div>
 
               <div className="flex flex-col gap-2">
-                <span className="text-text-secondary text-xs font-medium uppercase tracking-wider">Notez le terrain :</span>
+                <span className="text-text-secondary text-xs font-medium uppercase tracking-wider">
+                  Notez le terrain :
+                </span>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -208,10 +253,11 @@ const Avis = () => {
                       className="focus:outline-none transition-transform hover:scale-110 active:scale-90"
                     >
                       <Star
-                        className={`w-8 h-8 ${star <= newReview.note
+                        className={`w-8 h-8 ${
+                          star <= newReview.note
                             ? "text-primary fill-current"
                             : "text-surface-highlight"
-                          }`}
+                        }`}
                       />
                     </button>
                   ))}
@@ -221,11 +267,15 @@ const Avis = () => {
               <div className="relative group">
                 <textarea
                   className="w-full bg-background-dark/30 border border-surface-highlight rounded-2xl p-4 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none min-h-[100px] resize-none transition-all"
-                  placeholder={latestPendingMatch
-                    ? `Comment était le terrain ${latestPendingMatch.terrainName} ?`
-                    : "Aucun match récent à évaluer..."}
+                  placeholder={
+                    latestPendingMatch
+                      ? `Comment était le terrain ${latestPendingMatch.terrainName} ?`
+                      : "Aucun match récent à évaluer..."
+                  }
                   value={newReview.commentaire}
-                  onChange={(e) => setNewReview({ ...newReview, commentaire: e.target.value })}
+                  onChange={(e) =>
+                    setNewReview({ ...newReview, commentaire: e.target.value })
+                  }
                   disabled={!latestPendingMatch}
                 />
                 {!latestPendingMatch && !isLoading && (
@@ -235,7 +285,8 @@ const Avis = () => {
                         ? "Tous vos matchs récents ont déjà un avis ! Merci."
                         : "Faites un match pour laisser votre premier avis !"}
                       <br />
-                      Ou utilisez le bouton <b>"Laisser un avis"</b> dans l'historique.
+                      Ou utilisez le bouton <b>"Laisser un avis"</b> dans
+                      l'historique.
                     </p>
                   </div>
                 )}
@@ -248,7 +299,14 @@ const Avis = () => {
                 disabled={isSubmitting || !latestPendingMatch}
                 className="w-full bg-primary hover:bg-[#d96f0b] text-background-dark font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 group/btn"
               >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><span>Publier</span><Send className="w-4 h-4" /></>}
+                {isSubmitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <span>Publier</span>
+                    <Send className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -257,35 +315,79 @@ const Avis = () => {
         {/* LISTE DES AVIS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {isLoading ? (
-            <div className="col-span-full flex items-center justify-center p-12"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>
-          ) : userReviews.length > 0 ? (
-            userReviews.map((review) => (
-              <div key={review.id} className="rounded-2xl bg-surface-dark p-6 border border-surface-highlight flex flex-col gap-4 group">
+            <div className="col-span-full flex items-center justify-center p-12">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </div>
+          ) : paginatedReviews.length > 0 ? (
+            paginatedReviews.map((review) => (
+              <div
+                key={review.id}
+                className="rounded-2xl bg-surface-dark p-6 border border-surface-highlight flex flex-col gap-4 group"
+              >
                 <div className="flex justify-between items-start">
                   <div className="flex gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xl border border-primary/20 group-hover:bg-primary group-hover:text-background-dark transition-colors">
                       {review.fields?.name?.substring(0, 1) || "T"}
                     </div>
                     <div>
-                      <h4 className="text-white font-bold text-lg">{review.fields?.name || "Terrain"}</h4>
-                      <p className="text-xs text-text-secondary mt-1">Match du {new Date(review.created_at).toLocaleDateString()}</p>
+                      <h4 className="text-white font-bold text-lg">
+                        {review.fields?.name || "Terrain"}
+                      </h4>
+                      <p className="text-xs text-text-secondary mt-1">
+                        Match du{" "}
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-0.5 text-primary">
-                    {[1, 2, 3, 4, 5].map((i) => (<Star key={i} className={`w-[18px] h-[18px] ${i <= review.note ? "fill-current" : "text-surface-highlight"}`} />))}
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={`w-[18px] h-[18px] ${i <= review.note ? "fill-current" : "text-surface-highlight"}`}
+                      />
+                    ))}
                   </div>
                 </div>
-                <div className="bg-[#231a10]/50 rounded-xl p-4 border border-white/5 italic"><p className="text-text-secondary text-sm">"{review.commentaire}"</p></div>
+                <div className="bg-[#231a10]/50 rounded-xl p-4 border border-white/5 italic">
+                  <p className="text-text-secondary text-sm">
+                    "{review.commentaire}"
+                  </p>
+                </div>
               </div>
             ))
           ) : (
             <div className="col-span-full bg-surface-dark/30 rounded-3xl p-16 border border-dashed border-surface-highlight flex flex-col items-center justify-center text-center">
               <Star className="w-12 h-12 text-surface-highlight opacity-40 mb-4" />
               <h3 className="text-white font-bold text-lg mb-2">Aucun avis</h3>
-              <p className="text-text-secondary text-sm">Votre historique d'avis apparaîtra ici.</p>
+              <p className="text-text-secondary text-sm">
+                Votre historique d'avis apparaîtra ici.
+              </p>
             </div>
           )}
         </div>
+
+        {/* Pagination Avis */}
+        {!isLoading && totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-4">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="text-text-secondary text-sm font-bold">
+              Page {currentPage} sur {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

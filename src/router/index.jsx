@@ -19,6 +19,7 @@ import MyFields from "../pages/Dashboard/MyFields";
 import MyReservations from "../pages/Dashboard/MyReservations";
 import Statistics from "../pages/Dashboard/Statistics";
 import Revenues from "../pages/Dashboard/Revenues";
+import CalendarMatch from "../pages/Dashboard/CalendarMatch";
 import CreateFieldPage from "../pages/Dashboard/CreateFieldPage";
 import EditFieldPage from "../pages/Dashboard/EditFieldPage";
 import Settings from "../pages/Dashboard/Settings";
@@ -43,6 +44,10 @@ export const router = createBrowserRouter([
       {
         path: "terrains",
         element: <MyFields />,
+      },
+      {
+        path: "calendar",
+        element: <CalendarMatch />,
       },
       {
         path: "reservations",

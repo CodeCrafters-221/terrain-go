@@ -39,6 +39,17 @@ export default function TerrainDetails() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
 
+  // État pour le carrousel des avis
+  const [reviewIndex, setReviewIndex] = useState(0);
+
+  const nextReview = () => {
+    setReviewIndex((prev) => (prev + 1) % reviews.length);
+  };
+
+  const prevReview = () => {
+    setReviewIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+  };
+
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
   );
@@ -230,6 +241,7 @@ export default function TerrainDetails() {
 
     fetchTerrain();
     fetchReviews();
+    setReviewIndex(0);
   }, [id]);
 
   const handleReviewSubmit = async (e) => {
@@ -261,6 +273,7 @@ export default function TerrainDetails() {
       ]);
       setReviews(reviewsData);
       setRatingStats(stats);
+      setReviewIndex(0);
     } catch (err) {
       console.error("Error submitting review:", err);
       toast.error("Erreur lors de l'ajout de l'avis");
@@ -288,10 +301,14 @@ export default function TerrainDetails() {
     );
   }
 
+  const basePrice = terrain.price_per_hour || terrain.price || 0;
+  const serviceFee = 1000;
+  const totalPrice = basePrice + serviceFee;
+
   const stadiumDataForModal = {
     id: terrain.id,
     city: terrain.name,
-    price: terrain.price_per_hour || terrain.price || 0,
+    price: basePrice,
     location: terrain.adress,
     totalPlayers: terrain.pelouse,
     fieldStadium: terrain.pelouse,
@@ -505,24 +522,14 @@ export default function TerrainDetails() {
                     Vestiaires
                   </span>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <ShowerHead className="text-primary w-5 h-5" />
-                  <span className="text-sm font-medium text-white">
-                    Douches
-                  </span>
-                </div>
+
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
                   <SquareParking className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Parking
                   </span>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
-                  <Wifi className="text-primary w-5 h-5" />
-                  <span className="text-sm font-medium text-white">
-                    Wi-Fi Gratuit
-                  </span>
-                </div>
+
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-dark border border-surface-light">
                   <Lightbulb className="text-primary w-5 h-5" />
                   <span className="text-sm font-medium text-white">
@@ -661,112 +668,132 @@ export default function TerrainDetails() {
               </div>
             </section>
 
+            {user && (
+              <div className="mb-8 p-6 rounded-2xl bg-surface-dark border border-surface-light">
+                <h4 className="text-white font-bold mb-4">Laisser un avis</h4>
+                <form onSubmit={handleReviewSubmit} className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-text-secondary mr-2">
+                      Votre note :
+                    </span>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() =>
+                          setNewReview({ ...newReview, note: star })
+                        }
+                        className="focus:outline-none transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={`w-6 h-6 ${
+                            star <= newReview.note
+                              ? "text-primary fill-current"
+                              : "text-text-secondary"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={newReview.commentaire}
+                    onChange={(e) =>
+                      setNewReview({
+                        ...newReview,
+                        commentaire: e.target.value,
+                      })
+                    }
+                    placeholder="Partagez votre expérience sur ce terrain..."
+                    className="w-full bg-[#231a10] border border-surface-light rounded-xl p-4 text-white text-sm focus:border-primary outline-none transition-colors min-h-[100px]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmittingReview}
+                    className="px-6 py-2 bg-primary text-[#231a10] font-bold rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  >
+                    {isSubmittingReview ? "Envoi..." : "Publier l'avis"}
+                  </button>
+                </form>
+              </div>
+            )}
             {/* Reviews */}
             <section className="border-t border-surface-light pt-8">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white">
                   Avis ({ratingStats.count})
                 </h3>
-                <div className="flex items-center gap-2">
-                  <Star className="text-primary w-5 h-5 fill-current" />
-                  <span className="text-xl font-bold text-white">
-                    {ratingStats.average}
-                  </span>
+                <div className="flex items-center gap-4">
+                  {reviews.length > 1 && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={prevReview}
+                        className="p-1.5 rounded-full border border-surface-highlight text-text-secondary hover:text-white hover:bg-surface-highlight transition-all"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={nextReview}
+                        className="p-1.5 rounded-full border border-surface-highlight text-text-secondary hover:text-white hover:bg-surface-highlight transition-all"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Star className="text-primary w-5 h-5 fill-current" />
+                    <span className="text-xl font-bold text-white">
+                      {ratingStats.average}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Add Review Form */}
-              {user && (
-                <div className="mb-8 p-6 rounded-2xl bg-surface-dark border border-surface-light">
-                  <h4 className="text-white font-bold mb-4">Laisser un avis</h4>
-                  <form onSubmit={handleReviewSubmit} className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-text-secondary mr-2">
-                        Votre note :
-                      </span>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() =>
-                            setNewReview({ ...newReview, note: star })
-                          }
-                          className="focus:outline-none transition-transform hover:scale-110"
-                        >
-                          <Star
-                            className={`w-6 h-6 ${
-                              star <= newReview.note
-                                ? "text-primary fill-current"
-                                : "text-text-secondary"
-                            }`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <textarea
-                      value={newReview.commentaire}
-                      onChange={(e) =>
-                        setNewReview({
-                          ...newReview,
-                          commentaire: e.target.value,
-                        })
-                      }
-                      placeholder="Partagez votre expérience sur ce terrain..."
-                      className="w-full bg-[#231a10] border border-surface-light rounded-xl p-4 text-white text-sm focus:border-primary outline-none transition-colors min-h-[100px]"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSubmittingReview}
-                      className="px-6 py-2 bg-primary text-[#231a10] font-bold rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
-                    >
-                      {isSubmittingReview ? "Envoi..." : "Publier l'avis"}
-                    </button>
-                  </form>
-                </div>
-              )}
 
-              <div className="grid gap-6">
+              <div className="relative">
                 {reviews.length === 0 ? (
                   <p className="text-text-secondary italic text-center py-4">
                     Aucun avis pour le moment.
                   </p>
                 ) : (
-                  reviews.map((rev) => (
+                  <div className="space-y-4">
                     <div
-                      key={rev.id}
-                      className="bg-surface-dark p-6 rounded-2xl border border-surface-light"
+                      key={reviews[reviewIndex]?.id}
+                      className="bg-surface-dark p-6 rounded-2xl border border-surface-light animate-in fade-in slide-in-from-right-4 duration-500"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div
                             className="size-10 rounded-full bg-cover bg-center bg-[#493622]"
                             style={
-                              rev.profiles?.image
+                              reviews[reviewIndex]?.profiles?.image
                                 ? {
-                                    backgroundImage: `url('${rev.profiles.image}')`,
+                                    backgroundImage: `url('${reviews[reviewIndex].profiles.image}')`,
                                   }
                                 : {}
                             }
                           >
-                            {!rev.profiles?.image && (
+                            {!reviews[reviewIndex]?.profiles?.image && (
                               <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold uppercase">
-                                {rev.profiles?.name?.substring(0, 2) || "??"}
+                                {reviews[
+                                  reviewIndex
+                                ]?.profiles?.name?.substring(0, 2) || "??"}
                               </div>
                             )}
                           </div>
                           <div>
                             <p className="font-bold text-white text-sm">
-                              {rev.profiles?.name || "Anonyme"}
+                              {reviews[reviewIndex]?.profiles?.name ||
+                                "Anonyme"}
                             </p>
                             <p className="text-xs text-text-secondary">
-                              {new Date(rev.created_at).toLocaleDateString(
-                                "fr-FR",
-                                {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                },
-                              )}
+                              {new Date(
+                                reviews[reviewIndex]?.created_at,
+                              ).toLocaleDateString("fr-FR", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
                             </p>
                           </div>
                         </div>
@@ -775,17 +802,36 @@ export default function TerrainDetails() {
                             <Star
                               key={i}
                               className={`w-[14px] h-[14px] ${
-                                i <= rev.note ? "fill-current" : "opacity-30"
+                                i <= (reviews[reviewIndex]?.note || 0)
+                                  ? "fill-current"
+                                  : "opacity-30"
                               }`}
                             />
                           ))}
                         </div>
                       </div>
                       <p className="text-text-secondary text-sm">
-                        {rev.commentaire}
+                        {reviews[reviewIndex]?.commentaire}
                       </p>
                     </div>
-                  ))
+
+                    {/* Indicateurs (dots) pour la navigation visuelle */}
+                    {reviews.length > 1 && (
+                      <div className="flex justify-center gap-1.5 mt-2">
+                        {reviews.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setReviewIndex(i)}
+                            className={`h-1 rounded-full transition-all ${
+                              i === reviewIndex
+                                ? "w-6 bg-primary"
+                                : "w-1.5 bg-surface-highlight"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </section>
@@ -877,36 +923,17 @@ export default function TerrainDetails() {
               {/* Breakdown */}
               <div className="space-y-3 mb-8">
                 <div className="flex justify-between text-text-secondary text-sm">
-                  <span>
-                    {(
-                      terrain.price_per_hour ||
-                      terrain.price ||
-                      0
-                    ).toLocaleString()}{" "}
-                    x 1 heure
-                  </span>
-                  <span>
-                    {(
-                      terrain.price_per_hour ||
-                      terrain.price ||
-                      0
-                    ).toLocaleString()}{" "}
-                    FCFA
-                  </span>
+                  <span>{basePrice.toLocaleString()} x 1 heure</span>
+                  <span>{basePrice.toLocaleString()} FCFA</span>
                 </div>
                 <div className="flex justify-between text-text-secondary text-sm">
                   <span>Frais de service</span>
-                  <span>1 000 FCFA</span>
+                  <span>{serviceFee.toLocaleString()} FCFA</span>
                 </div>
                 <div className="h-px bg-surface-light my-2"></div>
                 <div className="flex justify-between text-white font-bold text-base">
                   <span>Total</span>
-                  <span>
-                    {(
-                      (terrain.price_per_hour || terrain.price || 0) + 1000
-                    ).toLocaleString()}{" "}
-                    FCFA
-                  </span>
+                  <span>{totalPrice.toLocaleString()} FCFA</span>
                 </div>
               </div>
               {/* CTA */}{" "}
