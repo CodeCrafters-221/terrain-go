@@ -145,7 +145,7 @@ const SearchPage = () => {
         />
 
         {/* Main Content (Results) */}
-        <main className="flex-1 flex flex-col gap-6 w-full">
+        <main className="flex-1 flex flex-col gap-6 w-full sm:px-4 sm:py-4">
           {/* Page Header */}
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 mb-2">
             <div className="text-center md:text-left w-full md:w-auto">
