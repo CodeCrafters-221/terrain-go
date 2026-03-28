@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 import { toast } from "react-toastify";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // 🔥 HELPERS ROBUSTES (Synchronisés avec DashboardCharts)
 const parseAmount = (item) => {
@@ -95,30 +97,104 @@ const Revenues = () => {
     );
   }, [transactions, currentPage]);
 
-  const handleExport = () => {
+  const handleExportExcel = () => {
     if (!transactions?.length) return toast.warn("Aucune donnée à exporter");
 
-    const headers = ["ID", "Client", "Montant (CFA)", "Statut", "Date", "Type"];
-    const csvRows = transactions.map((t) =>
-      [
-        t.id,
-        t.client.replace(/;/g, ","),
-        t.amount,
-        t.status,
-        t.date,
-        t.type,
-      ].join(";"),
-    );
+    const headers = [
+      "ID",
+      "Client",
+      "Montant (CFA)",
+      "Statut",
+      "Date",
+      "Type de Revenu",
+    ];
 
-    const csvContent = [headers.join(";"), ...csvRows].join("\n");
+    const rows = transactions.map((t) => [
+      t.id,
+      t.client,
+      t.amount,
+      t.status,
+      t.date,
+      t.type === "subscription" ? "Abonnement" : "Match Unique",
+    ]);
+
+    // Construction du CSV avec guillemets pour éviter que tout soit mélangé
+    const csvContent = [headers, ...rows]
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"),
+      )
+      .join("\n");
+
     const blob = new Blob(["\uFEFF" + csvContent], {
       type: "text/csv;charset=utf-8;",
     });
     const link = document.createElement("a");
-
     link.href = URL.createObjectURL(blob);
-    link.download = "revenues.csv";
+    link.download = `revenus_footbooking_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
+  };
+
+  const handleExportPDF = () => {
+    if (!transactions?.length) return toast.warn("Aucune donnée à exporter");
+
+    const doc = new jsPDF();
+
+    // En-tête du document
+    doc.setFontSize(22);
+    doc.setTextColor(35, 26, 16); // #231a10
+    doc.text("FOOTBOOKING - RAPPORT FINANCIER", 14, 22);
+
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(
+      `Généré le : ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}`,
+      14,
+      32,
+    );
+
+    // Résumé des totaux
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(35, 26, 16);
+    const total = (summary.subTotal + summary.matchTotal).toLocaleString();
+    doc.text(`TOTAL DES ENCAISSEMENTS : ${total} CFA`, 14, 42);
+
+    doc.setDrawColor(242, 127, 13); // Couleur primaire
+    doc.line(14, 45, 196, 45); // Ligne de séparation
+
+    // Génération du tableau avec autoTable
+    const tableData = transactions.map((t) => [
+      t.id.toString().substring(0, 8),
+      t.client,
+      `${t.amount.toLocaleString()} CFA`,
+      t.date,
+      t.type === "subscription" ? "Abonnement" : "Match Unique",
+      t.status.toUpperCase(),
+    ]);
+
+    doc.autoTable({
+      head: [["ID", "Client", "Montant", "Date", "Type", "Statut"]],
+      body: tableData,
+      startY: 55,
+      theme: "striped",
+      headStyles: {
+        fillColor: [242, 127, 13], // Orange #f27f0d
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: "bold",
+      },
+      bodyStyles: {
+        fontSize: 9,
+        cellPadding: 4,
+      },
+      alternateRowStyles: {
+        fillColor: [250, 245, 240],
+      },
+    });
+
+    doc.save(
+      `rapport_revenus_footbooking_${new Date().toISOString().split("T")[0]}.pdf`,
+    );
+    toast.success("PDF généré avec succès");
   };
 
   return (
@@ -176,15 +252,17 @@ const Revenues = () => {
             Suivez l'ensemble de vos encaissements en temps réel
           </p>
         </div>
-        <button
-          onClick={handleExport}
-          className="bg-primary text-[#231a10] px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg w-full md:w-auto"
-        >
-          <span className="material-symbols-outlined text-[20px]">
-            download
-          </span>
-          Exporter en CSV
-        </button>
+        <div className="">
+          <button
+            onClick={handleExportPDF}
+            className="bg-primary text-sm text-[#231a10] px-4 py-2 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center justify-center gap-1 active:scale-95 shadow-lg flex-1"
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              picture_as_pdf
+            </span>
+            Exporter
+          </button>
+        </div>
       </div>
 
       {/* Liste des Transactions en Grille */}
@@ -235,7 +313,7 @@ const Revenues = () => {
                     </div>
                   </div>
                   <span
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusColor(tx.status)}`}
+                    className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider border ${getStatusColor(tx.status)}`}
                   >
                     {tx.status}
                   </span>

@@ -129,67 +129,55 @@ const CalendarMatch = () => {
           dailyReservations.map((booking) => (
             <div
               key={booking.id}
-              className="group bg-[#2c241b] border border-[#493622] hover:border-primary/50 p-5 rounded-2xl transition-all flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg hover:shadow-primary/5"
+              className="group bg-[#2c241b] border border-[#493622] hover:border-primary/50 p-4 md:p-5 rounded-2xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 shadow-lg hover:shadow-primary/5"
             >
-              <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto">
+              <div className="flex items-start md:items-center gap-4 md:gap-6 w-full md:w-auto">
                 {/* Heure */}
-                <div className="flex flex-col items-center justify-center bg-[#231a10] border border-[#493622] rounded-xl w-30 h-20 shrink-0 group-hover:border-primary/30 transition-colors">
-                  <Clock className="w-5 h-5 text-primary mb-1" />
-                  <span className="text-white font-black text-md">
+                <div className="flex flex-col items-center justify-center bg-[#231a10] border border-[#493622] rounded-xl w-24 h-16 md:w-30 md:h-20 shrink-0 group-hover:border-primary/30 transition-colors">
+                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-primary mb-1" />
+                  <span className="text-white font-black text-sm md:text-md">
                     {booking.time}
                   </span>
                 </div>
 
                 {/* Infos Client */}
-                <div className="flex flex-col gap-2 text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-2">
-                    <User className="w-4 h-4 text-primary" />
-                    <h3 className="text-white font-bold text-lg">
-                      {booking.clientName}
-                    </h3>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center justify-center md:justify-start gap-2 text-[#cbad90] text-sm">
-                      <MapPin className="w-4 h-4" />
-                      <span>{booking.fieldName}</span>
+                <div className="flex flex-col gap-1.5 md:gap-2 text-left flex-1 min-w-0">
+                  <div className="flex items-center justify-between md:justify-start gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <User className="w-4 h-4 text-primary shrink-0" />
+                      <h3 className="text-white font-bold text-base md:text-lg truncate">
+                        {booking.clientName}
+                      </h3>
                     </div>
-                    <p className="text-[#5d452b] text-xs font-mono">
-                      {booking.id}
-                    </p>
+                    {/* Badge Statut Mobile */}
+                    <div className="md:hidden">
+                      <StatusBadge status={booking.status} />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 text-[#cbad90] text-xs md:text-sm">
+                      <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+                      <span className="truncate">{booking.fieldName}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[#5d452b] text-[10px] font-mono">
+                        ID: {booking.id.toString().substring(0, 8)}
+                      </p>
+                      {booking.matchType === "subscription" && (
+                        <div className="md:hidden">
+                          <SubscriptionBadge />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 w-full md:w-auto justify-center">
-                <div className="flex flex-col items-end gap-2">
-                  <span
-                    className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                      booking.status === "Payé" ||
-                      booking.status === "Confirmé" ||
-                      booking.status === "active"
-                        ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                        : booking.status === "Annulé"
-                          ? "bg-red-500/10 text-red-500 border border-red-500/20"
-                          : "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
-                    }`}
-                  >
-                    {booking.status === "active" ? "Confirmé" : booking.status}
-                  </span>
-
-                  {booking.matchType === "subscription" && (
-                    <span className="bg-primary/20 text-primary text-[9px] px-2 py-0.5 rounded font-black uppercase border border-primary/30 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[12px]">
-                        autorenew
-                      </span>
-                      Abonnement
-                    </span>
-                  )}
-                </div>
-                <button className="size-10 flex items-center justify-center rounded-xl bg-[#493622] text-white hover:bg-primary hover:text-background-dark transition-all cursor-pointer">
-                  <span className="material-symbols-outlined text-[20px]">
-                    more_vert
-                  </span>
-                </button>
+              {/* Desktop Status & Type */}
+              <div className="hidden md:flex flex-col items-end gap-2 shrink-0">
+                <StatusBadge status={booking.status} />
+                {booking.matchType === "subscription" && <SubscriptionBadge />}
               </div>
             </div>
           ))
@@ -208,5 +196,35 @@ const CalendarMatch = () => {
     </div>
   );
 };
+
+// Composants Badges internes pour un code plus propre et maintenable
+const StatusBadge = ({ status }) => {
+  const s = (status || "").toLowerCase();
+  const isActive = ["payé", "confirmé", "active", "success"].includes(s);
+  const isCancelled = s === "annulé";
+
+  return (
+    <span
+      className={`px-2.5 md:px-4 py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-wider border shrink-0 ${
+        isActive
+          ? "bg-green-500/10 text-green-500 border-green-500/20"
+          : isCancelled
+            ? "bg-red-500/10 text-red-500 border-red-500/20"
+            : "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
+      }`}
+    >
+      {s === "active" ? "Confirmé" : status}
+    </span>
+  );
+};
+
+const SubscriptionBadge = () => (
+  <span className="bg-primary/20 text-primary text-[8px] md:text-[9px] px-2 py-0.5 rounded font-black uppercase border border-primary/30 flex items-center gap-1 shrink-0">
+    <span className="material-symbols-outlined text-[10px] md:text-[12px]">
+      autorenew
+    </span>
+    Abonnement
+  </span>
+);
 
 export default CalendarMatch;
