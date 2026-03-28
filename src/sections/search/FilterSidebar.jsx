@@ -1,8 +1,14 @@
 import { X, Search, Check, CheckCircle } from "lucide-react";
 
 const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
-  const pitchTypes = ["5 vs 5", "7 vs 7", "11 vs 11", "Futsal", "Gazon Synthétique", "Gazon Naturel"];
-
+  const pitchTypes = [
+    "8 vs 8",
+    "9 vs 9",
+    "11 vs 11",
+    "Futsal",
+    "Synthétique",
+    "Gazon Naturel",
+  ];
 
   const handleTypeToggle = (type) => {
     const newTypes = filters.types.includes(type)
@@ -15,8 +21,9 @@ const FilterSidebar = ({ filters, onFilterChange, isOpen, onClose }) => {
     <>
       {/* Overlay for mobile drawer */}
       <div
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-160 lg:hidden transition-opacity duration-300 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"
-          }`}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-160 lg:hidden transition-opacity duration-300 ${
+          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+        }`}
         onClick={onClose}
       />
 

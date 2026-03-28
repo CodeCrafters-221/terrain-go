@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 
 export default function CreateProfile() {
