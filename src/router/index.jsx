@@ -25,10 +25,12 @@ import EditFieldPage from "../pages/Dashboard/EditFieldPage";
 import Settings from "../pages/Dashboard/Settings";
 import MySubscriptions from "../pages/Dashboard/MySubscriptions";
 import Owners from "../pages/Owners";
+import NotFound from "../sections/NotFound";
 
 import OwnerRedirect from "../components/OwnerRedirect";
 
 export const router = createBrowserRouter([
+  // ✅ DASHBOARD (avec layout)
   {
     path: "/dashboard",
     element: (
@@ -37,48 +39,20 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      {
-        index: true,
-        element: <Dashboard />,
-      },
-      {
-        path: "terrains",
-        element: <MyFields />,
-      },
-      {
-        path: "calendar",
-        element: <CalendarMatch />,
-      },
-      {
-        path: "reservations",
-        element: <MyReservations />,
-      },
-      {
-        path: "abonnements",
-        element: <MySubscriptions />,
-      },
-      {
-        path: "stats",
-        element: <Statistics />,
-      },
-      {
-        path: "revenues",
-        element: <Revenues />,
-      },
-      {
-        path: "create-field",
-        element: <CreateFieldPage />,
-      },
-      {
-        path: "edit-field/:id",
-        element: <EditFieldPage />,
-      },
-      {
-        path: "compte",
-        element: <Settings />,
-      },
+      { index: true, element: <Dashboard /> },
+      { path: "terrains", element: <MyFields /> },
+      { path: "calendar", element: <CalendarMatch /> },
+      { path: "reservations", element: <MyReservations /> },
+      { path: "abonnements", element: <MySubscriptions /> },
+      { path: "stats", element: <Statistics /> },
+      { path: "revenues", element: <Revenues /> },
+      { path: "create-field", element: <CreateFieldPage /> },
+      { path: "edit-field/:id", element: <EditFieldPage /> },
+      { path: "compte", element: <Settings /> },
     ],
   },
+
+  // ✅ APP (avec header/footer global)
   {
     element: (
       <OwnerRedirect>
@@ -87,14 +61,8 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/", element: <Home /> },
-      {
-        path: "/search",
-        element: <SearchPage />,
-      },
-      {
-        path: "/terrain-details/:id",
-        element: <TerrainDetails />,
-      },
+      { path: "/search", element: <SearchPage /> },
+      { path: "/terrain-details/:id", element: <TerrainDetails /> },
       {
         path: "/compte",
         element: (
@@ -105,6 +73,8 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  // ✅ AUTH (layout séparé)
   {
     element: <AuthLayout />,
     children: [
@@ -150,6 +120,8 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  // ✅ PAGE SIMPLE (sans layout)
   {
     path: "/owners",
     element: (
@@ -157,5 +129,10 @@ export const router = createBrowserRouter([
         <Owners />
       </OwnerRedirect>
     ),
+  },
+
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);

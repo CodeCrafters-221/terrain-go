@@ -32,7 +32,23 @@ const UserProfile = () => {
   // États pour la pagination des réservations
   const [upcomingPage, setUpcomingPage] = useState(1);
   const [pastPage, setPastPage] = useState(1);
-  const reservationsPerPage = 1;
+  const [reservationsPerPage, setReservationsPerPage] = useState(
+    window.innerWidth < 768 ? 1 : 2,
+  );
+
+  // Gérer la réactivité du nombre de réservations par page
+  useEffect(() => {
+    const handleResize = () => {
+      const newPerPage = window.innerWidth < 768 ? 1 : 2;
+      if (newPerPage !== reservationsPerPage) {
+        setReservationsPerPage(newPerPage);
+        setUpcomingPage(1);
+        setPastPage(1);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [reservationsPerPage]);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -330,23 +346,30 @@ const UserProfile = () => {
 
             {/* Pagination Prochaines Réservations */}
             {totalUpcomingPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-2">
+              <div className="flex justify-center items-center gap-6 mt-4">
                 <button
                   onClick={() => setUpcomingPage((p) => Math.max(1, p - 1))}
                   disabled={upcomingPage === 1}
-                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                  className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <span className="text-text-secondary text-sm font-bold">
-                  Page {upcomingPage} sur {totalUpcomingPages}
-                </span>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-primary font-black text-lg">
+                    {upcomingPage}
+                  </span>
+                  <span className="text-[#cbad90] font-bold text-xs uppercase tracking-widest">
+                    / {totalUpcomingPages}
+                  </span>
+                </div>
+
                 <button
                   onClick={() =>
                     setUpcomingPage((p) => Math.min(totalUpcomingPages, p + 1))
                   }
                   disabled={upcomingPage === totalUpcomingPages}
-                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                  className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -411,23 +434,30 @@ const UserProfile = () => {
 
             {/* Pagination Historique */}
             {totalPastPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-2">
+              <div className="flex justify-center items-center gap-6 mt-4">
                 <button
                   onClick={() => setPastPage((p) => Math.max(1, p - 1))}
                   disabled={pastPage === 1}
-                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                  className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <span className="text-text-secondary text-sm font-bold">
-                  Page {pastPage} sur {totalPastPages}
-                </span>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-primary font-black text-lg">
+                    {pastPage}
+                  </span>
+                  <span className="text-[#cbad90] font-bold text-xs uppercase tracking-widest">
+                    / {totalPastPages}
+                  </span>
+                </div>
+
                 <button
                   onClick={() =>
                     setPastPage((p) => Math.min(totalPastPages, p + 1))
                   }
                   disabled={pastPage === totalPastPages}
-                  className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+                  className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>

@@ -26,21 +26,33 @@ const CalendarMatch = () => {
     const selectedDateStr = selectedDate.toDateString();
     const selectedDayOfWeek = selectedDate.getDay();
 
-    // 1. Réservations uniques (on exclut les entrées liées aux abonnements pour éviter les doublons
-    // car on va générer les occurrences d'abonnement dynamiquement plus bas)
+    // 1. Réservations uniques (Uniquement celles confirmées/payées)
     const singleMatches = (reservations || [])
       .filter((res) => {
         const resDate = new Date(res.date);
+        const status = (res.status || "").toLowerCase();
+        const isConfirmed = ["payé", "confirmé", "active", "success"].includes(
+          status,
+        );
+
         return (
           resDate.toDateString() === selectedDateStr &&
-          res.reservationType !== "subscription"
+          res.reservationType !== "subscription" &&
+          isConfirmed
         );
       })
       .map((res) => ({ ...res, matchType: "single" }));
 
-    // 2. Abonnements qui tombent ce jour-là
+    // 2. Abonnements qui tombent ce jour-là (Uniquement ceux confirmés/payés)
     const subscriptionMatches = (subscriptions || [])
       .filter((sub) => {
+        const status = (sub.status || "").toLowerCase();
+        const isConfirmed = ["payé", "confirmé", "active", "success"].includes(
+          status,
+        );
+
+        if (!isConfirmed) return false;
+
         const start = new Date(sub.startDate);
         const end = new Date(sub.endDate);
 

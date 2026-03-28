@@ -125,7 +125,22 @@ const Avis = () => {
 
   // États pagination avis
   const [currentPage, setCurrentPage] = useState(1);
-  const reviewsPerPage = 1;
+  const [reviewsPerPage, setReviewsPerPage] = useState(
+    window.innerWidth < 768 ? 1 : 2,
+  );
+
+  // Gérer la réactivité du nombre d'avis par page
+  useEffect(() => {
+    const handleResize = () => {
+      const newPerPage = window.innerWidth < 768 ? 1 : 2;
+      if (newPerPage !== reviewsPerPage) {
+        setReviewsPerPage(newPerPage);
+        setCurrentPage(1); // Reset à la page 1 pour éviter les bugs d'index
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [reviewsPerPage]);
 
   const fetchUserReviews = async () => {
     if (!user) return;
@@ -368,21 +383,28 @@ const Avis = () => {
 
         {/* Pagination Avis */}
         {!isLoading && totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-4">
+          <div className="flex justify-center items-center gap-6 mt-4">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+              className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="text-text-secondary text-sm font-bold">
-              Page {currentPage} sur {totalPages}
-            </span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-primary font-black text-lg">
+                {currentPage}
+              </span>
+              <span className="text-[#cbad90] font-bold text-xs uppercase tracking-widest">
+                / {totalPages}
+              </span>
+            </div>
+
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 rounded-full border border-surface-highlight text-white disabled:opacity-30 hover:bg-surface-highlight transition-colors"
+              className="size-12 rounded-xl border border-surface-highlight bg-background-dark text-white flex items-center justify-center hover:border-primary disabled:opacity-30 transition-all shadow-lg"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

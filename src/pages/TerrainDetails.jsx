@@ -39,16 +39,12 @@ export default function TerrainDetails() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
 
-  // État pour le carrousel des avis
-  const [reviewIndex, setReviewIndex] = useState(0);
+  // États pour la pagination des avis
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const reviewsPerPage = 2;
 
-  const nextReview = () => {
-    setReviewIndex((prev) => (prev + 1) % reviews.length);
-  };
-
-  const prevReview = () => {
-    setReviewIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
-  };
+  // États pour la pagination du calendrier (semaines)
+  const [calendarWeek, setCalendarWeek] = useState(0); // 0 = cette semaine, 1 = semaine suivante...
 
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -241,8 +237,13 @@ export default function TerrainDetails() {
 
     fetchTerrain();
     fetchReviews();
-    setReviewIndex(0);
   }, [id]);
+
+  const totalReviewsPages = Math.ceil(reviews.length / reviewsPerPage);
+  const paginatedReviews = reviews.slice(
+    (reviewsPage - 1) * reviewsPerPage,
+    reviewsPage * reviewsPerPage,
+  );
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -273,7 +274,7 @@ export default function TerrainDetails() {
       ]);
       setReviews(reviewsData);
       setRatingStats(stats);
-      setReviewIndex(0);
+      setReviewsPage(1);
     } catch (err) {
       console.error("Error submitting review:", err);
       toast.error("Erreur lors de l'ajout de l'avis");
@@ -319,7 +320,7 @@ export default function TerrainDetails() {
     proprietaire_id: terrain.proprietaire_id,
   };
   return (
-    <div className="bg-background-dark relative  text-text-main font-display antialiased overflow-x-hidden selection:bg-primary selection:text-white min-h-screen">
+    <div className="bg-background-dark relative text-white font-display antialiased overflow-x-hidden selection:bg-primary selection:text-white min-h-screen pb-20">
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-4 md:px-10 py-6 pb-20">
         {/* Header Info */}
@@ -494,15 +495,15 @@ export default function TerrainDetails() {
         </div>
 
         {/* Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Left Column: Details */}
-          <div className="lg:col-span-2 space-y-12">
+          <div className="lg:col-span-8 space-y-12">
             {/* Description */}
             <section>
-              <h3 className="text-xl font-bold text-white mb-4">
+              <h3 className="text-2xl font-black italic text-white mb-4">
                 À propos de ce terrain
               </h3>
-              <div className="text-text-secondary leading-relaxed space-y-4">
+              <div className="text-[#cbad90] leading-relaxed space-y-4 font-medium">
                 <p>
                   {terrain.description ||
                     "Aucune description disponible pour ce terrain."}
@@ -512,7 +513,7 @@ export default function TerrainDetails() {
 
             {/* Amenities */}
             <section className="border-t border-surface-light pt-8">
-              <h3 className="text-xl font-bold text-white mb-6">
+              <h3 className="text-2xl font-black italic text-white mb-6">
                 Équipements et services
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -547,56 +548,65 @@ export default function TerrainDetails() {
 
             {/* Interactive Calendar Mockup */}
             <section className="border-t border-surface-light pt-8">
-              <h3 className="text-xl font-bold text-white mb-6">
+              <h3 className="text-2xl font-black italic text-white mb-6">
                 Disponibilités
               </h3>
-              <div className="bg-surface-dark rounded-2xl p-6 border border-surface-light">
+              <div className="bg-[#2c241b] rounded-3xl p-6 md:p-8 border border-[#493622] shadow-2xl">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-6">
-                  <button className="p-2 hover:bg-surface-light rounded-full text-text-secondary transition-colors">
-                    <ChevronLeft className="w-6 h-6" />
+                  <button
+                    onClick={() =>
+                      setCalendarWeek((prev) => Math.max(0, prev - 1))
+                    }
+                    disabled={calendarWeek === 0}
+                    className="p-2 hover:bg-primary/20 rounded-full text-[#cbad90] hover:text-primary transition-colors disabled:opacity-20"
+                  >
+                    <ChevronLeft className="w-7 h-7" />
                   </button>
-                  <h4 className="text-lg font-semibold text-white capitalize">
-                    {new Intl.DateTimeFormat("fr-FR", {
-                      month: "long",
-                      year: "numeric",
-                    }).format(new Date(selectedDate))}
+                  <h4 className="text-lg font-black text-white uppercase tracking-widest">
+                    {calendarWeek === 0
+                      ? "Cette semaine"
+                      : `Dans ${calendarWeek} semaine${calendarWeek > 1 ? "s" : ""}`}
                   </h4>
-                  <button className="p-2 hover:bg-surface-light rounded-full text-text-secondary transition-colors">
-                    <ChevronRight className="w-6 h-6" />
+                  <button
+                    onClick={() =>
+                      setCalendarWeek((prev) => Math.min(3, prev + 1))
+                    }
+                    className="p-2 hover:bg-primary/20 rounded-full text-[#cbad90] hover:text-primary transition-colors"
+                  >
+                    <ChevronRight className="w-7 h-7" />
                   </button>
                 </div>
 
-                {/* Days Header */}
-                <div className="grid grid-cols-7 mb-4 text-center">
-                  <span className="text-xs text-text-secondary uppercase tracking-wider">
+                <div className="grid grid-cols-7 mb-2 text-center">
+                  <span className="text-[10px] text-[#cbad90] uppercase font-bold tracking-tighter">
                     Lun
                   </span>
-                  <span className="text-xs text-text-secondary uppercase tracking-wider">
+                  <span className="text-[10px] text-[#cbad90] uppercase font-bold tracking-tighter">
                     Mar
                   </span>
-                  <span className="text-xs text-text-secondary uppercase tracking-wider">
+                  <span className="text-[10px] text-[#cbad90] uppercase font-bold tracking-tighter">
                     Mer
                   </span>
-                  <span className="text-xs text-text-secondary uppercase tracking-wider">
+                  <span className="text-[10px] text-[#cbad90] uppercase font-bold tracking-tighter">
                     Jeu
                   </span>
-                  <span className="text-xs text-text-secondary uppercase tracking-wider">
+                  <span className="text-[10px] text-[#cbad90] uppercase font-bold tracking-tighter">
                     Ven
                   </span>
-                  <span className="text-xs text-text-secondary uppercase tracking-wider text-primary">
+                  <span className="text-[10px] text-primary uppercase font-bold tracking-tighter">
                     Sam
                   </span>
-                  <span className="text-xs text-text-secondary uppercase tracking-wider text-primary">
+                  <span className="text-[10px] text-primary uppercase font-bold tracking-tighter">
                     Dim
                   </span>
                 </div>
 
                 {/* Days Grid */}
-                <div className="grid grid-cols-7 gap-2 mb-6">
-                  {Array.from({ length: 30 }).map((_, i) => {
+                <div className="grid grid-cols-7 gap-3 mb-8">
+                  {Array.from({ length: 7 }).map((_, i) => {
                     const d = new Date();
-                    d.setDate(new Date().getDate() + i);
+                    d.setDate(new Date().getDate() + calendarWeek * 7 + i);
                     const iso = d.toISOString().split("T")[0];
                     const isActive = iso === selectedDate;
 
@@ -604,58 +614,61 @@ export default function TerrainDetails() {
                       <button
                         key={iso}
                         onClick={() => setSelectedDate(iso)}
-                        className={`aspect-square rounded-full flex flex-col items-center justify-center text-sm ${
+                        className={`py-3 px-1 rounded-full flex flex-col items-center justify-center transition-all min-w-0 ${
                           isActive
-                            ? "bg-primary text-[#231a10] font-bold shadow-lg shadow-primary/20 scale-110"
-                            : "text-white hover:bg-surface-light border border-transparent"
+                            ? "bg-primary text-[#231a10] font-black shadow-[0_0_20px_rgba(242,127,13,0.3)] scale-105"
+                            : "bg-[#231a10] text-white hover:bg-[#493622] border border-[#493622]"
                         }`}
                       >
-                        <span className="text-[10px] opacity-70 mb-0.5">
-                          {AvailabilityService.getDayShortName(d.getDay())}
+                        <span className="text-base md:text-lg leading-none">
+                          {d.getDate()}
                         </span>
-                        <span>{d.getDate()}</span>
+                        <span className="text-[8px] md:text-[10px] uppercase opacity-70 font-bold mt-0.5">
+                          {new Intl.DateTimeFormat("fr-FR", { month: "short" })
+                            .format(d)
+                            .replace(".", "")}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
 
                 {/* Time Slots for selected day */}
-                <div className="border-t border-surface-light pt-6">
-                  <p className="text-sm text-text-secondary mb-4">
+                <div className="border-t border-[#493622] pt-6">
+                  <p className="text-sm text-[#cbad90] font-bold uppercase tracking-widest mb-4">
                     Créneaux disponibles pour le{" "}
-                    <span className="text-white font-medium">
+                    <span className="text-white">
                       {new Date(selectedDate).getDate()}{" "}
                       {new Intl.DateTimeFormat("fr-FR", {
                         month: "long",
                       }).format(new Date(selectedDate))}
                     </span>{" "}
-                    :
                   </p>
 
                   {loadingSlots ? (
                     <div className="flex justify-center py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary/20 border-t-primary"></div>
                     </div>
                   ) : availableSlots.length === 0 ? (
-                    <p className="text-text-secondary italic text-sm py-2">
+                    <p className="text-[#cbad90] italic text-sm py-4 text-center bg-[#231a10]/50 rounded-xl border border-dashed border-[#493622]">
                       Aucun créneau disponible
                     </p>
                   ) : (
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                       {availableSlots.map((slot) => (
                         <button
                           key={slot.time}
                           type="button"
                           disabled={!slot.available}
                           onClick={() => setSelectedTimeSlot(slot.time)}
-                          className={`
-                            px-4 py-2 rounded-lg text-sm transition-colors border
+                          className={` 
+                            py-2.5 rounded-xl text-xs font-bold transition-all border
                             ${
                               !slot.available
-                                ? "bg-surface-light text-text-secondary line-through opacity-50 cursor-not-allowed border-transparent"
+                                ? "bg-[#231a10]/50 text-[#5d452b] line-through cursor-not-allowed border-transparent"
                                 : selectedTimeSlot === slot.time
-                                  ? "bg-primary text-[#231a10] font-bold shadow-md border-primary"
-                                  : "bg-surface-light text-white hover:bg-primary hover:text-surface-dark border-transparent hover:border-primary"
+                                  ? "bg-primary text-[#231a10] shadow-lg border-primary scale-105"
+                                  : "bg-[#231a10] text-[#cbad90] hover:border-primary/50 border-[#493622]"
                             }
                           `}
                         >
@@ -719,23 +732,31 @@ export default function TerrainDetails() {
             {/* Reviews */}
             <section className="border-t border-surface-light pt-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-2xl font-black italic text-white">
                   Avis ({ratingStats.count})
                 </h3>
                 <div className="flex items-center gap-4">
                   {reviews.length > 1 && (
                     <div className="flex gap-2">
                       <button
-                        onClick={prevReview}
-                        className="p-1.5 rounded-full border border-surface-highlight text-text-secondary hover:text-white hover:bg-surface-highlight transition-all"
+                        onClick={() =>
+                          setReviewsPage((prev) => Math.max(1, prev - 1))
+                        }
+                        disabled={reviewsPage === 1}
+                        className="p-2 rounded-full border border-[#493622] text-[#cbad90] hover:text-white hover:bg-[#493622] transition-all disabled:opacity-20"
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={nextReview}
-                        className="p-1.5 rounded-full border border-surface-highlight text-text-secondary hover:text-white hover:bg-surface-highlight transition-all"
+                        onClick={() =>
+                          setReviewsPage((prev) =>
+                            Math.min(totalReviewsPages, prev + 1),
+                          )
+                        }
+                        disabled={reviewsPage === totalReviewsPages}
+                        className="p-2 rounded-full border border-[#493622] text-[#cbad90] hover:text-white hover:bg-[#493622] transition-all disabled:opacity-20"
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
                   )}
@@ -756,81 +777,66 @@ export default function TerrainDetails() {
                     Aucun avis pour le moment.
                   </p>
                 ) : (
-                  <div className="space-y-4">
-                    <div
-                      key={reviews[reviewIndex]?.id}
-                      className="bg-surface-dark p-6 rounded-2xl border border-surface-light animate-in fade-in slide-in-from-right-4 duration-500"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="size-10 rounded-full bg-cover bg-center bg-[#493622]"
-                            style={
-                              reviews[reviewIndex]?.profiles?.image
-                                ? {
-                                    backgroundImage: `url('${reviews[reviewIndex].profiles.image}')`,
-                                  }
-                                : {}
-                            }
-                          >
-                            {!reviews[reviewIndex]?.profiles?.image && (
-                              <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold uppercase">
-                                {reviews[
-                                  reviewIndex
-                                ]?.profiles?.name?.substring(0, 2) || "??"}
-                              </div>
-                            )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {paginatedReviews.map((review) => (
+                      <div
+                        key={review.id}
+                        className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-4 shadow-xl"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="size-10 rounded-full bg-cover bg-center bg-[#493622]"
+                              style={
+                                review?.profiles?.image
+                                  ? {
+                                      backgroundImage: `url('${review.profiles.image}')`,
+                                    }
+                                  : {}
+                              }
+                            >
+                              {!review?.profiles?.image && (
+                                <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold uppercase">
+                                  {review?.profiles?.name?.substring(0, 2) ||
+                                    "??"}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-white text-sm tracking-tight">
+                                {review?.profiles?.name || "Anonyme"}
+                              </p>
+                              <p className="text-[10px] font-black uppercase text-[#cbad90] opacity-60">
+                                {new Date(
+                                  review?.created_at,
+                                ).toLocaleDateString("fr-FR", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-white text-sm">
-                              {reviews[reviewIndex]?.profiles?.name ||
-                                "Anonyme"}
-                            </p>
-                            <p className="text-xs text-text-secondary">
-                              {new Date(
-                                reviews[reviewIndex]?.created_at,
-                              ).toLocaleDateString("fr-FR", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })}
-                            </p>
+                          <div className="flex gap-0.5 text-primary">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <Star
+                                key={i}
+                                className={`w-[14px] h-[14px] ${
+                                  i <= (review?.note || 0)
+                                    ? "fill-current"
+                                    : "opacity-30"
+                                }`}
+                              />
+                            ))}
                           </div>
                         </div>
-                        <div className="flex gap-0.5 text-primary">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <Star
-                              key={i}
-                              className={`w-[14px] h-[14px] ${
-                                i <= (reviews[reviewIndex]?.note || 0)
-                                  ? "fill-current"
-                                  : "opacity-30"
-                              }`}
-                            />
-                          ))}
+                        <div className="bg-[#231a10]/50 rounded-2xl p-4 border border-[#493622]/50 italic">
+                          <p className="text-[#cbad90] text-sm leading-relaxed">
+                            "{review?.commentaire}"
+                          </p>
                         </div>
                       </div>
-                      <p className="text-text-secondary text-sm">
-                        {reviews[reviewIndex]?.commentaire}
-                      </p>
-                    </div>
-
-                    {/* Indicateurs (dots) pour la navigation visuelle */}
-                    {reviews.length > 1 && (
-                      <div className="flex justify-center gap-1.5 mt-2">
-                        {reviews.map((_, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setReviewIndex(i)}
-                            className={`h-1 rounded-full transition-all ${
-                              i === reviewIndex
-                                ? "w-6 bg-primary"
-                                : "w-1.5 bg-surface-highlight"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -839,36 +845,33 @@ export default function TerrainDetails() {
             {/* Map */}
             <section className="border-t border-surface-light pt-8">
               <h3 className="text-xl font-bold text-white mb-6">Emplacement</h3>
-              <div className="w-full h-64 bg-surface-dark rounded-2xl overflow-hidden relative">
-                <div
-                  className="w-full h-full bg-cover bg-center opacity-80"
-                  data-alt="Static map view of Dakar Liberté 6 area"
-                  data-location="Dakar"
+              <div className="w-full h-72 bg-surface-dark rounded-3xl overflow-hidden border border-surface-highlight shadow-inner">
+                <iframe
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(terrain.adress + ", Dakar, Senegal")}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                  width="100%"
+                  height="100%"
                   style={{
-                    backgroundImage:
-                      "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCbLGJqOpXHjL8jpfJumhVPzQTB1zcbHVRLSLpcHNT8J_qIzQfQtzRLFNnpn10TA1erIVIykEdXj0V39lQdaldkSfvw4HES2GII-rtPiyqQL1SBn3QPezjd_RtKPNKzN-QaAo3kiP1wVXOo8kpPCC7mmbJ_FjbRTOHRiKkJMFHCTTuuSH6MApooFYQuuXJxYXNH2DU9ffIFa0jTB-LI3wGY2KFH9leereTlEg9WFDM7ThvpqdzbDd15dZGrungybq8AglZRw6YZ_Q')",
+                    border: 0,
+                    filter:
+                      "grayscale(1) contrast(1.2) invert(0.9) hue-rotate(180deg)",
                   }}
-                ></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-white p-2 rounded-full shadow-xl">
-                    <div className="bg-primary p-2 rounded-full text-[#231a10]">
-                      <Trophy className="w-6 h-6" strokeWidth={2} />
-                    </div>
-                  </div>
-                </div>
+                  allowFullScreen=""
+                  loading="lazy"
+                  title={`Carte de ${terrain.name}`}
+                ></iframe>
               </div>
               <p className="mt-4 text-text-secondary text-sm">
-                Liberté 6, Dakar, Sénégal • À 5 min du rond-point JVC
+                {terrain.adress}, Dakar, Sénégal
               </p>
             </section>
           </div>
 
           {/* Right Column: Sticky Booking Card */}
-          <div className="relative">
-            <div className="sticky top-24 bg-surface-dark rounded-3xl p-6 border border-surface-light shadow-2xl">
-              <div className="flex justify-between items-start mb-6 border-b border-surface-light pb-6">
+          <div className="lg:col-span-4 relative">
+            <div className="sticky top-24 bg-[#2c241b] rounded-[2rem] p-8 border border-[#493622] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+              <div className="flex justify-between items-start mb-8 border-b border-[#493622] pb-6">
                 <div>
-                  <span className="text-2xl font-bold text-white block">
+                  <span className="text-3xl font-black text-white block tracking-tighter">
                     {(
                       terrain.price_per_hour ||
                       terrain.price ||
@@ -876,7 +879,9 @@ export default function TerrainDetails() {
                     ).toLocaleString()}{" "}
                     FCFA
                   </span>
-                  <span className="text-text-secondary text-sm">par heure</span>
+                  <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
+                    par heure de jeu
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 bg-surface-light px-2 py-1 rounded-md">
                   <Star className="text-primary w-4 h-4 fill-current" />
@@ -885,14 +890,14 @@ export default function TerrainDetails() {
                   </span>
                 </div>
               </div>
-              <div className="space-y-4 mb-6">
+              <div className="space-y-3 mb-8">
                 {/* Date/Time Display */}
-                <div className="bg-[#231a10] rounded-xl p-4 border border-surface-light/50 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors">
+                <div className="bg-[#231a10] rounded-2xl p-4 border border-[#493622] flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group">
                   <div className="flex flex-col">
-                    <span className="text-xs text-text-secondary uppercase font-bold tracking-wide">
+                    <span className="text-[10px] text-[#cbad90] uppercase font-black tracking-widest">
                       Date
                     </span>
-                    <span className="text-white font-medium capitalize">
+                    <span className="text-white font-bold capitalize">
                       {new Intl.DateTimeFormat("fr-FR", {
                         day: "numeric",
                         month: "long",
@@ -900,14 +905,14 @@ export default function TerrainDetails() {
                       }).format(new Date(selectedDate))}
                     </span>
                   </div>
-                  <Calendar className="text-primary w-5 h-5" />
+                  <Calendar className="text-primary w-5 h-5 group-hover:scale-110 transition-transform" />
                 </div>
-                <div className="bg-[#231a10] rounded-xl p-4 border border-surface-light/50 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-colors">
+                <div className="bg-[#231a10] rounded-2xl p-4 border border-[#493622] flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group">
                   <div className="flex flex-col">
-                    <span className="text-xs text-text-secondary uppercase font-bold tracking-wide">
+                    <span className="text-[10px] text-[#cbad90] uppercase font-black tracking-widest">
                       Horaire
                     </span>
-                    <span className="text-white font-medium">
+                    <span className="text-white font-bold">
                       {selectedTimeSlot ? (
                         selectedTimeSlot
                       ) : (
@@ -917,7 +922,7 @@ export default function TerrainDetails() {
                       )}
                     </span>
                   </div>
-                  <Clock className="text-primary w-5 h-5" />
+                  <Clock className="text-primary w-5 h-5 group-hover:scale-110 transition-transform" />
                 </div>
               </div>
               {/* Breakdown */}

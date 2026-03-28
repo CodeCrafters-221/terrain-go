@@ -5,17 +5,24 @@ import { useNavigate } from "react-router-dom";
 const DashboardBookings = () => {
   const { reservations } = useDashboard();
   const navigate = useNavigate();
-  const [filterStatus, setFilterStatus] = useState("All"); // All, Pending, Confirmed
+  const [filterStatus, setFilterStatus] = useState("Tout"); // Tout, En attente, Confirmé, Annulé
 
   const getFilteredReservations = () => {
     let filtered = reservations;
-    if (filterStatus === "Pending") {
+    if (filterStatus === "En attente") {
       filtered = reservations.filter(
         (r) => r.status === "En attente de paiement",
       );
-    } else if (filterStatus === "Confirmed") {
+    } else if (filterStatus === "Confirmé") {
       filtered = reservations.filter(
-        (r) => r.status === "Confirmé" || r.status === "Payé",
+        (r) =>
+          r.status === "Confirmé" ||
+          r.status === "Payé" ||
+          r.status === "active",
+      );
+    } else if (filterStatus === "Annulé") {
+      filtered = reservations.filter(
+        (r) => r.status === "Annulé" || r.status === "Expiré",
       );
     }
     return filtered.slice(0, 5);
@@ -24,7 +31,7 @@ const DashboardBookings = () => {
   const displayReservations = getFilteredReservations();
 
   const cycleFilter = () => {
-    const statuses = ["All", "Pending", "Confirmed"];
+    const statuses = ["Tout", "En attente", "Confirmé", "Annulé"];
     const currentIndex = statuses.indexOf(filterStatus);
     setFilterStatus(statuses[(currentIndex + 1) % statuses.length]);
   };
@@ -42,7 +49,11 @@ const DashboardBookings = () => {
         </div>
         <button
           onClick={cycleFilter}
-          className={`size-8 flex items-center justify-center rounded-full transition-all ${filterStatus !== "All" ? "bg-[#f27f0d] text-[#231a10]" : "hover:bg-[#493622] text-[#cbad90]"}`}
+          className={`size-8 flex items-center justify-center rounded-full transition-all ${
+            filterStatus !== "Tout"
+              ? "bg-[#f27f0d] text-[#231a10]"
+              : "hover:bg-[#493622] text-[#cbad90]"
+          }`}
           title="Changer le filtre"
         >
           <span className="material-symbols-outlined">filter_list</span>
@@ -67,20 +78,38 @@ const DashboardBookings = () => {
               </div>
               <div className="flex flex-col flex-1 gap-1">
                 <div className="flex justify-between items-start">
-                  <h4 className="text-white font-medium text-sm">
+                  <h4 className="text-white font-medium text-xs">
                     {booking.clientName}
                   </h4>
-                  <span className="text-[#f27f0d] text-xs font-bold px-2 py-0.5 rounded bg-[#f27f0d]/10">
+                  <span className="text-[#f27f0d] text-xs font-bold px-0.5 py-0.5 rounded bg-[#f27f0d]/10">
                     {booking.time}
                   </span>
                 </div>
                 <p className="text-[#cbad90] text-xs">{booking.fieldName}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span
-                    className={`size-2 rounded-full ${booking.status === "Payé" || booking.status === "Confirmé" ? "bg-green-500" : "bg-yellow-500"}`}
+                    className={`size-2 rounded-full ${
+                      booking.status === "Payé" ||
+                      booking.status === "Confirmé" ||
+                      booking.status === "active"
+                        ? "bg-green-500"
+                        : booking.status === "Annulé" ||
+                            booking.status === "Expiré"
+                          ? "bg-red-500"
+                          : "bg-yellow-500"
+                    }`}
                   ></span>
                   <span
-                    className={`text-xs font-medium ${booking.status === "Payé" || booking.status === "Confirmé" ? "text-green-500" : "text-yellow-500"}`}
+                    className={`text-xs font-medium ${
+                      booking.status === "Payé" ||
+                      booking.status === "Confirmé" ||
+                      booking.status === "active"
+                        ? "text-green-500"
+                        : booking.status === "Annulé" ||
+                            booking.status === "Expiré"
+                          ? "text-red-500"
+                          : "text-yellow-500"
+                    }`}
                   >
                     {booking.status}
                   </span>
