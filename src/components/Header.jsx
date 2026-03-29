@@ -149,6 +149,7 @@ export default function Header() {
               : "opacity-0 invisible pointer-events-none"
           }`}
         >
+          <XIcon className="w-8 h-8 absolute top-5 right-5 hover:opacity-20" color="white" onClick={() => setIsMenuOpen(false)} />
           <nav className="flex flex-col gap-6 items-center w-full">
             {profile?.role !== "owner" && (
               <>

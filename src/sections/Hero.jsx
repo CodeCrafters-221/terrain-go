@@ -76,7 +76,7 @@ export default function Hero() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
             >
               <PartyPopper className="text-primary w-4 h-4" />
-              <span className="text-primary text-sm font-semibold">
+              <span className="text-primary text-sm font-semibold text-center">
                 Bienvenue - Accéder au Dashboard !
               </span>
             </Link>
@@ -86,7 +86,7 @@ export default function Hero() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
             >
               <PartyPopper className="text-primary w-4 h-4" />
-              <span className="text-primary text-sm font-semibold">
+              <span className="text-primary text-sm font-semibold text-center">
                 Envie de jouer? - Réservez maintenant !
               </span>
             </Link>
@@ -94,10 +94,10 @@ export default function Hero() {
         ) : (
           <div
             onClick={() => navigate("/login")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
           >
-            <PartyPopper className="text-primary w-4 h-4" />
-            <span className="text-primary text-sm font-semibold">
+            <PartyPopper className="text-primary size-4" />
+            <span className="text-primary text-sm font-semibold w-60 text-center">
               Envie de jouer? - Connectez-vous pour réserver !
             </span>
           </div>

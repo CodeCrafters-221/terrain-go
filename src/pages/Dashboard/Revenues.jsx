@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+// import autoTable from "jspdf-autotable";
 
 // 🔥 HELPERS ROBUSTES (Synchronisés avec DashboardCharts)
 const parseAmount = (item) => {

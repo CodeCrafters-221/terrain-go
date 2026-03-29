@@ -95,7 +95,7 @@ export default function Login() {
   const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
 
   return (
-    <div className="bg-[#2e2318] rounded-2xl w-xl shadow-2xl border border-[#493622]">
+    <div className="bg-[#2e2318] rounded-2xl w-xl shadow-2xl border border-surface-highlight relative">
       <div className="p-6 sm:p-8">
         <h2 className="text-white text-2xl font-semibold text-center mb-6">
           Se Connecter
@@ -104,7 +104,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="email" className="text-[#cbad90] text-sm">
+            <label htmlFor="email" className="text-text-secondary text-sm">
               Email
             </label>
             <input

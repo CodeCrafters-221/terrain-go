@@ -49,7 +49,7 @@ export default function Register() {
     try {
       setIsLoading(true);
 
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
       });
