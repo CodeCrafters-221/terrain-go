@@ -26,35 +26,36 @@ const CardSearch = ({ terrains, onReserve, onFavorite, favorites = [] }) => {
             className="group bg-surface-dark border border-surface-highlight rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 flex flex-col relative"
           >
             {/* Image Container */}
-            <Link to={`/terrain-details/${terrain.id}`} className="relative aspect-[16/10] overflow-hidden block">
-              <div className="absolute top-3 left-3 z-10 flex gap-2">
-                <span className="bg-black/40 backdrop-blur-md border border-white/10 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                  {terrain.type}
-                </span>
-                {terrain.isAvailable && (
-                  <span className="bg-primary/90 backdrop-blur-sm text-background-dark text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg shadow-primary/20">
-                    <Zap className="w-[14px] h-[14px]" fill="currentColor" />
-                    Dispo
-                  </span>
-                )}
+            <Link
+              to={`/terrain-details/${terrain.id}`}
+              className="relative aspect-[16/10] overflow-hidden block"
+            >
+              <div className="absolute inset-0  bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70 flex items-start justify-between  p-2 gap-4">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onFavorite && onFavorite(terrain.id);
+                  }}
+                  className={`p-2 rounded-full backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-110 active:scale-90 group/btn ${
+                    favorites.includes(terrain.id)
+                      ? "bg-primary text-white border-primary"
+                      : "bg-black/40 text-white hover:bg-white hover:text-red-500"
+                  }`}
+                >
+                  <Heart
+                    className={`w-[18px] h-[18px] transition-transform group-hover/btn:scale-110 ${favorites.includes(terrain.id) ? "fill-current" : ""}`}
+                  />
+                </button>
+                <div className="flex gap-2 mt-2">
+                  {terrain.isAvailable && (
+                    <span className="bg-primary/90 backdrop-blur-sm text-background-dark text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg shadow-primary/20">
+                      <Zap className="size-4" fill="currentColor" />
+                      Dispo
+                    </span>
+                  )}
+                </div>
               </div>
-
-              <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onFavorite && onFavorite(terrain.id);
-                }}
-                className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-sm border border-white/10 transition-all duration-300 hover:scale-110 active:scale-90 group/btn ${
-                  favorites.includes(terrain.id) 
-                    ? "bg-primary text-white border-primary" 
-                    : "bg-black/40 text-white hover:bg-white hover:text-red-500"
-                }`}
-              >
-                <Heart className={`w-[18px] h-[18px] transition-transform group-hover/btn:scale-110 ${favorites.includes(terrain.id) ? "fill-current" : ""}`} />
-              </button>
-
-              <div className="absolute inset-0 bg-linear-to-t from-background-dark/90 via-transparent to-transparent z-5 opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
 
               <img
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"

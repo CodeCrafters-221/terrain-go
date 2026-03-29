@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function CreateField() {
-  const { profile } = useAuth(); 
+  const { profile } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({

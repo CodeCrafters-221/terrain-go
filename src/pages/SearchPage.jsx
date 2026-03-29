@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import NavSearch from "../sections/search/NavSearch";
 import CardSearch from "../sections/search/CardSearch";
 import Pagination from "../sections/search/Pagination";
 import FilterSidebar from "../sections/search/FilterSidebar";
@@ -7,6 +6,7 @@ import { ListFilter, LayoutGrid, Map } from "lucide-react";
 import ReservationModal from "../components/ReservationModal";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
+import Header from "../components/Header";
 
 const initialTerrains = [];
 
@@ -51,9 +51,7 @@ const SearchPage = () => {
     const fetchRealStadiums = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("fields")
-          .select(`
+        const { data, error } = await supabase.from("fields").select(`
             *,
             field_images (url_image)
           `);
@@ -68,9 +66,11 @@ const SearchPage = () => {
           type: f.pelouse || "5x5", // Assurez-vous que les types correspondent à ceux de FilterSidebar
           rating: 4.8,
           reviews: 120,
-          image: f.field_images?.[0]?.url_image || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80",
+          image:
+            f.field_images?.[0]?.url_image ||
+            "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80",
           isAvailable: true,
-          proprietaire_id: f.proprietaire_id
+          proprietaire_id: f.proprietaire_id,
         }));
 
         setStadiums(mapped);
@@ -81,10 +81,8 @@ const SearchPage = () => {
       }
     };
 
-
     fetchRealStadiums();
   }, []);
-
 
   const filteredTerrains = useMemo(() => {
     return stadiums.filter((terrain) => {
@@ -97,7 +95,9 @@ const SearchPage = () => {
       // Filtrage par Type (recherche d'une correspondance même partielle)
       const matchesType =
         filters.types.length === 0 ||
-        filters.types.some(t => terrain.type.toLowerCase().includes(t.toLowerCase()));
+        filters.types.some((t) =>
+          terrain.type.toLowerCase().includes(t.toLowerCase()),
+        );
 
       // Filtrage par Prix (inférieur ou égal au prix max)
       const matchesPrice = terrain.price <= filters.priceRange[1];
@@ -105,7 +105,6 @@ const SearchPage = () => {
       return matchesSearch && matchesType && matchesPrice;
     });
   }, [filters, stadiums]);
-
 
   const handleReserve = (terrain) => {
     setSelectedStadium({
@@ -117,7 +116,7 @@ const SearchPage = () => {
       fieldStadium: terrain.type,
       notes: terrain.rating.toString(),
       image: terrain.image,
-      proprietaire_id: terrain.proprietaire_id
+      proprietaire_id: terrain.proprietaire_id,
     });
     setIsReservationOpen(true);
   };
@@ -131,11 +130,9 @@ const SearchPage = () => {
 
   return (
     <div className="bg-background-dark text-white min-h-screen flex flex-col overflow-x-hidden font-display">
-      {/* Top Navigation */}
-      <NavSearch />
-
       {/* Main Layout */}
-      <div className="flex flex-1 max-w-[1440px] mx-auto w-full pt-28 pb-10 sm:pt-24 px-4 sm:px-6 lg:px-8">
+      <Header />
+      <div className="flex flex-1 max-w-[1440px] mx-auto w-full pt-32 pb-10 px-4 sm:px-6 lg:px-8">
         {/* Sidebar Filters - Now with mobile drawer support */}
         <FilterSidebar
           filters={filters}
@@ -145,7 +142,7 @@ const SearchPage = () => {
         />
 
         {/* Main Content (Results) */}
-        <main className="flex-1 flex flex-col gap-6 w-full">
+        <main className="flex-1 flex flex-col gap-6 w-full p-4">
           {/* Page Header */}
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 mb-2">
             <div className="text-center md:text-left w-full md:w-auto">
@@ -153,7 +150,10 @@ const SearchPage = () => {
                 Trouvez votre terrain
               </h1>
               <p className="text-text-secondary text-sm">
-                {filteredTerrains.length} terrain{filteredTerrains.length > 1 ? 's' : ''} disponible{filteredTerrains.length > 1 ? 's' : ''} {filters.search ? `à "${filters.search}"` : "à Dakar"}
+                {filteredTerrains.length} terrain
+                {filteredTerrains.length > 1 ? "s" : ""} disponible
+                {filteredTerrains.length > 1 ? "s" : ""}{" "}
+                {filters.search ? `à "${filters.search}"` : "à Dakar"}
               </p>
             </div>
 
@@ -170,10 +170,11 @@ const SearchPage = () => {
               <div className="hidden sm:flex items-center gap-2 bg-surface-dark p-1 rounded-lg border border-surface-highlight shrink-0">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all ${viewMode === "grid"
-                    ? "bg-white/10 text-white shadow-sm"
-                    : "text-text-secondary hover:text-white"
-                    }`}
+                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all ${
+                    viewMode === "grid"
+                      ? "bg-white/10 text-white shadow-sm"
+                      : "text-text-secondary hover:text-white"
+                  }`}
                 >
                   <LayoutGrid className="w-4 h-4" />
                   <span className="text-sm font-medium hidden sm:block">
@@ -182,10 +183,11 @@ const SearchPage = () => {
                 </button>
                 <button
                   onClick={() => setViewMode("map")}
-                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all ${viewMode === "map"
-                    ? "bg-white/10 text-white shadow-sm"
-                    : "text-text-secondary hover:text-white"
-                    }`}
+                  className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all ${
+                    viewMode === "map"
+                      ? "bg-white/10 text-white shadow-sm"
+                      : "text-text-secondary hover:text-white"
+                  }`}
                 >
                   <Map className="w-4 h-4" />
                   <span className="text-sm font-medium hidden sm:block">
@@ -201,12 +203,12 @@ const SearchPage = () => {
             <>
               {isLoading ? (
                 <div className="flex justify-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2  border-primary"></div>
                 </div>
               ) : (
-                <CardSearch 
-                  terrains={paginatedTerrains} 
-                  onReserve={handleReserve} 
+                <CardSearch
+                  terrains={paginatedTerrains}
+                  onReserve={handleReserve}
                   onFavorite={handleFavorite}
                   favorites={favorites}
                 />
@@ -229,7 +231,6 @@ const SearchPage = () => {
                     "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80')",
                 }}
               ></div>
-              <div className="absolute inset-0 bg-linear-to-t from-background-dark via-transparent to-transparent opacity-60"></div>
 
               {/* Map UI Elements */}
               <div className="absolute inset-0 flex items-center justify-center">
@@ -241,7 +242,9 @@ const SearchPage = () => {
                     Bientôt Disponible : Vue Carte
                   </h3>
                   <p className="text-text-secondary text-base leading-relaxed mb-6">
-                    Nous finalisons l'intégration de la carte interactive pour vous permettre de localiser les terrains en temps réel autour de vous.
+                    Nous finalisons l'intégration de la carte interactive pour
+                    vous permettre de localiser les terrains en temps réel
+                    autour de vous.
                   </p>
                   <button
                     onClick={() => setViewMode("grid")}

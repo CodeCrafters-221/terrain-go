@@ -15,7 +15,7 @@ export default function Hero() {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
 
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, profile } = useAuth();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -70,15 +70,27 @@ export default function Hero() {
 
         {/* Badge */}
         {currentUser ? (
-          <Link
-            to="/search"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
-          >
-            <PartyPopper className="text-primary w-4 h-4" />
-            <span className="text-primary text-sm font-semibold">
-              Envie de jouer? - Réservez maintenant !
-            </span>
-          </Link>
+          profile?.role === "owner" ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
+            >
+              <PartyPopper className="text-primary w-4 h-4" />
+              <span className="text-primary text-sm font-semibold">
+                Bienvenue - Accéder au Dashboard !
+              </span>
+            </Link>
+          ) : (
+            <Link
+              to="/search"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse mt-6 cursor-pointer"
+            >
+              <PartyPopper className="text-primary w-4 h-4" />
+              <span className="text-primary text-sm font-semibold">
+                Envie de jouer? - Réservez maintenant !
+              </span>
+            </Link>
+          )
         ) : (
           <div
             onClick={() => navigate("/login")}

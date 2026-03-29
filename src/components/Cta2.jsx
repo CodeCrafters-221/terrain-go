@@ -1,8 +1,8 @@
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Cta2() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   return (
     <>
@@ -62,20 +62,30 @@ export default function Cta2() {
 
         {/* Boutons d'action */}
         <div className="flex flex-col sm:flex-row gap-4 z-10 w-full md:w-auto">
-          {
-            user ?
-              <Link to="/search"
+          {user ? (
+            profile?.role === "owner" ? (
+              <Link
+                to="/dashboard"
+                className="flex items-center justify-center rounded-full h-14 px-8 bg-primary hover:bg-primary/90 text-black text-base font-bold transition-all cursor-pointer shadow-lg shadow-primary/50 hover:shadow-primary/70 active:scale-95 w-full sm:w-auto"
+              >
+                Mon Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/search"
                 className="flex items-center justify-center rounded-full h-14 px-8 bg-primary hover:bg-primary/90 text-black text-base font-bold transition-all cursor-pointer shadow-lg shadow-primary/50 hover:shadow-primary/70 active:scale-95 w-full sm:w-auto"
               >
                 Réserver
               </Link>
-              :
-              <Link to="/register"
-                className="flex items-center justify-center rounded-full h-14 px-8 bg-primary hover:bg-primary/90 text-black text-base font-bold transition-all cursor-pointer shadow-lg shadow-primary/50 hover:shadow-primary/70 active:scale-95 w-full sm:w-auto"
-              >
-                Créer un compte
-              </Link>
-          }
+            )
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center justify-center rounded-full h-14 px-8 bg-primary hover:bg-primary/90 text-black text-base font-bold transition-all cursor-pointer shadow-lg shadow-primary/50 hover:shadow-primary/70 active:scale-95 w-full sm:w-auto"
+            >
+              Se connecter
+            </Link>
+          )}
 
           {/* Bouton secondaire (conservé en commentaire au cas où vous voudriez le réactiver) */}
           {/* <button
