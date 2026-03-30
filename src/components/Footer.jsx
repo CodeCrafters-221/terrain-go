@@ -71,12 +71,12 @@ export default function Footer() {
 
               <li className="flex items-center gap-2">
                 <Mail className="text-primary w-4 h-4" />
-                contact@footbooking.sn
+                  <a href="mailto:code.crafters221@gmail.com">contact@footbooking.sn</a>
               </li>
 
               <li className="flex items-center gap-2">
                 <Phone className="text-primary w-4 h-4" />
-                +221 77 123 45 67
+                +221 76 026 36 31
               </li>
             </ul>
 
