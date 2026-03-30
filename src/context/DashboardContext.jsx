@@ -68,7 +68,7 @@ export const DashboardProvider = ({ children }) => {
   // --- NOTIFICATIONS ---
   const processNotifications = (reservs, subs = []) => {
     const resNotifs = reservs
-      .filter((r) => r.status === "En attente de paiement")
+      .filter((r) => r.status === "En attente")
       .map((r) => ({
         id: r.id,
         title: "Nouvelle réservation",
@@ -81,7 +81,7 @@ export const DashboardProvider = ({ children }) => {
       }));
 
     const subNotifs = subs
-      .filter((s) => s.status === "En attente de paiement")
+      .filter((s) => s.status === "En attente")
       .map((s) => ({
         id: s.id,
         title: "Nouvel Abonnement",
@@ -325,7 +325,7 @@ export const DashboardProvider = ({ children }) => {
         { table: "disponibilite", col: "field_id" },
         { table: "reservations", col: "field_id" },
         { table: "subscriptions", col: "field_id" },
-        { table: "avis", col: "terrain_id" }
+        { table: "avis", col: "terrain_id" },
       ];
 
       for (const cleanup of cleanups) {
@@ -333,22 +333,27 @@ export const DashboardProvider = ({ children }) => {
           .from(cleanup.table)
           .delete()
           .eq(cleanup.col, id);
-        
+
         if (cleanupError) {
-          console.warn(`Warning deleting from ${cleanup.table}:`, cleanupError.message);
+          console.warn(
+            `Warning deleting from ${cleanup.table}:`,
+            cleanupError.message,
+          );
           // We don't throw here to try to delete as much as possible
         }
       }
 
       // 2. Finally delete the field
       const { error } = await supabase.from("fields").delete().eq("id", id);
-      
+
       if (error) {
         console.error("Error deleting field:", error.message);
-        toast.error(`Impossible de supprimer le terrain : ${error.message}. Il reste peut-être des données liées que vous n'avez pas le droit de supprimer.`);
+        toast.error(
+          `Impossible de supprimer le terrain : ${error.message}. Il reste peut-être des données liées que vous n'avez pas le droit de supprimer.`,
+        );
         throw error;
       }
-      
+
       setFields(fields.filter((f) => f.id !== id));
       toast.success("Terrain supprimé avec succès !");
     } catch (error) {
@@ -594,12 +599,9 @@ export const DashboardProvider = ({ children }) => {
 
     const monthlyRevenueSubscriptions = subscriptions.reduce((acc, curr) => {
       const sDate = new Date(curr.createdAt);
-      const isConfirmed = [
-        "Confirmé",
-        "active",
-        "Payé",
-        "En attente de paiement",
-      ].includes(curr.status); // Adjusted to include all revenue-generating statuses
+      const isConfirmed = ["Confirmé", "active", "Payé", "En attente"].includes(
+        curr.status,
+      ); // Adjusted to include all revenue-generating statuses
       return (
         acc +
         (sDate >= startOfMonth && isConfirmed ? Number(curr.amount || 0) : 0)

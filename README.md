@@ -1,5 +1,3 @@
-
-
 # ⚽ FOOTBOOKING — Plateforme de Réservation de Terrains de Foot
 
 FOOTBOOKING est une application web de réservation de terrains de football.
@@ -233,6 +231,12 @@ src/
 
 origin/dev
 
-
 - router/index.jsx
+
 ## : Merged all routes (/, /user-profile, /terrain-details, /search)
+
+=======
+
+## : Merged all routes (/, /user-profile, /terrain-details, /search)
+
+93e6792 (...)

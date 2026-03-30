@@ -9,7 +9,7 @@ import OwnersCTA from "../sections/owners/OwnersCTA";
 
 export default function Owners() {
   return (
-    <div className="min-h-screen w-full bg-[#231a10] text-white">
+    <div className="min-h-screen w-full bg-background-dark text-white">
       <Header />
       <main className="flex flex-col relative z-0">
         <OwnersHero />

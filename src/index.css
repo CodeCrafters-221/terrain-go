@@ -4,11 +4,7 @@
   --color-bg: rgb(255 255 255);
   --color-text: rgb(15 15 15);
   --color-primary: rgb(255 122 0);
-  --color-mainBg: rgb(
-    35,
-    26,
-    16
-  ); /* Updated to match #231a10 rgb(35, 26, 16) */
+  --color-mainBg: rgb(35, 26, 16 ); /* Updated to match #231a10 rgb(35, 26, 16) */
   --font-lexend: "lexend", sans-serif;
   --color-primary-new: #f27f0d;
   --color-background-light: #f8f7f5;

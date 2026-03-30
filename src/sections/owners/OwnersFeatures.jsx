@@ -46,7 +46,7 @@ export default function OwnersFeatures() {
   return (
     <section
       id="features"
-      className="py-24 px-16 sm:px-4 lg:px-24 bg-[#1a130c]"
+      className="py-24 px-8 sm:px-4 lg:px-24 bg-[#1a130c]"
     >
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
