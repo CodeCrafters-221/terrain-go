@@ -71,7 +71,7 @@ export default function Footer() {
 
               <li className="flex items-center gap-2">
                 <Mail className="text-primary w-4 h-4" />
-                  <a href="mailto:code.crafters221@gmail.com?subject=Notre équipe FootBooking est là pour vous répondre rapidement.">contact@footbooking.sn</a>
+                  <a href="mailto:code.crafters221@gmail.com?subject=Bienvenue, comment pouvons-nous vous aider ?&body=FootBooking vous accompagne pour toutes vos réservations de terrains.">contact@footbooking.sn</a>
               </li>
 
               <li className="flex items-center gap-2">
