@@ -81,7 +81,6 @@ export default function CreateField() {
     }
   };
 
-  // Classes communes pour les inputs pour garder le code propre
   const inputClasses = `w-full px-4 py-3 rounded-lg border bg-transparent text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors`;
 
   return (
