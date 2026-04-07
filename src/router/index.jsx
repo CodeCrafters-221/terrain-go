@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
+import Loader from "../components/Loader";
 
 import Home from "../pages/Home";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -29,7 +30,7 @@ const NotFound = lazy(() => import("../sections/NotFound"));
 import OwnerRedirect from "../components/OwnerRedirect";
 
 const withSuspense = (element) => (
-  <Suspense fallback={<div className="p-6 text-center">Chargement...</div>}>
+  <Suspense fallback={<Loader />}>
     {element}
   </Suspense>
 );
