@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ArrowLeftCircle } from "lucide-react";
 import { Link, Outlet } from "react-router";
 
@@ -7,7 +8,9 @@ export default function AuthLayout() {
       <Link to={"/"}>
         <ArrowLeftCircle className="size-8 text-primary absolute top-5 left-5 hover:opacity-20" />
       </Link>
-      <Outlet />
+      <Suspense fallback={<div className="text-center text-white">Chargement...</div>}>
+        <Outlet />
+      </Suspense>
     </div>
-  )
+  );
 }

@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 import { toast } from "react-toastify";
-import jsPDF from "jspdf";
-// import autoTable from "jspdf-autotable";
 
 // 🔥 HELPERS ROBUSTES (Synchronisés avec DashboardCharts)
 const parseAmount = (item) => {
@@ -134,8 +132,13 @@ const Revenues = () => {
     link.click();
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!transactions?.length) return toast.warn("Aucune donnée à exporter");
+
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
 
     const doc = new jsPDF();
 
@@ -171,7 +174,7 @@ const Revenues = () => {
       t.status.toUpperCase(),
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [["ID", "Client", "Montant", "Date", "Type", "Statut"]],
       body: tableData,
       startY: 55,

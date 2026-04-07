@@ -4,4 +4,24 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("react-router")) return "router";
+          if (id.includes("react")) return "react-vendor";
+          if (id.includes("@supabase")) return "supabase";
+          if (id.includes("recharts")) return "charts";
+          if (
+            id.includes("jspdf") ||
+            id.includes("html2canvas") ||
+            id.includes("jspdf-autotable")
+          ) {
+            return "pdf-tools";
+          }
+        },
+      },
+    },
+  },
 });

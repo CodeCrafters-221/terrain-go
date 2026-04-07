@@ -19,13 +19,17 @@ export default function AuthProvider({ children }) {
 
   // Initialisation de la session utilisateur
   useEffect(() => {
+    let isActive = true;
+
     const initSession = async () => {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
         console.error("Erreur session:", error.message);
       }
-      setUser(data?.session?.user ?? null);
-      setLoading(false);
+      if (isActive) {
+        setUser(data?.session?.user ?? null);
+        setLoading(false);
+      }
     };
 
     initSession();
@@ -34,10 +38,13 @@ export default function AuthProvider({ children }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      if (isActive) setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isActive = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Récupère le profil utilisateur
@@ -69,25 +76,30 @@ export default function AuthProvider({ children }) {
 
   // Récupère les terrains si l'utilisateur est propriétaire
   useEffect(() => {
+    let isActive = true;
+
     const fetchTerrains = async () => {
       if (!profile || profile.role !== "owner") {
-        setTerrains([]);
+        if (isActive) setTerrains([]);
         return;
       }
       const { data, error } = await supabase
         .from("fields")
-        .select("*")
+        .select("id, name, adress, price_per_hour, pelouse, proprietaire_id")
         .eq("proprietaire_id", profile.id);
 
       if (error) {
         console.error("Erreur récupération terrain:", error.message);
-        setTerrains([]);
+        if (isActive) setTerrains([]);
       } else {
-        setTerrains(data);
+        if (isActive) setTerrains(data);
       }
     };
 
     fetchTerrains();
+    return () => {
+      isActive = false;
+    };
   }, [profile]);
 
   // Memoize la valeur du contexte pour éviter des rerenders inutiles

@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "./AuthContext";
 import { toast } from "react-toastify";
@@ -656,7 +663,7 @@ export const DashboardProvider = ({ children }) => {
     }
   }, [archivedIds, user]);
 
-  const toggleArchiveReservation = (id) => {
+  const toggleArchiveReservation = useCallback((id) => {
     const idStr = String(id);
     setArchivedIds((prev) => {
       const isArchived = prev.includes(idStr);
@@ -664,7 +671,7 @@ export const DashboardProvider = ({ children }) => {
         ? prev.filter((hid) => String(hid) !== idStr)
         : [...prev, idStr];
     });
-  };
+  }, []);
 
   const uploadFieldImage = async (fieldId, file) => {
     try {
@@ -740,43 +747,80 @@ export const DashboardProvider = ({ children }) => {
     }
   };
 
-  const stats = getStats();
+  const stats = useMemo(
+    () => getStats(),
+    [fields, reservations, subscriptions],
+  );
 
-  const Value = {
-    fields,
-    reservations,
-    subscriptions,
-    stats,
-    notifications,
-    unreadCount,
-    archivedIds,
-    toggleArchiveReservation,
-    isLoadingFields,
-    isLoadingReservations,
-    isLoadingSubscriptions,
-    isCreateModalOpen,
-    openCreateModal,
-    closeCreateModal,
-    isEditModalOpen,
-    editingField,
-    openEditModal,
-    closeEditModal,
-    addField,
-    deleteField,
-    updateField,
-    updateReservationStatus,
-    updateSubscriptionStatus,
-    addManualReservation,
-    toggleFieldStatus,
-    fetchFields,
-    fetchReservations,
-    uploadFieldImage,
-    uploadMultipleFieldImages,
-    deleteFieldImage,
-  };
+  const value = useMemo(
+    () => ({
+      fields,
+      reservations,
+      subscriptions,
+      stats,
+      notifications,
+      unreadCount,
+      archivedIds,
+      toggleArchiveReservation,
+      isLoadingFields,
+      isLoadingReservations,
+      isLoadingSubscriptions,
+      isCreateModalOpen,
+      openCreateModal,
+      closeCreateModal,
+      isEditModalOpen,
+      editingField,
+      openEditModal,
+      closeEditModal,
+      addField,
+      deleteField,
+      updateField,
+      updateReservationStatus,
+      updateSubscriptionStatus,
+      addManualReservation,
+      toggleFieldStatus,
+      fetchFields,
+      fetchReservations,
+      uploadFieldImage,
+      uploadMultipleFieldImages,
+      deleteFieldImage,
+    }),
+    [
+      fields,
+      reservations,
+      subscriptions,
+      stats,
+      notifications,
+      unreadCount,
+      archivedIds,
+      toggleArchiveReservation,
+      isLoadingFields,
+      isLoadingReservations,
+      isLoadingSubscriptions,
+      isCreateModalOpen,
+      openCreateModal,
+      closeCreateModal,
+      isEditModalOpen,
+      editingField,
+      openEditModal,
+      closeEditModal,
+      addField,
+      deleteField,
+      updateField,
+      updateReservationStatus,
+      updateSubscriptionStatus,
+      addManualReservation,
+      toggleFieldStatus,
+      fetchFields,
+      fetchReservations,
+      uploadFieldImage,
+      uploadMultipleFieldImages,
+      deleteFieldImage,
+    ],
+  );
 
   return (
-    <DashboardContext.Provider value={Value}>
+    <DashboardContext.Provider value={value}>
       {children}
     </DashboardContext.Provider>
   );

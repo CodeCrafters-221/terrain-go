@@ -1,33 +1,38 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 
 import Home from "../pages/Home";
-import SearchPage from "../pages/SearchPage";
-import UserProfile from "../pages/UserProfile";
-import TerrainDetails from "../pages/TerrainDetails";
 import ProtectedRoute from "../components/ProtectedRoute";
-import BookingPage from "../pages/BookingPage";
 import AuthLayout from "../layouts/AuthLayout";
-import Login from "../pages/Auth/Login";
-import Register from "../pages/Auth/Register";
-import CreateProfile from "../components/CreateProfile";
-import CreateField from "../components/CreateField";
-import CreateFieldDetails from "../components/CreateFieldDetails";
 import DashboardLayout from "../layouts/DashboardLayout";
-import Dashboard from "../pages/Dashboard";
-import MyFields from "../pages/Dashboard/MyFields";
-import MyReservations from "../pages/Dashboard/MyReservations";
-import Statistics from "../pages/Dashboard/Statistics";
-import Revenues from "../pages/Dashboard/Revenues";
-import CalendarMatch from "../pages/Dashboard/CalendarMatch";
-import CreateFieldPage from "../pages/Dashboard/CreateFieldPage";
-import EditFieldPage from "../pages/Dashboard/EditFieldPage";
-import Settings from "../pages/Dashboard/Settings";
-import MySubscriptions from "../pages/Dashboard/MySubscriptions";
-import Owners from "../pages/Owners";
-import NotFound from "../sections/NotFound";
-
+const SearchPage = lazy(() => import("../pages/SearchPage"));
+const UserProfile = lazy(() => import("../pages/UserProfile"));
+const TerrainDetails = lazy(() => import("../pages/TerrainDetails"));
+const Login = lazy(() => import("../pages/Auth/Login"));
+const Register = lazy(() => import("../pages/Auth/Register"));
+const CreateProfile = lazy(() => import("../components/CreateProfile"));
+const CreateField = lazy(() => import("../components/CreateField"));
+const CreateFieldDetails = lazy(() => import("../components/CreateFieldDetails"));
+const Dashboard = lazy(() => import("../pages/Dashboard"));
+const MyFields = lazy(() => import("../pages/Dashboard/MyFields"));
+const MyReservations = lazy(() => import("../pages/Dashboard/MyReservations"));
+const Statistics = lazy(() => import("../pages/Dashboard/Statistics"));
+const Revenues = lazy(() => import("../pages/Dashboard/Revenues"));
+const CalendarMatch = lazy(() => import("../pages/Dashboard/CalendarMatch"));
+const CreateFieldPage = lazy(() => import("../pages/Dashboard/CreateFieldPage"));
+const EditFieldPage = lazy(() => import("../pages/Dashboard/EditFieldPage"));
+const Settings = lazy(() => import("../pages/Dashboard/Settings"));
+const MySubscriptions = lazy(() => import("../pages/Dashboard/MySubscriptions"));
+const Owners = lazy(() => import("../pages/Owners"));
+const NotFound = lazy(() => import("../sections/NotFound"));
 import OwnerRedirect from "../components/OwnerRedirect";
+
+const withSuspense = (element) => (
+  <Suspense fallback={<div className="p-6 text-center">Chargement...</div>}>
+    {element}
+  </Suspense>
+);
 
 export const router = createBrowserRouter([
   // ✅ DASHBOARD (avec layout)
@@ -126,13 +131,13 @@ export const router = createBrowserRouter([
     path: "/owners",
     element: (
       <OwnerRedirect>
-        <Owners />
+        {withSuspense(<Owners />)}
       </OwnerRedirect>
     ),
   },
 
   {
     path: "*",
-    element: <NotFound />,
+    element: withSuspense(<NotFound />),
   },
 ]);

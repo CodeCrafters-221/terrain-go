@@ -123,8 +123,6 @@ export const AvailabilityService = {
 
     // ─── GET créneaux libres pour un terrain à une date précise ───
     async getAvailableSlots(fieldId, dateString, durationHours = 1) {
-        console.log("🔍 getAvailableSlots start:", { fieldId, dateString });
-
         const EXPIRATION_LIMIT_MINUTES = 20;
         const BUFFER_TIME_MINUTES = 10;
 
@@ -138,7 +136,6 @@ export const AvailabilityService = {
         if (isReal) {
             try {
                 const hasDefined = await this.hasDefinedAvailability(fieldId);
-                console.log(`🏗️ hasDefinedAvailability for ${fieldId}:`, hasDefined);
 
                 if (hasDefined) {
                     const dayAvailability = await this.getAvailabilityForDate(fieldId, dateString);
@@ -146,12 +143,10 @@ export const AvailabilityService = {
                         availability = dayAvailability;
                     } else {
                         // EXPLICITEMENT FERMÉ : Le terrain a des horaires, mais rien pour ce jour
-                        console.log("🚫 Terrain fermé ce jour-là (défini mais vide)");
                         return [];
                     }
                 } else {
                     // FALLBACK : Terrain sans aucune config -> on ouvre par défaut
-                    console.log("⚠️ Fallback DEFAULT_HOURS (non configuré)");
                     availability = DEFAULT_HOURS;
                 }
             } catch (err) {
@@ -177,14 +172,27 @@ export const AvailabilityService = {
         try {
             const targetDayOfWeek = this.getDayOfWeek(dateString);
             
-            // 1. Récupérer les réservations ponctuelles
-            const { data: resData, error: resError } = await supabase
+            const reservationsQuery = supabase
                 .from("reservations")
-                .select("start_time, end_time, status, created_at, date")
+                .select("start_time, end_time, status, created_at")
                 .eq("field_id", fieldId)
                 .eq("date", dateString)
                 .neq("status", "Annulé")
                 .neq("status", "Expiré");
+
+            const subscriptionsQuery = supabase
+                .from("subscriptions")
+                .select("start_time, end_time, start_date, end_date")
+                .eq("field_id", fieldId)
+                .eq("day_of_week", targetDayOfWeek)
+                .in("status", ["active", "Confirmé", "En attente de paiement", "Payé"])
+                .lte("start_date", dateString)
+                .gte("end_date", dateString);
+
+            const [
+                { data: resData, error: resError },
+                { data: subData, error: subError },
+            ] = await Promise.all([reservationsQuery, subscriptionsQuery]);
 
             if (!resError && resData) {
                 const nowMs = new Date().getTime();
@@ -196,16 +204,6 @@ export const AvailabilityService = {
                     return true;
                 });
             }
-
-            // 2. Récupérer les abonnements actifs pour ce jour de la semaine
-            const { data: subData, error: subError } = await supabase
-                .from("subscriptions")
-                .select("start_time, end_time, start_date, end_date")
-                .eq("field_id", fieldId)
-                .eq("day_of_week", targetDayOfWeek)
-                .in("status", ["active", "Confirmé", "En attente de paiement", "Payé"])
-                .lte("start_date", dateString)
-                .gte("end_date", dateString);
 
             if (!subError && subData) {
                 subscriptions = subData;
