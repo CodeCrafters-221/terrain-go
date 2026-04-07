@@ -15,6 +15,7 @@ import {
 
 import { useDashboard } from "../../context/DashboardContext";
 
+
 // 🔥 HELPERS ROBUSTES (Cohérence avec le reste du dashboard)
 const parseAmount = (item) => {
   const val = item?.amount ?? item?.total_price ?? item?.total_amount ?? 0;
