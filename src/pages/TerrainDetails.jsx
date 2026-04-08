@@ -123,8 +123,8 @@ export default function TerrainDetails() {
   }
 
   const basePrice = terrain.price_per_hour || terrain.price || 0;
-  const serviceFee = 1000;
-  const totalPrice = basePrice + serviceFee;
+  // const serviceFee = 1000;
+  const totalPrice = basePrice;
 
   const stadiumDataForModal = {
     id: terrain.id,
@@ -753,7 +753,10 @@ export default function TerrainDetails() {
                 </div>
                 <div className="flex justify-between text-text-secondary text-sm">
                   <span>Frais de service</span>
-                  <span>{serviceFee.toLocaleString()} FCFA</span>
+                  <span>
+                    {/* {serviceFee.toLocaleString()} FCFA */}
+                      Gratuit
+                  </span>
                 </div>
                 <div className="h-px bg-surface-light my-2"></div>
                 <div className="flex justify-between text-white font-bold text-base">
