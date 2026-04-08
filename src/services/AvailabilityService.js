@@ -1,20 +1,30 @@
 import { supabase } from "./supabaseClient";
-import {
-  toMinutes,
-  getDayOfWeek,
-  getDayName,
-  getDayShortName,
-  getCurrentDateTimeInfo,
-  TIME_CONSTANTS,
-} from "../utils/dateTime";
 
 /**
  * Service de gestion des disponibilités (table `disponibilite`)
+ *
+ * Table schema:
+ *   id          - UUID (auto)
+ *   field_id    - UUID (FK vers fields)
+ *   day_of_week - integer (0=Dimanche, 1=Lundi, ..., 6=Samedi)
+ *   start_time  - time (ex: "08:00:00")
+ *   end_time    - time (ex: "22:00:00")
  */
 export const AvailabilityService = {
+  // Helper to get day of week (0-6) from "YYYY-MM-DD"
+  getDayOfWeek(dateString) {
+    const parts = dateString.split("-");
+    if (parts.length !== 3) return -1;
+    const date = new Date(
+      parseInt(parts[0], 10),
+      parseInt(parts[1], 10) - 1,
+      parseInt(parts[2], 10),
+    );
+    return date.getDay();
+  },
+
   // ─── FETCH disponibilités d'un terrain ───
   async getFieldAvailability(fieldId) {
-    if (!this._isValidId(fieldId)) return [];
     const { data, error } = await supabase
       .from("disponibilite")
       .select("*")
@@ -57,10 +67,10 @@ export const AvailabilityService = {
 
   // ─── GET disponibilité pour un terrain à une date précise ───
   async getAvailabilityForDate(fieldId, dateString) {
-    const dayOfWeek = getDayOfWeek(dateString);
+    const dayOfWeek = this.getDayOfWeek(dateString);
     if (dayOfWeek === -1) return [];
 
-    if (!this._isValidId(fieldId)) return [];
+    console.log(`📅 getAvailabilityForDate: ${dateString} -> day ${dayOfWeek}`);
 
     try {
       const { data, error } = await supabase
@@ -85,7 +95,12 @@ export const AvailabilityService = {
 
   // ─── Vérifier si un terrain a des disponibilités définies ───
   async hasDefinedAvailability(fieldId) {
-    if (!this._isValidId(fieldId)) return false;
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        fieldId,
+      );
+    const isNumeric = /^\d+$/.test(fieldId);
+    if (!isUuid && !isNumeric) return false;
 
     try {
       const { data, error } = await supabase
@@ -105,12 +120,29 @@ export const AvailabilityService = {
     }
   },
 
+  // ─── HELPER : Convert "HH:MM" to minutes from start of day ───
+  toMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(":").map(Number);
+    // Handle midnight as 24:00 for end times in comparisons
+    return h * 60 + (m || 0);
+  },
+
   // ─── GET créneaux libres pour un terrain à une date précise ───
   async getAvailableSlots(fieldId, dateString, durationHours = 1) {
-    const DEFAULT_HOURS = [{ start_time: "08:00:00", end_time: "00:00:00" }];
-    let availability = [];
+    const EXPIRATION_LIMIT_MINUTES = 20;
+    const BUFFER_TIME_MINUTES = 10;
 
-    const isReal = this._isValidId(fieldId);
+    const DEFAULT_HOURS = [{ start_time: "08:00:00", end_time: "00:00:00" }];
+    let availability = []; // On part d'un terrain FERMÉ par défaut pour les vrais terrains
+
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        fieldId,
+      );
+    const isNumeric = /^\d+$/.test(fieldId);
+    const isReal = isUuid || isNumeric;
+
     if (isReal) {
       try {
         const hasDefined = await this.hasDefinedAvailability(fieldId);
@@ -123,11 +155,11 @@ export const AvailabilityService = {
           if (dayAvailability && dayAvailability.length > 0) {
             availability = dayAvailability;
           } else {
+            // EXPLICITEMENT FERMÉ : Le terrain a des horaires, mais rien pour ce jour
             return [];
           }
         } else {
           // FALLBACK : Terrain sans aucune config -> on ouvre par défaut
-          console.log("⚠️ Fallback DEFAULT_HOURS (non configuré)");
           availability = DEFAULT_HOURS;
         }
       } catch (err) {
@@ -139,38 +171,29 @@ export const AvailabilityService = {
       availability = DEFAULT_HOURS;
     }
 
-    const { todayStr, currentMins, nowMs } = getCurrentDateTimeInfo();
+    // --- Déterminer si c'est aujourd'hui pour bloquer les créneaux passés ---
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+    const currentMins = now.getHours() * 60 + now.getMinutes();
 
     let reservations = [];
     let subscriptions = [];
 
     try {
-      const targetDayOfWeek = getDayOfWeek(dateString);
+      const targetDayOfWeek = this.getDayOfWeek(dateString);
 
-      // 1. Récupérer les réservations ponctuelles
-      const { data: resData, error: resError } = await supabase
+      const reservationsQuery = supabase
         .from("reservations")
-        .select("start_time, end_time, status, created_at, date")
+        .select("start_time, end_time, status, created_at")
         .eq("field_id", fieldId)
         .eq("date", dateString)
         .neq("status", "Annulé")
         .neq("status", "Expiré");
 
-      if (!resError && resData) {
-        reservations = resData.filter((res) => {
-          if (res.status === "En attente de paiement") {
-            const createdMs = new Date(res.created_at).getTime();
-            return (
-              (nowMs - createdMs) / (1000 * 60) <
-              TIME_CONSTANTS.EXPIRATION_LIMIT_MINUTES
-            );
-          }
-          return true;
-        });
-      }
-
-      // 2. Récupérer les abonnements actifs pour ce jour de la semaine
-      const { data: subData, error: subError } = await supabase
+      const subscriptionsQuery = supabase
         .from("subscriptions")
         .select("start_time, end_time, start_date, end_date")
         .eq("field_id", fieldId)
@@ -178,6 +201,22 @@ export const AvailabilityService = {
         .in("status", ["active", "Confirmé", "En attente de paiement", "Payé"])
         .lte("start_date", dateString)
         .gte("end_date", dateString);
+
+      const [
+        { data: resData, error: resError },
+        { data: subData, error: subError },
+      ] = await Promise.all([reservationsQuery, subscriptionsQuery]);
+
+      if (!resError && resData) {
+        const nowMs = new Date().getTime();
+        reservations = resData.filter((res) => {
+          if (res.status === "En attente de paiement") {
+            const createdMs = new Date(res.created_at).getTime();
+            return (nowMs - createdMs) / (1000 * 60) < EXPIRATION_LIMIT_MINUTES;
+          }
+          return true;
+        });
+      }
 
       if (!subError && subData) {
         subscriptions = subData;
@@ -190,17 +229,17 @@ export const AvailabilityService = {
     const mergedAvailability = [];
     if (availability.length > 0) {
       const sorted = [...availability].sort(
-        (a, b) => toMinutes(a.start_time) - toMinutes(b.start_time),
+        (a, b) => this.toMinutes(a.start_time) - this.toMinutes(b.start_time),
       );
       let current = {
-        start: toMinutes(sorted[0].start_time),
-        end: toMinutes(sorted[0].end_time),
+        start: this.toMinutes(sorted[0].start_time),
+        end: this.toMinutes(sorted[0].end_time),
       };
       if (current.end === 0 || current.end <= current.start) current.end = 1440;
 
       for (let i = 1; i < sorted.length; i++) {
-        const nextStart = toMinutes(sorted[i].start_time);
-        let nextEnd = toMinutes(sorted[i].end_time);
+        const nextStart = this.toMinutes(sorted[i].start_time);
+        let nextEnd = this.toMinutes(sorted[i].end_time);
         if (nextEnd === 0 || nextEnd <= nextStart) nextEnd = 1440;
 
         if (nextStart <= current.end) {
@@ -228,7 +267,7 @@ export const AvailabilityService = {
     const durationMins = Math.round(parseFloat(durationHours) * 60);
 
     return allSlots.map((slot) => {
-      const slotMins = toMinutes(slot);
+      const slotMins = this.toMinutes(slot);
       const slotEndMins = slotMins + durationMins;
 
       // 1. Passé
@@ -239,13 +278,20 @@ export const AvailabilityService = {
         isPast = true;
       }
 
-      const isWithinHours = mergedAvailability.some(
-        (range) => slotMins >= range.start && slotEndMins <= range.end,
-      );
-      const isReserved = this._checkConflict(slotMins, slotEndMins, [
-        ...reservations,
-        ...subscriptions,
-      ]);
+      // 2. Horaires d'ouverture (doit tenir dans une plage fusionnée)
+      const isWithinHours = mergedAvailability.some((range) => {
+        return slotMins >= range.start && slotEndMins <= range.end;
+      });
+
+      // 3. Réservations ponctuelles & Abonnements & Buffer
+      const isReserved = [...reservations, ...subscriptions].some((item) => {
+        const rStart = this.toMinutes(item.start_time);
+        let rEnd = this.toMinutes(item.end_time);
+        if (rEnd === 0 || rEnd <= rStart) rEnd = 1440;
+
+        const rEndWithBuffer = rEnd + BUFFER_TIME_MINUTES;
+        return slotMins < rEndWithBuffer && slotEndMins > rStart;
+      });
 
       return {
         time: slot,
@@ -256,18 +302,32 @@ export const AvailabilityService = {
 
   // ─── VÉRIFIER chevauchement avant réservation ───
   async checkOverlap(fieldId, dateString, startTime, endTime) {
-    const { todayStr, currentMins } = getCurrentDateTimeInfo();
+    const EXPIRATION_LIMIT_MINUTES = 20;
+    const BUFFER_TIME_MINUTES = 10;
+
+    // --- Vérification du temps passé ---
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+    const currentMins = now.getHours() * 60 + now.getMinutes();
 
     if (dateString < todayStr) {
       return { available: false, reason: "La date choisie est déjà passée." };
     }
 
-    const startM = toMinutes(startTime);
+    const startM = this.toMinutes(startTime);
     if (dateString === todayStr && startM < currentMins) {
       return { available: false, reason: "Ce créneau horaire est déjà passé." };
     }
 
-    const isReal = this._isValidId(fieldId);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        fieldId,
+      );
+    const isNumeric = /^\d+$/.test(fieldId);
+    const isReal = isUuid || isNumeric;
 
     let availability = [];
     let hasDefined = false;
@@ -298,10 +358,32 @@ export const AvailabilityService = {
       availability = [{ start_time: "08:00", end_time: "00:00" }];
     }
 
-    let endM = toMinutes(endTime);
+    let endM = this.toMinutes(endTime);
     if (endM <= startM) endM += 1440;
 
-    const mergedAvail = this._mergeRanges(availability);
+    // Fusionner les plages pour le check aussi
+    const mergedAvail = [];
+    if (availability.length > 0) {
+      const sorted = [...availability].sort(
+        (a, b) => this.toMinutes(a.start_time) - this.toMinutes(b.start_time),
+      );
+      let curr = {
+        start: this.toMinutes(sorted[0].start_time),
+        end: this.toMinutes(sorted[0].end_time),
+      };
+      if (curr.end === 0 || curr.end <= curr.start) curr.end = 1440;
+      for (let i = 1; i < sorted.length; i++) {
+        const ns = this.toMinutes(sorted[i].start_time);
+        let ne = this.toMinutes(sorted[i].end_time);
+        if (ne === 0 || ne <= ns) ne = 1440;
+        if (ns <= curr.end) curr.end = Math.max(curr.end, ne);
+        else {
+          mergedAvail.push(curr);
+          curr = { start: ns, end: ne };
+        }
+      }
+      mergedAvail.push(curr);
+    }
 
     const isWithinHours = mergedAvail.some(
       (range) => startM >= range.start && endM <= range.end,
@@ -314,14 +396,48 @@ export const AvailabilityService = {
       };
     }
 
-    const { reservations, subscriptions } = await this._fetchBusySlots(
-      fieldId,
-      dateString,
-    );
-    const overlap = this._checkConflict(startM, endM, [
-      ...reservations,
-      ...subscriptions,
-    ]);
+    const targetDayOfWeek = this.getDayOfWeek(dateString);
+
+    // 1. Check punctual reservations
+    const { data: resData, error: resError } = await supabase
+      .from("reservations")
+      .select("id, start_time, end_time, status, created_at")
+      .eq("field_id", fieldId)
+      .eq("date", dateString)
+      .neq("status", "Annulé")
+      .neq("status", "Expiré");
+
+    if (resError) throw resError;
+
+    const nowMs = new Date().getTime();
+    const activeReservations = (resData || []).filter((res) => {
+      if (res.status === "En attente de paiement") {
+        const createdMs = new Date(res.created_at).getTime();
+        return (nowMs - createdMs) / (1000 * 60) < EXPIRATION_LIMIT_MINUTES;
+      }
+      return true;
+    });
+
+    // 2. Check active subscriptions
+    const { data: subData, error: subError } = await supabase
+      .from("subscriptions")
+      .select("start_time, end_time, start_date, end_date")
+      .eq("field_id", fieldId)
+      .eq("day_of_week", targetDayOfWeek)
+      .in("status", ["active", "Confirmé", "En attente de paiement", "Payé"])
+      .lte("start_date", dateString)
+      .gte("end_date", dateString);
+
+    if (subError) throw subError;
+
+    const overlap = [...activeReservations, ...subData].some((item) => {
+      const rStart = this.toMinutes(item.start_time);
+      let rEnd = this.toMinutes(item.end_time);
+      if (rEnd === 0 || rEnd <= rStart) rEnd = 1440;
+
+      const rEndWithBuffer = rEnd + BUFFER_TIME_MINUTES;
+      return startM < rEndWithBuffer && endM > rStart;
+    });
 
     return overlap
       ? {
@@ -332,97 +448,22 @@ export const AvailabilityService = {
       : { available: true, reason: null };
   },
 
-  /**
-   * Validation privée du format d'ID (UUID ou Numeric)
-   */
-  _isValidId(id) {
-    if (!id) return false;
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        id,
-      );
-    const isNumeric = /^\d+$/.test(id);
-    return isUuid || isNumeric;
+  // ─── HELPER : Noms des jours ───
+  getDayName(dayOfWeek) {
+    const days = [
+      "Dimanche",
+      "Lundi",
+      "Mardi",
+      "Mercredi",
+      "Jeudi",
+      "Vendredi",
+      "Samedi",
+    ];
+    return days[dayOfWeek] || "Inconnu";
   },
 
-  /**
-   * Fusionne des plages horaires qui se chevauchent
-   */
-  _mergeRanges(ranges) {
-    if (!ranges.length) return [];
-    const sorted = [...ranges].sort(
-      (a, b) => toMinutes(a.start_time) - toMinutes(b.start_time),
-    );
-    const merged = [];
-    let current = {
-      start: toMinutes(sorted[0].start_time),
-      end: toMinutes(sorted[0].end_time),
-    };
-    if (current.end === 0 || current.end <= current.start) current.end = 1440;
-
-    for (let i = 1; i < sorted.length; i++) {
-      const nextStart = toMinutes(sorted[i].start_time);
-      let nextEnd = toMinutes(sorted[i].end_time);
-      if (nextEnd === 0 || nextEnd <= nextStart) nextEnd = 1440;
-      if (nextStart <= current.end)
-        current.end = Math.max(current.end, nextEnd);
-      else {
-        merged.push(current);
-        current = { start: nextStart, end: nextEnd };
-      }
-    }
-    merged.push(current);
-    return merged;
-  },
-
-  /**
-   * Récupère les réservations et abonnements pour une date donnée
-   */
-  async _fetchBusySlots(fieldId, dateString) {
-    const { nowMs } = getCurrentDateTimeInfo();
-    const targetDayOfWeek = getDayOfWeek(dateString);
-
-    const [resResponse, subResponse] = await Promise.all([
-      supabase
-        .from("reservations")
-        .select("start_time, end_time, status, created_at")
-        .eq("field_id", fieldId)
-        .eq("date", dateString)
-        .neq("status", "Annulé")
-        .neq("status", "Expiré"),
-      supabase
-        .from("subscriptions")
-        .select("start_time, end_time, start_date, end_date")
-        .eq("field_id", fieldId)
-        .eq("day_of_week", targetDayOfWeek)
-        .in("status", ["active", "Confirmé", "En attente de paiement", "Payé"])
-        .lte("start_date", dateString)
-        .gte("end_date", dateString),
-    ]);
-
-    const reservations = (resResponse.data || []).filter((res) => {
-      if (res.status === "En attente de paiement") {
-        const createdMs = new Date(res.created_at).getTime();
-        return (
-          (nowMs - createdMs) / 60000 < TIME_CONSTANTS.EXPIRATION_LIMIT_MINUTES
-        );
-      }
-      return true;
-    });
-
-    return { reservations, subscriptions: subResponse.data || [] };
-  },
-
-  /**
-   * Vérifie si un créneau entre en conflit avec une liste de réservations existantes
-   */
-  _checkConflict(startM, endM, busySlots) {
-    return busySlots.some((item) => {
-      const rStart = toMinutes(item.start_time);
-      let rEnd = toMinutes(item.end_time);
-      if (rEnd === 0 || rEnd <= rStart) rEnd = 1440;
-      const rEndWithBuffer = rEnd + TIME_CONSTANTS.BUFFER_TIME_MINUTES;
-      return startM < rEndWithBuffer && endM > rStart;
-    });
+  getDayShortName(dayOfWeek) {
+    const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+    return days[dayOfWeek] || "?";
   },
 };

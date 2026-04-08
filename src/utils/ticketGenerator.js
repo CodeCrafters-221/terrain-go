@@ -1,7 +1,6 @@
-import jsPDF from "jspdf";
-
-export const generateTicket = (reservation = {}) => {
+export const generateTicket = async (reservation = {}) => {
   try {
+    const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",

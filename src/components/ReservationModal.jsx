@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, X, Star, Lock, LogIn, UserPlus } from "lucide-react";
+import { MapPin, X, Star, Lock, LogIn, UserPlus, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import { AvailabilityService } from "../services/AvailabilityService";
 import { ReservationService } from "../services/ReservationService";
 import { toast } from "react-toastify";
-import { CheckCircle2, Download } from "lucide-react";
 
 export default function ReservationModal({
   isOpen,
@@ -25,7 +24,7 @@ export default function ReservationModal({
     playerName: "",
     phone: "",
     email: "",
-    paymentMethod: "Wave",
+    paymentMethod: "Espèces",
     reservationType: "single", // match unique par défaut
     subscriptionMonths: "1", // Added default 1 month
   });
@@ -223,16 +222,14 @@ export default function ReservationModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const SERVICE_FEE = 1000;
+  // const SERVICE_FEE = 1000;
 
   const calculateBasePrice = () => {
     if (!stadium) return 0;
     return (stadium.price || 0) * parseFloat(formData.duration);
   };
 
-  const calculateTotal = () => {
-    return calculateBasePrice() + SERVICE_FEE;
-  };
+  const calculateTotal = () => calculateBasePrice() || 0;
 
   const calculateEndTime = (startTime, durationHours) => {
     if (!startTime) return "";
@@ -303,8 +300,8 @@ export default function ReservationModal({
         start_time: formData.timeSlot,
         end_time: endTime,
         total_price: calculateTotal(),
-        status: "En attente de paiement",
-        payment_method: formData.paymentMethod || "Wave",
+        status: "En attente",
+        payment_method: formData.paymentMethod || "Espèces",
         client_name: formData.playerName,
         client_phone: formData.phone,
         reservation_type: formData.reservationType || "single",
@@ -334,7 +331,7 @@ export default function ReservationModal({
           start_date: formData.date,
           end_date: endDate.toISOString().split("T")[0],
           total_amount: calculateTotal() * 4 * months, // Simple estimation: 4 matches per month
-          payment_method: formData.paymentMethod || "Wave",
+          payment_method: formData.paymentMethod || "Espèces",
         };
 
         const newSub = await ReservationService.createSubscription(subData);
@@ -353,7 +350,7 @@ export default function ReservationModal({
             end_time: endTime,
             total_price: 0, // Subscription amount is tracked in sub table
             status: "En attente de paiement",
-            payment_method: formData.paymentMethod || "Wave",
+            payment_method: formData.paymentMethod || "Espèces",
             client_name: formData.playerName,
             client_phone: formData.phone,
             subscription_id: newSub.id, // THIS LINKS TO THE NEW SUB
@@ -991,11 +988,12 @@ export default function ReservationModal({
                       Dernière étape : Paiement
                     </h3>
                     <p className="text-text-secondary text-sm">
-                      Choisissez votre mode de paiement préféré
+                      {/* Choisissez votre mode de paiement préféré */}
+                      Paiement en espèces (directement au propriétaire)
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
                       onClick={() =>
@@ -1039,12 +1037,12 @@ export default function ReservationModal({
                       </div>
                       <span className="text-white font-bold">Orange Money</span>
                     </button>
-                  </div>
+                  </div> */}
 
                   <div className="bg-background-dark border border-primary/20 rounded-2xl p-6 space-y-4">
                     <div className="flex flex-col items-center text-center gap-2">
                       <p className="text-text-secondary text-sm font-medium">
-                        Envoyez exactement
+                        Total à payer
                       </p>
                       <p className="text-primary text-3xl font-black">
                         {(calculateTotal() || 0).toLocaleString()} CFA
@@ -1055,22 +1053,22 @@ export default function ReservationModal({
 
                     <div className="flex flex-col gap-2">
                       <p className="text-white/60 text-xs text-center uppercase tracking-widest font-bold">
-                        Numéro de transfert
+                        Propriétaire
                       </p>
                       <div className="bg-surface-dark rounded-xl p-4 flex items-center justify-center gap-3 border border-surface-highlight">
                         <span className="text-white text-2xl font-black tracking-wider">
-                          {ownerProfile?.phone || "Non renseigné"}
+                          {ownerProfile?.name || "Propriétaire"}
                         </span>
                       </div>
-                      <p className="text-text-secondary text-[10px] text-center italic mt-1">
+                      {/* <p className="text-text-secondary text-[10px] text-center italic mt-1">
                         Destinataire :{" "}
                         <span className="text-white not-italic font-bold">
                           {ownerProfile?.name || "Propriétaire"}
                         </span>
-                      </p>
+                      </p> */}
                     </div>
 
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
+                    {/* <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
                       <div className="size-5 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
                         <X className="size-3 text-black rotate-45" />
                       </div>
@@ -1079,7 +1077,7 @@ export default function ReservationModal({
                         <strong>"Confirmer la réservation"</strong>. Le
                         propriétaire validera votre créneau dès réception.
                       </p>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               ) : (
@@ -1095,16 +1093,15 @@ export default function ReservationModal({
                     <span className="text-white font-bold">{stadium.city}</span>{" "}
                     a bien été enregistrée avec le statut{" "}
                     <span className="text-primary font-bold">
-                      En attente de paiement
+                      En attente de validation
                     </span>
                     .
                     <br />
                     <br />
-                    Dès que le propriétaire confirmera la réception de votre
-                    transfert{" "}
-                    <span className="text-white font-bold">
+                    Dès que le propriétaire confirmera la réservation
+                    {/* <span className="text-white font-bold">
                       {formData.paymentMethod}
-                    </span>
+                    </span> */}
                     , votre ticket sera mis à jour.
                   </p>
 
@@ -1120,6 +1117,9 @@ export default function ReservationModal({
                     >
                       Voir mes réservations
                     </button>
+                    <a href={`https://wa.me/${ownerProfile?.phone}`} target="_blank" className="text-text-secondary text-sm font-bold py-2 hover:text-white transition-all underline">
+                      Contacter le propriétaire par WhatsApp
+                    </a>
                     <button
                       type="button"
                       onClick={() => {
@@ -1156,7 +1156,10 @@ export default function ReservationModal({
                       </div>
                       <div className="flex justify-between text-text-secondary text-sm">
                         <span>Frais de service</span>
-                        <span>{SERVICE_FEE.toLocaleString()} FCFA</span>
+                        <span>
+                          {/* {SERVICE_FEE.toLocaleString()} FCFA */}
+                          Gratuit
+                        </span>
                       </div>
                       <div className="h-px bg-surface-highlight/30 my-1"></div>
                       <div className="flex justify-between items-center">

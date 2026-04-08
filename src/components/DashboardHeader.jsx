@@ -107,7 +107,7 @@ const DashboardHeader = ({ onMenuClick }) => {
                     <button onClick={openCreateModal} className="flex cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full h-9 md:h-10 px-4 md:px-6 bg-[#f27f0d] text-[#231a10] text-xs md:text-sm font-bold shadow-[0_0_15px_rgba(242,127,13,0.3)] hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all">
                         <span className="material-symbols-outlined text-[18px] md:text-[20px]">add</span>
                         <span className="hidden sm:inline">Ajouter Terrain</span>
-                        <span className="sm:hidden">Ajouter</span>
+                        {/* <span className="sm:hidden">Ajouter</span> */}
                     </button>
                 </div>
             </div>

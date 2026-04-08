@@ -106,8 +106,6 @@ export default function Features() {
     fetchHomeStadiums();
   }, []);
 
-
-
   // --- LOGIQUE DE FILTRAGE ---
   useEffect(() => {
     if (stadiums.length === 0) return;

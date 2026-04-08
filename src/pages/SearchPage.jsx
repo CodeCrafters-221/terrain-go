@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import CardSearch from "../sections/search/CardSearch";
 import Pagination from "../sections/search/Pagination";
 import FilterSidebar from "../sections/search/FilterSidebar";
@@ -8,7 +8,22 @@ import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
 import Header from "../components/Header";
 
-const initialTerrains = [];
+const ITEMS_PER_PAGE = 6;
+
+const mapFieldToStadium = (field) => ({
+  id: field.id,
+  name: field.name,
+  price: field.price_per_hour || field.price || 0,
+  location: field.adress,
+  type: field.pelouse || "5x5",
+  rating: 4.8,
+  reviews: 120,
+  image:
+    field.field_images?.[0]?.url_image ||
+    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80",
+  isAvailable: true,
+  proprietaire_id: field.proprietaire_id,
+});
 
 const SearchPage = () => {
   const [filters, setFilters] = useState({
@@ -21,8 +36,6 @@ const SearchPage = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6; // Increased from 3 to show more results
-
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -34,7 +47,7 @@ const SearchPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState([]);
 
-  const handleFavorite = (stadiumId) => {
+  const handleFavorite = useCallback((stadiumId) => {
     setFavorites((prev) => {
       const isFav = prev.includes(stadiumId);
       if (isFav) {
@@ -45,43 +58,38 @@ const SearchPage = () => {
         return [...prev, stadiumId];
       }
     });
-  };
+  }, []);
 
   useEffect(() => {
+    let isActive = true;
+
     const fetchRealStadiums = async () => {
       setIsLoading(true);
       try {
         const { data, error } = await supabase.from("fields").select(`
-            *,
+            id,
+            name,
+            price_per_hour,
+            price,
+            adress,
+            pelouse,
+            proprietaire_id,
             field_images (url_image)
           `);
 
         if (error) throw error;
-
-        const mapped = data.map((f) => ({
-          id: f.id,
-          name: f.name,
-          price: f.price_per_hour || f.price || 0,
-          location: f.adress,
-          type: f.pelouse || "5x5", // Assurez-vous que les types correspondent à ceux de FilterSidebar
-          rating: 4.8,
-          reviews: 120,
-          image:
-            f.field_images?.[0]?.url_image ||
-            "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80",
-          isAvailable: true,
-          proprietaire_id: f.proprietaire_id,
-        }));
-
-        setStadiums(mapped);
+        if (isActive) setStadiums(data.map(mapFieldToStadium));
       } catch (err) {
         console.error("Error fetching stadiums:", err);
       } finally {
-        setIsLoading(false);
+        if (isActive) setIsLoading(false);
       }
     };
 
     fetchRealStadiums();
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const filteredTerrains = useMemo(() => {
@@ -106,7 +114,7 @@ const SearchPage = () => {
     });
   }, [filters, stadiums]);
 
-  const handleReserve = (terrain) => {
+  const handleReserve = useCallback((terrain) => {
     setSelectedStadium({
       id: terrain.id,
       city: terrain.name,
@@ -119,14 +127,14 @@ const SearchPage = () => {
       proprietaire_id: terrain.proprietaire_id,
     });
     setIsReservationOpen(true);
-  };
+  }, []);
 
   // Derived Pagination Data
-  const totalPages = Math.ceil(filteredTerrains.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredTerrains.length / ITEMS_PER_PAGE);
   const paginatedTerrains = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredTerrains.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredTerrains, currentPage, itemsPerPage]);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTerrains.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredTerrains, currentPage]);
 
   return (
     <div className="bg-background-dark text-white min-h-screen flex flex-col overflow-x-hidden font-display">
@@ -142,7 +150,7 @@ const SearchPage = () => {
         />
 
         {/* Main Content (Results) */}
-        <main className="flex-1 flex flex-col gap-6 w-full p-4">
+        <main className="flex-1 flex flex-col gap-6 w-full">
           {/* Page Header */}
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 mb-2">
             <div className="text-center md:text-left w-full md:w-auto">

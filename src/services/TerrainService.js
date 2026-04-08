@@ -1,17 +1,17 @@
 import { supabase } from "./supabaseClient";
 
 export const TerrainService = {
-  // --- FETCH ---
-  async getAllTerrains() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { data, error } = await supabase
-      .from("fields")
-      .select(
-        `
-        *,
+    // --- FETCH ---
+    async getAllTerrains() {
+        const { data, error } = await supabase
+            .from("fields")
+            .select(`
+        id,
+        name,
+        adress,
+        price_per_hour,
+        description,
+        proprietaire_id,
         field_images (url_image)
       `,
       )

@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 import { toast } from "react-toastify";
-import jsPDF from "jspdf";
-// import autoTable from "jspdf-autotable";
 
 // 🔥 HELPERS ROBUSTES (Synchronisés avec DashboardCharts)
 const parseAmount = (item) => {
@@ -134,67 +132,77 @@ const Revenues = () => {
     link.click();
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!transactions?.length) return toast.warn("Aucune donnée à exporter");
 
-    const doc = new jsPDF();
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
 
-    // En-tête du document
-    doc.setFontSize(22);
-    doc.setTextColor(35, 26, 16); // #231a10
-    doc.text("FOOTBOOKING - RAPPORT FINANCIER", 14, 22);
+      const doc = new jsPDF();
 
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(
-      `Généré le : ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}`,
-      14,
-      32,
-    );
+      // En-tête du document
+      doc.setFontSize(22);
+      doc.setTextColor(35, 26, 16); // #231a10
+      doc.text("FOOTBOOKING - RAPPORT FINANCIER", 14, 22);
 
-    // Résumé des totaux
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(35, 26, 16);
-    const total = (summary.subTotal + summary.matchTotal).toLocaleString();
-    doc.text(`TOTAL DES ENCAISSEMENTS : ${total} CFA`, 14, 42);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(
+        `Généré le : ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}`,
+        14,
+        32,
+      );
 
-    doc.setDrawColor(242, 127, 13); // Couleur primaire
-    doc.line(14, 45, 196, 45); // Ligne de séparation
+      // Résumé des totaux
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(35, 26, 16);
+      const total = (summary.subTotal + summary.matchTotal).toLocaleString();
+      doc.text(`TOTAL DES ENCAISSEMENTS : ${total} CFA`, 14, 42);
 
-    // Génération du tableau avec autoTable
-    const tableData = transactions.map((t) => [
-      t.id.toString().substring(0, 8),
-      t.client,
-      `${t.amount.toLocaleString()} CFA`,
-      t.date,
-      t.type === "subscription" ? "Abonnement" : "Match Unique",
-      t.status.toUpperCase(),
-    ]);
+      doc.setDrawColor(242, 127, 13); // Couleur primaire
+      doc.line(14, 45, 196, 45); // Ligne de séparation
 
-    doc.autoTable({
-      head: [["ID", "Client", "Montant", "Date", "Type", "Statut"]],
-      body: tableData,
-      startY: 55,
-      theme: "striped",
-      headStyles: {
-        fillColor: [242, 127, 13], // Orange #f27f0d
-        textColor: [255, 255, 255],
-        fontSize: 10,
-        fontStyle: "bold",
-      },
-      bodyStyles: {
-        fontSize: 9,
-        cellPadding: 4,
-      },
-      alternateRowStyles: {
-        fillColor: [250, 245, 240],
-      },
-    });
+      // Génération du tableau avec autoTable
+      const tableData = transactions.map((t) => [
+        String(t.id ?? "N/A").substring(0, 8),
+        t.client,
+        `${t.amount.toLocaleString()} CFA`,
+        t.date,
+        t.type === "subscription" ? "Abonnement" : "Match Unique",
+        t.status.toUpperCase(),
+      ]);
 
-    doc.save(
-      `rapport_revenus_footbooking_${new Date().toISOString().split("T")[0]}.pdf`,
-    );
-    toast.success("PDF généré avec succès");
+      autoTable(doc, {
+        head: [["ID", "Client", "Montant", "Date", "Type", "Statut"]],
+        body: tableData,
+        startY: 55,
+        theme: "striped",
+        headStyles: {
+          fillColor: [242, 127, 13], // Orange #f27f0d
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: "bold",
+        },
+        bodyStyles: {
+          fontSize: 9,
+          cellPadding: 4,
+        },
+        alternateRowStyles: {
+          fillColor: [250, 245, 240],
+        },
+      });
+
+      doc.save(
+        `rapport_revenus_footbooking_${new Date().toISOString().split("T")[0]}.pdf`,
+      );
+      toast.success("PDF généré avec succès");
+    } catch (error) {
+      console.error("Erreur export PDF:", error);
+      toast.error("Impossible de générer le PDF pour le moment.");
+    }
   };
 
   return (
