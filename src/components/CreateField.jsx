@@ -1,31 +1,31 @@
 import { useState } from "react";
-import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useDashboard } from "../context/DashboardContext";
 
 export default function CreateField() {
-  const { profile } = useAuth();
-  const navigate = useNavigate();
+  const { addField } = useDashboard();
 
   const [formData, setFormData] = useState({
     name: "",
-    proprietaire_id: profile?.id,
     description: "",
-    adress: "",
+    location: "",
     pelouse: "",
-    capacity: 0,
-    price_per_hour: 0,
+    capacity: "",
+    price: "",
   });
+  const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // Effacer l'erreur du champ en cours de modification
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+    if (errors[name]) setErrors({ ...errors, [name]: "" });
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
     }
   };
 
@@ -34,47 +34,29 @@ export default function CreateField() {
 
     const validationErrors = {};
 
-    if (
-      formData.name == "" ||
-      formData.description == "" ||
-      formData.pelouse == "" ||
-      formData.adress == "" ||
-      formData.capacity == "" ||
-      formData.price_per_hour == ""
-    ) {
-      validationErrors.name = "Ce champ est requis !";
-    }
-
-    if (formData.capacity > 11 || formData.capacity < 6) {
-      validationErrors.capacity =
-        "La capacité du terrain doit etre en 6 (6x6) et 11 (11x11)";
-    }
+    // Validation plus précise
+    Object.keys(formData).forEach((key) => {
+      if (!formData[key]) validationErrors[key] = "Requis";
+    });
 
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
     try {
       setIsLoading(true);
-
-      const { error } = await supabase.from("fields").insert({
-        name: formData.name,
-        proprietaire_id: profile?.id,
-        description: formData.description,
-        adress: formData.adress,
-        pelouse: formData.pelouse,
-        capacity: formData.capacity,
-        price_per_hour: formData.price_per_hour,
-      });
-
-      if (error) {
-        toast.error(error.message);
-        return;
+      const success = await addField(formData, imageFile);
+      if (success) {
+        setFormData({
+          name: "",
+          description: "",
+          location: "",
+          pelouse: "",
+          capacity: "",
+          price: "",
+        });
+        setImageFile(null);
       }
-
-      toast.success("Terrain créé !");
-      navigate("/create-field-details");
     } catch (err) {
-      console.error(err);
       toast.error("Erreur serveur, réessaie plus tard");
     } finally {
       setIsLoading(false);
@@ -137,25 +119,33 @@ export default function CreateField() {
             )}
           </div>
 
-          {/* adress */}
+          {/* Image Upload */}
+          <div className="flex flex-col gap-1 col-span-2">
+            <label className="text-text-secondary text-sm">
+              Photo du terrain
+            </label>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              accept="image/*"
+              className={inputClasses}
+            />
+          </div>
+
+          {/* adress -> location */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="adress" className="text-text-secondary text-sm">
+            <label htmlFor="location" className="text-text-secondary text-sm">
               Adresse
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="adress"
-                name="adress"
-                placeholder="Dakar Sacré Coeur"
-                value={formData.adress}
-                onChange={handleInputChange}
-                className={`${inputClasses} ${errors.adress ? "border-red-500" : "border-surface-highlight"}`}
-              />
-            </div>
-            {errors.adress && (
-              <span className="text-red-500 text-xs">{errors.adress}</span>
-            )}
+            <input
+              type="text"
+              id="location"
+              name="location"
+              placeholder="Dakar Sacré Coeur"
+              value={formData.location}
+              onChange={handleInputChange}
+              className={`${inputClasses} ${errors.location ? "border-red-500" : "border-surface-highlight"}`}
+            />
           </div>
 
           {/* pelouse */}

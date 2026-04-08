@@ -1,13 +1,67 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useDashboard } from "../context/DashboardContext";
 import { useNavigate } from "react-router-dom";
+import { formatDisplayDate } from "../utils/dateTime";
+
+/**
+ * Sous-composant mémoïsé pour éviter les re-rendus inutiles de la liste
+ */
+const BookingItem = React.memo(({ booking }) => {
+  const { month, day } = formatDisplayDate(
+    booking.date || booking.originalDate,
+  );
+
+  const statusColors = {
+    active: "text-green-500",
+    Confirmé: "text-green-500",
+    Payé: "text-green-500",
+    Annulé: "text-red-500",
+    Expiré: "text-red-500",
+    default: "text-yellow-500",
+  };
+
+  const statusBg = statusColors[booking.status] || statusColors.default;
+  const dotBg = statusBg.replace("text-", "bg-");
+
+  return (
+    <div className="p-4 hover:bg-[#493622]/50 rounded-xl transition-colors cursor-pointer group">
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col items-center justify-center bg-[#493622] text-[#f27f0d] rounded-xl w-14 h-14 shrink-0">
+          <span className="text-xs font-bold uppercase">{month}</span>
+          <span className="text-xl font-bold">{day}</span>
+        </div>
+        <div className="flex flex-col flex-1 gap-1">
+          <div className="flex justify-between items-start">
+            <h4 className="text-white font-medium text-xs">
+              {booking.clientName}
+            </h4>
+            <span className="text-[#f27f0d] text-xs font-bold px-1.5 py-0.5 rounded bg-[#f27f0d]/10">
+              {booking.time || booking.startTime}
+            </span>
+          </div>
+          <p className="text-[#cbad90] text-xs">
+            {booking.fieldName || booking.terrainName}
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`size-2 rounded-full ${dotBg}`}></span>
+            <span className={`text-xs font-medium ${statusBg}`}>
+              {booking.status}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+BookingItem.displayName = "BookingItem";
 
 const DashboardBookings = () => {
   const { reservations } = useDashboard();
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState("Tout"); // Tout, En attente, Confirmé, Annulé
 
-  const getFilteredReservations = () => {
+  const displayReservations = useMemo(() => {
     let filtered = reservations;
     if (filterStatus === "En attente") {
       filtered = reservations.filter(
@@ -26,15 +80,13 @@ const DashboardBookings = () => {
       );
     }
     return filtered.slice(0, 5);
-  };
+  }, [reservations, filterStatus]);
 
-  const displayReservations = getFilteredReservations();
-
-  const cycleFilter = () => {
+  const cycleFilter = useCallback(() => {
     const statuses = ["Tout", "En attente", "Confirmé", "Annulé"];
     const currentIndex = statuses.indexOf(filterStatus);
     setFilterStatus(statuses[(currentIndex + 1) % statuses.length]);
-  };
+  }, [filterStatus]);
 
   return (
     <div className="bg-[#2c241b] rounded-2xl border border-[#493622] h-full flex flex-col">
@@ -61,62 +113,7 @@ const DashboardBookings = () => {
       </div>
       <div className="flex flex-col p-2 overflow-y-auto max-h-[600px] custom-scrollbar">
         {displayReservations.map((booking) => (
-          <div
-            key={booking.id}
-            className="p-4 hover:bg-[#493622]/50 rounded-xl transition-colors cursor-pointer group"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex flex-col items-center justify-center bg-[#493622] text-[#f27f0d] rounded-xl w-14 h-14 shrink-0">
-                <span className="text-xs font-bold uppercase">
-                  {new Date(booking.originalDate)
-                    .toLocaleDateString("fr-FR", { month: "short" })
-                    .replace(".", "")}
-                </span>
-                <span className="text-xl font-bold">
-                  {new Date(booking.originalDate).getDate()}
-                </span>
-              </div>
-              <div className="flex flex-col flex-1 gap-1">
-                <div className="flex justify-between items-start">
-                  <h4 className="text-white font-medium text-xs">
-                    {booking.clientName}
-                  </h4>
-                  <span className="text-[#f27f0d] text-xs font-bold px-0.5 py-0.5 rounded bg-[#f27f0d]/10">
-                    {booking.time}
-                  </span>
-                </div>
-                <p className="text-[#cbad90] text-xs">{booking.fieldName}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span
-                    className={`size-2 rounded-full ${
-                      booking.status === "Payé" ||
-                      booking.status === "Confirmé" ||
-                      booking.status === "active"
-                        ? "bg-green-500"
-                        : booking.status === "Annulé" ||
-                            booking.status === "Expiré"
-                          ? "bg-red-500"
-                          : "bg-yellow-500"
-                    }`}
-                  ></span>
-                  <span
-                    className={`text-xs font-medium ${
-                      booking.status === "Payé" ||
-                      booking.status === "Confirmé" ||
-                      booking.status === "active"
-                        ? "text-green-500"
-                        : booking.status === "Annulé" ||
-                            booking.status === "Expiré"
-                          ? "text-red-500"
-                          : "text-yellow-500"
-                    }`}
-                  >
-                    {booking.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <BookingItem key={booking.id} booking={booking} />
         ))}
 
         <div className="p-4 mt-2">
