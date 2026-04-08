@@ -1,26 +1,6 @@
 import React, { useMemo } from "react";
 import { useDashboard } from "../context/DashboardContext";
-
-// 🔥 HELPERS ROBUSTES (Synchronisés avec DashboardCharts et Revenues)
-const parseAmount = (item) => {
-  const val = item?.amount ?? item?.total_price ?? item?.total_amount ?? 0;
-  if (typeof val === "string") {
-    return parseInt(val.replace(/[^0-9]/g, "")) || 0;
-  }
-  return Number(val) || 0;
-};
-
-const normalizeStatus = (status) => (status || "").toLowerCase();
-
-const isPaidStatus = (status) =>
-  ["payé", "confirmé", "active", "success"].includes(normalizeStatus(status));
-
-const isSubscription = (res) =>
-  !!(
-    res?.subscription_id ||
-    res?.reservation_type === "subscription" ||
-    res?.reservationType === "subscription"
-  );
+import { parseAmount, isPaidStatus, isSubscription } from "../utils/dateTime";
 
 const DashboardStats = () => {
   const { fields = [], reservations = [], subscriptions = [] } = useDashboard();
