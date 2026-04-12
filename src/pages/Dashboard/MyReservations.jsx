@@ -13,11 +13,12 @@ const getStatusColor = (status) => {
 
 const MyReservations = () => {
   const {
-    subscriptions = [],
-    isLoadingSubscriptions,
-    updateSubscriptionStatus,
+    isLoadingReservations,
+    updateReservationStatus,
     archivedIds = [],
+    reservations,
     toggleArchiveReservation,
+    highlightedReservationId,
   } = useDashboard();
 
   const [fieldFilter, setFieldFilter] = useState("Tous les terrains");
@@ -27,8 +28,8 @@ const MyReservations = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  const filteredSubscriptions = useMemo(() => {
-    return subscriptions.filter((r) => {
+  const filteredReservations = useMemo(() => {
+    return reservations.filter((r) => {
       const matchesField =
         fieldFilter === "Tous les terrains" || r.fieldName === fieldFilter;
       const isArchived = archivedIds.includes(String(r.id));
@@ -37,15 +38,15 @@ const MyReservations = () => {
         ? matchesField && isArchived
         : matchesField && !isArchived;
     });
-  }, [subscriptions, fieldFilter, showArchived, archivedIds]);
+  }, [reservations, fieldFilter, showArchived, archivedIds]);
 
-  const totalPages = Math.ceil(filteredSubscriptions.length / itemsPerPage);
-  const paginatedSubscriptions = useMemo(() => {
-    return filteredSubscriptions.slice(
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+  const paginatedReservations = useMemo(() => {
+    return filteredReservations.slice(
       (currentPage - 1) * itemsPerPage,
       currentPage * itemsPerPage,
     );
-  }, [filteredSubscriptions, currentPage]);
+  }, [filteredReservations, currentPage]);
 
   const handleDownloadTicket = (booking) => generateTicket(booking);
 
@@ -57,7 +58,7 @@ const MyReservations = () => {
   const handleStatusChange = async (id, status) => {
     setLoadingAction(id);
     try {
-      await updateSubscriptionStatus(id, status);
+      await updateReservationStatus(id, status);
       showToast("success", `Mis à jour : ${status}`);
     } catch (e) {
       showToast("error", e.message);
@@ -66,7 +67,7 @@ const MyReservations = () => {
     }
   };
 
-  if (isLoadingSubscriptions) {
+  if (isLoadingReservations) {
     return (
       <div className="h-[400px] flex flex-col items-center justify-center gap-4">
         <div className="size-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
@@ -115,7 +116,7 @@ const MyReservations = () => {
             className="bg-[#2c241b] text-[#cbad90] border border-[#493622] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary flex-1 md:flex-none transition-all"
           >
             <option>Tous les terrains</option>
-            {[...new Set(subscriptions.map((r) => r.fieldName))].map((name) => (
+            {[...new Set(reservations.map((r) => r.fieldName))].map((name) => (
               <option key={name}>{name}</option>
             ))}
           </select>
@@ -139,8 +140,8 @@ const MyReservations = () => {
       </div>
 
       {/* Liste des Réservations */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {paginatedSubscriptions.length === 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {paginatedReservations.length === 0 ? (
           <div className="col-span-full py-20 bg-[#2c241b]/50 border-2 border-dashed border-[#493622] rounded-3xl flex flex-col items-center justify-center text-center px-6">
             <div className="size-20 rounded-full bg-[#493622]/40 flex items-center justify-center mb-4">
               <span className="material-symbols-outlined text-4xl text-[#5d452b]">
@@ -153,15 +154,20 @@ const MyReservations = () => {
             </p>
           </div>
         ) : (
-          paginatedSubscriptions.map((booking) => {
+          paginatedReservations.map((booking) => {
             const status = normalizeStatus(booking.status);
             const isActive = ["payé", "confirmé", "active"].includes(status);
             const isLoading = loadingAction === booking.id;
+            const isHighlighted = highlightedReservationId === booking.id;
 
             return (
               <div
                 key={booking.id}
-                className={`bg-[#2c241b] rounded-3xl border border-[#493622] hover:border-primary/50 transition-all group overflow-hidden ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+                className={`bg-[#2c241b] rounded-3xl border transition-all group overflow-hidden ${
+                  isHighlighted
+                    ? "border-primary/80 shadow-[0_0_20px_rgba(242,127,13,0.4)] animate-pulse"
+                    : "border-[#493622] hover:border-primary/50"
+                } ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
               >
                 <div className="p-6 flex flex-col gap-5">
                   {/* Header Card */}
@@ -180,7 +186,7 @@ const MyReservations = () => {
                       </div>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusColor(booking.status)}`}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusColor(booking.status)}`}
                     >
                       {booking.status}
                     </span>
@@ -237,17 +243,33 @@ const MyReservations = () => {
                       </button>
                     </div>
 
-                    {status !== "annulé" &&
-                      !archivedIds.includes(String(booking.id)) && (
-                        <button
-                          onClick={() =>
-                            handleStatusChange(booking.id, "Annulé")
-                          }
-                          className="px-4 py-2 bg-red-500/10 text-red-500 text-[11px] font-black uppercase tracking-wider rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all active:scale-95"
-                        >
-                          Annuler
-                        </button>
-                      )}
+                    <div className="flex items-center gap-2">
+                      {status !== "confirmé" &&
+                        status !== "payé" &&
+                        status !== "annulé" &&
+                        !archivedIds.includes(String(booking.id)) && (
+                          <button
+                            onClick={() =>
+                              handleStatusChange(booking.id, "Confirmé")
+                            }
+                            className="px-4 py-2 bg-green-500/10 text-green-500 text-[11px] font-black uppercase tracking-wider rounded-xl border border-green-500/20 hover:bg-green-500 hover:text-white transition-all active:scale-95"
+                          >
+                            Valider
+                          </button>
+                        )}
+
+                      {status !== "annulé" &&
+                        !archivedIds.includes(String(booking.id)) && (
+                          <button
+                            onClick={() =>
+                              handleStatusChange(booking.id, "Annulé")
+                            }
+                            className="px-4 py-2 bg-red-500/10 text-red-500 text-[11px] font-black uppercase tracking-wider rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all active:scale-95"
+                          >
+                            Annuler
+                          </button>
+                        )}
+                    </div>
                   </div>
                 </div>
               </div>

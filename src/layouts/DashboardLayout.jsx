@@ -1,10 +1,10 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import DashboardSidebar from '../components/DashboardSidebar';
-import DashboardHeader from '../components/DashboardHeader';
-import { DashboardProvider } from '../context/DashboardContext';
-import CreateFieldModal from '../components/CreateFieldModal';
-import EditFieldModal from '../components/EditFieldModal';
+import React, { Suspense } from "react";
+import { Outlet } from "react-router-dom";
+import DashboardSidebar from "../components/DashboardSidebar";
+import DashboardHeader from "../components/DashboardHeader";
+import { DashboardProvider } from "../context/DashboardContext";
+import CreateFieldModal from "../components/CreateFieldModal";
+import EditFieldModal from "../components/EditFieldModal";
 
 const DashboardLayoutContent = () => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -21,7 +21,9 @@ const DashboardLayoutContent = () => {
                 <DashboardHeader onMenuClick={toggleSidebar} />
 
                 <div className="flex-1 px-4 md:px-8 py-6 md:py-8 w-full max-w-[1400px] mx-auto flex flex-col gap-6 md:gap-8">
-                    <Outlet />
+                    <Suspense fallback={<div className="p-4 text-center">Chargement...</div>}>
+                        <Outlet />
+                    </Suspense>
                 </div>
             </main>
             <CreateFieldModal />
