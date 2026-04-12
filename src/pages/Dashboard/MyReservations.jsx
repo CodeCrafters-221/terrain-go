@@ -18,6 +18,7 @@ const MyReservations = () => {
     archivedIds = [],
     reservations,
     toggleArchiveReservation,
+    highlightedReservationId,
   } = useDashboard();
 
   const [fieldFilter, setFieldFilter] = useState("Tous les terrains");
@@ -157,11 +158,16 @@ const MyReservations = () => {
             const status = normalizeStatus(booking.status);
             const isActive = ["payé", "confirmé", "active"].includes(status);
             const isLoading = loadingAction === booking.id;
+            const isHighlighted = highlightedReservationId === booking.id;
 
             return (
               <div
                 key={booking.id}
-                className={`bg-[#2c241b] rounded-3xl border border-[#493622] hover:border-primary/50 transition-all group overflow-hidden ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+                className={`bg-[#2c241b] rounded-3xl border transition-all group overflow-hidden ${
+                  isHighlighted
+                    ? "border-primary/80 shadow-[0_0_20px_rgba(242,127,13,0.4)] animate-pulse"
+                    : "border-[#493622] hover:border-primary/50"
+                } ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
               >
                 <div className="p-6 flex flex-col gap-5">
                   {/* Header Card */}

@@ -33,7 +33,8 @@ const DashboardStats = () => {
     // Revenus des réservations uniques payées ces 7 derniers jours
     reservations.forEach((res) => {
       if (!isPaidStatus(res.status) || isSubscription(res)) return;
-      const resDate = new Date(res.date || res.created_at);
+      const resDate = new Date(res.originalDate || res.createdAt);
+      if (isNaN(resDate.getTime())) return;
       const amt = parseAmount(res);
       if (resDate >= last7Days) weeklyRevenue += amt;
       else if (resDate >= prev7Days) prevWeeklyRevenue += amt;
@@ -43,8 +44,9 @@ const DashboardStats = () => {
     subscriptions.forEach((sub) => {
       if (!isPaidStatus(sub.status)) return;
       const subDate = new Date(
-        sub.start_date || sub.startDate || sub.created_at,
+        sub.startDate || sub.start_date || sub.createdAt,
       );
+      if (isNaN(subDate.getTime())) return;
       const amt = parseAmount(sub);
       if (subDate >= last7Days) weeklyRevenue += amt;
       else if (subDate >= prev7Days) prevWeeklyRevenue += amt;
@@ -65,17 +67,22 @@ const DashboardStats = () => {
     ).length;
 
     const matchesToday = reservations.filter((r) => {
-      const rDate = new Date(r.date || r.created_at).toLocaleDateString(
-        "en-CA",
+      const dateStr = r.originalDate || r.createdAt;
+      if (!dateStr) return false;
+      const rDate = new Date(dateStr);
+      if (isNaN(rDate.getTime())) return false;
+      return (
+        isPaidStatus(r.status) && rDate.toLocaleDateString("en-CA") === todayStr
       );
-      return isPaidStatus(r.status) && rDate === todayStr;
     }).length;
 
     // Taux d'occupation simplifié (basé sur le volume de réservations vs capacité théorique)
     const theoreticalMax = totalFields * 10 * 7;
     const recentResCount = reservations.filter((r) => {
-      const resDate = new Date(r.date);
-      return isPaidStatus(r.status) && resDate >= last7Days;
+      const dateStr = r.originalDate || r.createdAt;
+      if (!dateStr) return false;
+      const resDate = new Date(dateStr);
+      return !isNaN(resDate.getTime()) && resDate >= last7Days;
     }).length;
 
     const occupancy =

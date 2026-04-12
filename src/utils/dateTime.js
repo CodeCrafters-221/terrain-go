@@ -63,11 +63,12 @@ export const getCurrentDateTimeInfo = () => {
 export const formatDisplayDate = (dateString) => {
   if (!dateString) return { month: "---", day: "--" };
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return { month: "---", day: "--" };
   const month = date
     .toLocaleDateString("fr-FR", { month: "short" })
     .replace(".", "");
   const day = date.getDate();
-  return { month, day };
+  return { month, day: isNaN(day) ? "--" : day };
 };
 
 /**
@@ -82,18 +83,32 @@ export const getDayShortName = (dayOfWeek) => {
  * Nettoie et convertit un montant en nombre (ex: "20.000 CFA" -> 20000)
  */
 export const parseAmount = (item) => {
+  if (!item) return 0;
   const val =
-    item?.price ?? item?.amount ?? item?.total_price ?? item?.total_amount ?? 0;
-  if (typeof val === "string") return parseInt(val.replace(/[^0-9]/g, "")) || 0;
-  return Number(val) || 0;
+    item?.amount ?? item?.total_price ?? item?.total_amount ?? item?.price ?? 0;
+  if (val === null || val === undefined || val === "") return 0;
+  if (typeof val === "string") {
+    const parsed = parseInt(val.replace(/[^0-9.-]/g, "")) || 0;
+    return isNaN(parsed) || parsed < 0 ? 0 : parsed;
+  }
+  const numVal = Number(val);
+  return isNaN(numVal) || numVal < 0 ? 0 : numVal;
 };
 
 /**
  * Vérifie si un statut est considéré comme "payé/confirmé"
  */
 export const isPaidStatus = (status) => {
-  const s = (status || "").toLowerCase();
-  return ["payé", "confirmé", "active", "success"].includes(s);
+  if (!status) return false;
+  const s = String(status).toLowerCase().trim();
+  return [
+    "payé",
+    "paid",
+    "confirmé",
+    "confirmed",
+    "active",
+    "success",
+  ].includes(s);
 };
 
 /**

@@ -8,7 +8,7 @@ import { formatDisplayDate } from "../utils/dateTime";
  */
 const BookingItem = React.memo(({ booking }) => {
   const { month, day } = formatDisplayDate(
-    booking.date || booking.originalDate,
+    booking.originalDate || booking.createdAt || booking.date,
   );
 
   const statusColors = {
@@ -64,20 +64,29 @@ const DashboardBookings = () => {
   const displayReservations = useMemo(() => {
     let filtered = reservations;
     if (filterStatus === "En attente") {
-      filtered = reservations.filter(
-        (r) => r.status === "En attente de paiement",
+      filtered = reservations.filter((r) =>
+        String(r.status || "")
+          .toLowerCase()
+          .includes("attente"),
       );
     } else if (filterStatus === "Confirmé") {
-      filtered = reservations.filter(
-        (r) =>
-          r.status === "Confirmé" ||
-          r.status === "Payé" ||
-          r.status === "active",
-      );
+      filtered = reservations.filter((r) => {
+        const statusLower = String(r.status || "").toLowerCase();
+        return (
+          statusLower.includes("confirmé") ||
+          statusLower.includes("payé") ||
+          statusLower.includes("active")
+        );
+      });
     } else if (filterStatus === "Annulé") {
-      filtered = reservations.filter(
-        (r) => r.status === "Annulé" || r.status === "Expiré",
-      );
+      filtered = reservations.filter((r) => {
+        const statusLower = String(r.status || "").toLowerCase();
+        return (
+          statusLower.includes("annulé") ||
+          statusLower.includes("canceled") ||
+          statusLower.includes("expiré")
+        );
+      });
     }
     return filtered.slice(0, 5);
   }, [reservations, filterStatus]);

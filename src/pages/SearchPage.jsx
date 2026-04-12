@@ -150,9 +150,9 @@ const SearchPage = () => {
         />
 
         {/* Main Content (Results) */}
-        <main className="flex-1 flex flex-col gap-6 w-full">
+        <main className="flex-1 flex flex-col gap-6 w-full px-4">
           {/* Page Header */}
-          <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4 mb-2">
+          <div className="flex  flex-col md:flex-row justify-between items-center md:items-end gap-4 mb-2">
             <div className="text-center md:text-left w-full md:w-auto">
               <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-2">
                 Trouvez votre terrain
@@ -233,7 +233,7 @@ const SearchPage = () => {
             <div className="flex-1 min-h-[500px] bg-surface-dark rounded-3xl border border-surface-highlight overflow-hidden relative group">
               {/* Mock Map Background */}
               <div
-                className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity hover:opacity-100 transition-all duration-700"
+                className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity hover:opacity-100 transition-all duration-700 "
                 style={{
                   backgroundImage:
                     "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80')",
@@ -241,7 +241,7 @@ const SearchPage = () => {
               ></div>
 
               {/* Map UI Elements */}
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center ">
                 <div className="bg-surface-dark/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl max-w-md text-center transform transition-all group-hover:scale-105 duration-500">
                   <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Map className="w-10 h-10 text-primary" />

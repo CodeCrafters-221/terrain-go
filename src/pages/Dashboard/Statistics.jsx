@@ -15,20 +15,32 @@ import {
 
 import { useDashboard } from "../../context/DashboardContext";
 
-
 // 🔥 HELPERS ROBUSTES (Cohérence avec le reste du dashboard)
 const parseAmount = (item) => {
+  if (!item) return 0;
   const val = item?.amount ?? item?.total_price ?? item?.total_amount ?? 0;
+  if (val === null || val === undefined || val === "") return 0;
   if (typeof val === "string") {
-    return parseInt(val.replace(/[^0-9]/g, "")) || 0;
+    const parsed = parseInt(val.replace(/[^0-9.-]/g, "")) || 0;
+    return isNaN(parsed) || parsed < 0 ? 0 : parsed;
   }
-  return Number(val) || 0;
+  const numVal = Number(val);
+  return isNaN(numVal) || numVal < 0 ? 0 : numVal;
 };
 
-const isPaidStatus = (status) =>
-  ["payé", "confirmé", "active", "success"].includes(
-    (status || "").toLowerCase(),
-  );
+const isPaidStatus = (status) => {
+  if (!status) return false;
+  const statusLower = String(status).toLowerCase().trim();
+  // Inclure tous les statuts ayant générés du revenu
+  return [
+    "payé",
+    "paid",
+    "confirmé",
+    "confirmed",
+    "active",
+    "success",
+  ].includes(statusLower);
+};
 
 const COLORS = ["#f27f0d", "#cbad90", "#493622", "#7d5a37", "#a67c52"];
 
@@ -57,6 +69,7 @@ const Statistics = () => {
     subscriptions = [],
     fields = [],
     isLoadingReservations,
+    isLoadingSubscriptions,
   } = useDashboard();
 
   // 📊 CALCUL DES ANALYSES RÉELLES
@@ -66,20 +79,55 @@ const Statistics = () => {
     const currentYear = now.getFullYear();
 
     let monthlyRevenue = 0;
-    const activeRes = reservations.filter((r) => isPaidStatus(r.status));
-    const paidSubs = subscriptions.filter((s) => isPaidStatus(s.status));
+    // Inclure toutes les réservations sauf celles annulées
+    const activeRes = reservations.filter((r) => {
+      const statusLower = String(r.status || "")
+        .toLowerCase()
+        .trim();
+      return (
+        !statusLower.includes("annulé") && !statusLower.includes("canceled")
+      );
+    });
+    const paidSubs = subscriptions.filter((s) => {
+      const statusLower = String(s.status || "")
+        .toLowerCase()
+        .trim();
+      return (
+        !statusLower.includes("annulé") && !statusLower.includes("canceled")
+      );
+    });
 
     // 1. Revenu Mensuel (Cumul Matchs + Abonnements du mois en cours)
     activeRes.forEach((r) => {
-      const d = new Date(r.date || r.created_at);
-      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-        monthlyRevenue += parseAmount(r);
+      const dateStr = r.originalDate || r.createdAt;
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (
+          !isNaN(d.getTime()) &&
+          d.getMonth() === currentMonth &&
+          d.getFullYear() === currentYear
+        ) {
+          const amount = parseAmount(r);
+          if (amount > 0) {
+            monthlyRevenue += amount;
+          }
+        }
       }
     });
     paidSubs.forEach((s) => {
-      const d = new Date(s.start_date || s.startDate || s.created_at);
-      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-        monthlyRevenue += parseAmount(s);
+      const dateStr = s.startDate || s.createdAt;
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (
+          !isNaN(d.getTime()) &&
+          d.getMonth() === currentMonth &&
+          d.getFullYear() === currentYear
+        ) {
+          const amount = parseAmount(s);
+          if (amount > 0) {
+            monthlyRevenue += amount;
+          }
+        }
       }
     });
 
@@ -119,22 +167,22 @@ const Statistics = () => {
 
     // 5. Taux d'occupation
     const totalSlotsPossible = (fields.length || 1) * 10 * 30; // 10 créneaux/jour sur 30 jours
-    const occupancy = Math.min(
-      100,
-      (activeRes.length / totalSlotsPossible) * 100,
-    ).toFixed(1);
+    const occupancyValue = (activeRes.length / totalSlotsPossible) * 100;
+    const occupancy = !isNaN(occupancyValue)
+      ? Math.min(100, occupancyValue).toFixed(1)
+      : "0";
 
     return {
-      monthlyRevenue,
-      activeReservations: activeRes.length,
-      totalClients: clientSet.size,
+      monthlyRevenue: isNaN(monthlyRevenue) ? 0 : monthlyRevenue,
+      activeReservations: activeRes.length || 0,
+      totalClients: clientSet.size || 0,
       occupancyRate: `${occupancy}%`,
       fieldDistributionData,
       hourlyAffluenceData,
     };
   }, [reservations, subscriptions, fields]);
 
-  if (isLoadingReservations) {
+  if (isLoadingReservations || isLoadingSubscriptions) {
     return (
       <div className="h-[400px] flex flex-col items-center justify-center gap-4">
         <div className="size-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
@@ -146,9 +194,12 @@ const Statistics = () => {
   }
 
   const formatCurrency = (val) => {
+    if (typeof val !== "number" || isNaN(val) || !isFinite(val)) {
+      return "0";
+    }
     if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
     if (val >= 1000) return `${(val / 1000).toFixed(1)}K`;
-    return val.toString();
+    return Math.round(val).toString();
   };
 
   return (
