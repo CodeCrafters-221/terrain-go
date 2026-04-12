@@ -1,19 +1,10 @@
-import React, { useMemo } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
-
+import React, { useMemo, Suspense } from "react";
 import { useDashboard } from "../../context/DashboardContext";
+
+// Lazy load recharts components
+const RechartsComponents = React.lazy(
+  () => import("../../sections/RechartsComponents"),
+);
 
 // 🔥 HELPERS ROBUSTES (Cohérence avec le reste du dashboard)
 const parseAmount = (item) => {
@@ -300,37 +291,23 @@ const Statistics = () => {
             Répartition par Terrain
           </h3>
           <div className="h-[300px] w-full relative">
-            <ResponsiveContainer width="99%" height="100%">
-              <PieChart>
-                <Pie
-                  data={realStats.fieldDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {realStats.fieldDistributionData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  verticalAlign="bottom"
-                  height={36}
-                  formatter={(value) => (
-                    <span className="text-[#cbad90] text-xs font-bold uppercase tracking-wider">
-                      {value}
+            <Suspense
+              fallback={
+                <div className="h-[300px] flex items-center justify-center text-primary">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="size-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                    <span className="text-xs font-bold uppercase tracking-widest">
+                      Chargement...
                     </span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+                  </div>
+                </div>
+              }
+            >
+              <RechartsComponents.RechartsPieChart
+                data={realStats.fieldDistributionData}
+                isLoading={isLoadingReservations || isLoadingSubscriptions}
+              />
+            </Suspense>
           </div>
         </div>
 
@@ -339,41 +316,23 @@ const Statistics = () => {
             Affluence par Créneau
           </h3>
           <div className="h-[300px] w-full relative">
-            <ResponsiveContainer width="99%" height="100%">
-              <BarChart
+            <Suspense
+              fallback={
+                <div className="h-[300px] flex items-center justify-center text-primary">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="size-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                    <span className="text-xs font-bold uppercase tracking-widest">
+                      Chargement...
+                    </span>
+                  </div>
+                </div>
+              }
+            >
+              <RechartsComponents.RechartsBarChartStats
                 data={realStats.hourlyAffluenceData}
-                margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#493622"
-                />
-                <XAxis
-                  dataKey="hour"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#cbad90", fontSize: 10, fontWeight: 700 }}
-                  dy={10}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#cbad90", fontSize: 10 }}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(242, 127, 13, 0.05)" }}
-                  content={<CustomTooltip />}
-                />
-                <Bar
-                  dataKey="count"
-                  fill="#f27f0d"
-                  radius={[4, 4, 0, 0]}
-                  barSize={16}
-                  animationDuration={2000}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+                isLoading={isLoadingReservations || isLoadingSubscriptions}
+              />
+            </Suspense>
           </div>
         </div>
       </div>

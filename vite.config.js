@@ -24,4 +24,11 @@ export default defineConfig({
       },
     },
   },
+  define: {
+    // Ensure React is available globally for recharts
+    "process.env": {},
+  },
+  optimizeDeps: {
+    include: ["recharts"],
+  },
 });
