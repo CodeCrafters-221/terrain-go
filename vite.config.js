@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    dedupe: ["react", "react-dom"],
+  },
   build: {
     rollupOptions: {
       output: {
@@ -29,6 +32,6 @@ export default defineConfig({
     "process.env": {},
   },
   optimizeDeps: {
-    include: ["recharts"],
+    include: ["react", "react-dom", "recharts"],
   },
 });
