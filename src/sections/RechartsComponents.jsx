@@ -241,3 +241,13 @@ export const RechartsBarChartStats = ({ data, isLoading }) => {
     </ResponsiveContainer>
   );
 };
+
+// Export default object with all components
+const components = {
+  RechartsBarChart,
+  RechartsAreaChart,
+  RechartsPieChart,
+  RechartsBarChartStats,
+};
+
+export default components;
