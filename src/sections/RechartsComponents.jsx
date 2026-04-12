@@ -99,6 +99,77 @@ export const RechartsBarChart = ({ data, isLoading }) => {
   );
 };
 
+export const RechartsAreaChart = ({ data, isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="h-[400px] flex items-center justify-center text-primary">
+        <div className="flex flex-col items-center gap-4">
+          <div className="size-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+          <span className="text-xs font-bold uppercase tracking-widest">
+            Analyse des données...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={400}>
+      <AreaChart
+        data={data}
+        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+      >
+        <defs>
+          <linearGradient id="colorSingle" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#f27f0d" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#f27f0d" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="colorSub" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid
+          strokeDasharray="3 3"
+          vertical={false}
+          stroke="#493622"
+        />
+        <XAxis
+          dataKey="name"
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: "#cbad90", fontSize: 10, fontWeight: 700 }}
+          dy={10}
+        />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: "#cbad90", fontSize: 10 }}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area
+          type="monotone"
+          dataKey="singleRevenue"
+          stroke="#f27f0d"
+          strokeWidth={3}
+          fillOpacity={1}
+          fill="url(#colorSingle)"
+          animationDuration={1500}
+        />
+        <Area
+          type="monotone"
+          dataKey="subRevenue"
+          stroke="#3b82f6"
+          strokeWidth={3}
+          fillOpacity={1}
+          fill="url(#colorSub)"
+          animationDuration={1500}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
+
 export const RechartsPieChart = ({ data, isLoading }) => {
   if (isLoading) {
     return (
