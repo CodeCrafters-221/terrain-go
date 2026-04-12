@@ -45,16 +45,22 @@ const isPaidStatus = (status) => {
 const COLORS = ["#f27f0d", "#cbad90", "#493622", "#7d5a37", "#a67c52"];
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
+  if (
+    active &&
+    payload &&
+    payload.length &&
+    payload[0]?.value !== undefined &&
+    payload[0]?.value !== null
+  ) {
     return (
       <div className="bg-[#231a10] border border-[#493622] p-3 rounded-xl shadow-2xl">
         <p className="text-white text-xs font-black uppercase mb-1">
-          {label || payload[0].name}
+          {label || payload[0]?.name || "N/A"}
         </p>
         <p className="text-primary text-lg font-black">
-          {payload[0].value.toLocaleString()}
+          {payload[0].value?.toLocaleString() || "0"}
           <span className="text-[10px] text-[#cbad90] ml-1 font-normal uppercase">
-            {payload[0].unit || (payload[0].name === "count" ? "Matchs" : "")}
+            {payload[0]?.unit || (payload[0]?.name === "count" ? "Matchs" : "")}
           </span>
         </p>
       </div>

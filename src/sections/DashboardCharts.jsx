@@ -26,27 +26,31 @@ const CustomTooltip = ({ active, payload, label }) => {
           {label}
         </p>
         <div className="flex flex-col gap-1.5">
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div
-                className="size-2 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              ></div>
-              <p className="text-white text-sm font-bold">
-                <span className="text-[#cbad90] font-medium mr-1">
-                  {entry.dataKey === "singleRevenue"
-                    ? "Matchs Uniques:"
-                    : entry.dataKey === "subRevenue"
-                      ? "Abonnements:"
-                      : "Fréquentation:"}
-                </span>
-                {entry.value.toLocaleString()}
-                <span className="text-[10px] font-normal text-[#cbad90] ml-1">
-                  {entry.dataKey.includes("Revenue") ? "CFA" : "rés."}
-                </span>
-              </p>
-            </div>
-          ))}
+          {payload.map((entry, index) => {
+            if (!entry || entry.value === undefined || entry.value === null)
+              return null;
+            return (
+              <div key={index} className="flex items-center gap-2">
+                <div
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                ></div>
+                <p className="text-white text-sm font-bold">
+                  <span className="text-[#cbad90] font-medium mr-1">
+                    {entry.dataKey === "singleRevenue"
+                      ? "Matchs Uniques:"
+                      : entry.dataKey === "subRevenue"
+                        ? "Abonnements:"
+                        : "Fréquentation:"}
+                  </span>
+                  {entry.value?.toLocaleString() || "0"}
+                  <span className="text-[10px] font-normal text-[#cbad90] ml-1">
+                    {entry.dataKey?.includes("Revenue") ? "CFA" : "rés."}
+                  </span>
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
