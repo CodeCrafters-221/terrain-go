@@ -1,4 +1,3 @@
-
 # ⚽ FOOTBOOKING — Plateforme de Réservation de Terrains de Foot
 
 FOOTBOOKING est une application web de réservation de terrains de football.
@@ -47,8 +46,7 @@ Objectif :
 
 ## 🧠 Règle pour toi :
 
-Tu ne codes pas tout, tu fais coder intelligemment.
----
+## Tu ne codes pas tout, tu fais coder intelligemment.
 
 ## 🎨 Bicom — Frontend Pages & UI
 
@@ -114,8 +112,7 @@ Si quelqu’un voit le site → il voit le travail de Bicom
 
 ## 🧠 Objectif :
 
-La réservation doit être fluide, simple, rassurante
----
+## La réservation doit être fluide, simple, rassurante
 
 ## 🧑‍💼 JuniorPacho — Dashboard Propriétaire
 
@@ -169,12 +166,14 @@ src/
 ## 🗂️ ORGANISATION GITHUB (IMPORTANT)
 
 ### 🔀 Branches
+
 - `main` → version stable
 - `develop` → branche de développement
 - `feature/nom-feature`
 - `fix/nom-bug`
 
 ### ✅ Règles obligatoires
+
 - ❌ Aucun push direct sur `main`
 - ✅ Toujours passer par une branche feature
 - ✅ Pull Request obligatoire
@@ -182,6 +181,7 @@ src/
 - ✅ Tests validés avant merge
 
 ### ✍️ Convention de commit
+
 - `feat: ajout recherche terrain`
 - `fix: bug réservation`
 - `refactor: nettoyage code`
@@ -228,3 +228,15 @@ src/
 🔥 **On le livre.**
 
 ---
+
+origin/dev
+
+- router/index.jsx
+
+## : Merged all routes (/, /user-profile, /terrain-details, /search)
+
+=======
+
+## : Merged all routes (/, /user-profile, /terrain-details, /search)
+
+93e6792 (...)

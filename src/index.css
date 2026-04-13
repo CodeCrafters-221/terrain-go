@@ -1,0 +1,76 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Lexend:wght@100..900&display=swap");
+@import "tailwindcss";
+@theme {
+  --color-bg: rgb(255 255 255);
+  --color-text: rgb(15 15 15);
+  --color-primary: rgb(255 122 0);
+  --color-mainBg: rgb(35, 26, 16 ); /* Updated to match #231a10 rgb(35, 26, 16) */
+  --font-lexend: "lexend", sans-serif;
+  --color-primary-new: #f27f0d;
+  --color-background-light: #f8f7f5;
+  --color-background-dark: #231a10;
+  --color-surface-dark: #2c241b;
+  --color-surface-highlight: #493622;
+  --color-text-secondary: #cbad90;
+}
+
+.navigation {
+  @apply flex justify-around items-center flex-row gap-5;
+}
+
+.heroSection {
+  @apply relative flex inset-0 w-full h-full min-h-screen
+  bg-cover bg-center  bg-no-repeat z-0 bg-[center-65%]
+  bg-[linear-gradient(rgba(35,26,16,0.4),rgba(35,26,16,0.95)),url('/heroBg.png')];
+}
+
+.featuresSection {
+  @apply w-full py-20 px-5 lg:px-40 flex flex-col gap-8 bg-mainBg;
+}
+.card1 {
+  @apply h-64 w-full rounded-md bg-cover bg-center 
+  bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/features1.png')];
+}
+.card2 {
+  @apply h-64 w-full rounded-md bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/features2.png')];
+}
+.card3 {
+  @apply h-52 w-full rounded-lg bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/features3.png')];
+}
+/* .card4 {
+  @apply h-64 w-full rounded-lg bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/features4.png')];
+}
+.card5 {
+  @apply h-64 w-full rounded-2xl bg-cover bg-center 
+  inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.8),transparent),url('/features5.png')];
+} */
+.userBgImg {
+  @apply bg-cover bg-center bg-no-repeat rounded-full
+  bg-[url('/userpng.png')];
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html,
+body,
+#root {
+  width: 100%;
+  overflow-x: hidden;
+  /* Apply hide-scrollbar globally */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  display: none;
+}
