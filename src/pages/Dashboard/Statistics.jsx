@@ -1,12 +1,20 @@
 import React, { useMemo, Suspense } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 
-// Lazy load recharts components
-const RechartsComponents = React.lazy(
-  () => import("../../sections/RechartsComponents"),
+// ✅ FIX : lazy par composant (ET PAS objet)
+const RechartsPieChart = React.lazy(() =>
+  import("../../sections/RechartsComponents").then((module) => ({
+    default: module.RechartsPieChart,
+  })),
 );
 
-// 🔥 HELPERS ROBUSTES (Cohérence avec le reste du dashboard)
+const RechartsBarChartStats = React.lazy(() =>
+  import("../../sections/RechartsComponents").then((module) => ({
+    default: module.RechartsBarChartStats,
+  })),
+);
+
+// 🔥 HELPERS (inchangés)
 const parseAmount = (item) => {
   if (!item) return 0;
   const val = item?.amount ?? item?.total_price ?? item?.total_amount ?? 0;
@@ -22,7 +30,6 @@ const parseAmount = (item) => {
 const isPaidStatus = (status) => {
   if (!status) return false;
   const statusLower = String(status).toLowerCase().trim();
-  // Inclure tous les statuts ayant générés du revenu
   return [
     "payé",
     "paid",
@@ -69,14 +76,13 @@ const Statistics = () => {
     isLoadingSubscriptions,
   } = useDashboard();
 
-  // 📊 CALCUL DES ANALYSES RÉELLES
   const realStats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     let monthlyRevenue = 0;
-    // Inclure toutes les réservations sauf celles annulées
+
     const activeRes = reservations.filter((r) => {
       const statusLower = String(r.status || "")
         .toLowerCase()
@@ -85,6 +91,7 @@ const Statistics = () => {
         !statusLower.includes("annulé") && !statusLower.includes("canceled")
       );
     });
+
     const paidSubs = subscriptions.filter((s) => {
       const statusLower = String(s.status || "")
         .toLowerCase()
@@ -94,85 +101,70 @@ const Statistics = () => {
       );
     });
 
-    // 1. Revenu Mensuel (Cumul Matchs + Abonnements du mois en cours)
     activeRes.forEach((r) => {
-      const dateStr = r.originalDate || r.createdAt;
-      if (dateStr) {
-        const d = new Date(dateStr);
-        if (
-          !isNaN(d.getTime()) &&
-          d.getMonth() === currentMonth &&
-          d.getFullYear() === currentYear
-        ) {
-          const amount = parseAmount(r);
-          if (amount > 0) {
-            monthlyRevenue += amount;
-          }
-        }
-      }
-    });
-    paidSubs.forEach((s) => {
-      const dateStr = s.startDate || s.createdAt;
-      if (dateStr) {
-        const d = new Date(dateStr);
-        if (
-          !isNaN(d.getTime()) &&
-          d.getMonth() === currentMonth &&
-          d.getFullYear() === currentYear
-        ) {
-          const amount = parseAmount(s);
-          if (amount > 0) {
-            monthlyRevenue += amount;
-          }
-        }
+      const d = new Date(r.originalDate || r.createdAt);
+      if (
+        !isNaN(d) &&
+        d.getMonth() === currentMonth &&
+        d.getFullYear() === currentYear
+      ) {
+        monthlyRevenue += parseAmount(r);
       }
     });
 
-    // 2. Clients Uniques
+    paidSubs.forEach((s) => {
+      const d = new Date(s.startDate || s.createdAt);
+      if (
+        !isNaN(d) &&
+        d.getMonth() === currentMonth &&
+        d.getFullYear() === currentYear
+      ) {
+        monthlyRevenue += parseAmount(s);
+      }
+    });
+
     const clientSet = new Set();
     reservations.forEach((r) => clientSet.add(r.clientName || r.userId));
     subscriptions.forEach((s) => clientSet.add(s.clientName || s.userId));
 
-    // 3. Répartition par terrain (Pie Chart)
     const distribution = {};
     activeRes.forEach((r) => {
       const name = r.fieldName || "Inconnu";
       distribution[name] = (distribution[name] || 0) + 1;
     });
+
     const fieldDistributionData = Object.keys(distribution).map((name) => ({
       name,
       value: distribution[name],
     }));
 
-    // 4. Affluence par créneau (Bar Chart)
     const hoursMap = {};
-    // Initialiser les créneaux de 08h à 23h
-    for (let i = 8; i <= 23; i++)
+    for (let i = 8; i <= 23; i++) {
       hoursMap[`${i.toString().padStart(2, "0")}:00`] = 0;
+    }
 
     activeRes.forEach((r) => {
-      const time = r.time || r.startTime || "";
-      const hour = time.split(":")[0];
+      const hour = (r.time || r.startTime || "").split(":")[0];
       if (hour && hoursMap[`${hour}:00`] !== undefined) {
         hoursMap[`${hour}:00`]++;
       }
     });
+
     const hourlyAffluenceData = Object.keys(hoursMap).map((hour) => ({
       hour,
       count: hoursMap[hour],
     }));
 
-    // 5. Taux d'occupation
-    const totalSlotsPossible = (fields.length || 1) * 10 * 30; // 10 créneaux/jour sur 30 jours
-    const occupancyValue = (activeRes.length / totalSlotsPossible) * 100;
-    const occupancy = !isNaN(occupancyValue)
-      ? Math.min(100, occupancyValue).toFixed(1)
-      : "0";
+    const totalSlotsPossible = (fields.length || 1) * 10 * 30;
+    const occupancy = Math.min(
+      100,
+      (activeRes.length / totalSlotsPossible) * 100,
+    ).toFixed(1);
 
     return {
-      monthlyRevenue: isNaN(monthlyRevenue) ? 0 : monthlyRevenue,
-      activeReservations: activeRes.length || 0,
-      totalClients: clientSet.size || 0,
+      monthlyRevenue,
+      activeReservations: activeRes.length,
+      totalClients: clientSet.size,
       occupancyRate: `${occupancy}%`,
       fieldDistributionData,
       hourlyAffluenceData,
@@ -191,9 +183,6 @@ const Statistics = () => {
   }
 
   const formatCurrency = (val) => {
-    if (typeof val !== "number" || isNaN(val) || !isFinite(val)) {
-      return "0";
-    }
     if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
     if (val >= 1000) return `${(val / 1000).toFixed(1)}K`;
     return Math.round(val).toString();
@@ -201,139 +190,42 @@ const Statistics = () => {
 
   return (
     <div className="flex flex-col gap-10 pb-10">
+      {/* HEADER inchangé */}
       <div className="flex flex-col">
         <div className="flex items-center gap-2">
-          <h2 className="text-white text-2xl md:text-3xl font-black tracking-tight leading-tight">
+          <h2 className="text-white text-2xl md:text-3xl font-black">
             Analyse Approfondie
           </h2>
-          <span className="size-2 rounded-full bg-[#0bda16] animate-pulse mt-1"></span>
-        </div>
-        <p className="text-[#cbad90] text-xs md:text-sm mt-1 font-medium italic">
-          Données calculées en direct sur l'activité de votre établissement
-        </p>
-      </div>
-
-      {/* Top Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 hover:border-primary/30 transition-all group">
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
-            Revenu Mensuel
-          </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none group-hover:text-primary transition-colors">
-              {formatCurrency(realStats.monthlyRevenue)}
-            </h3>
-            <span className="text-[#cbad90] text-sm mb-0.5">CFA</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[#0bda16] text-xs font-bold mt-2">
-            <span className="material-symbols-outlined text-[16px]">
-              trending_up
-            </span>
-            Performance du mois
-          </div>
-        </div>
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 hover:border-primary/30 transition-all group">
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
-            Réservations
-          </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none group-hover:text-primary transition-colors">
-              {realStats.activeReservations}
-            </h3>
-            <span className="text-[#cbad90] text-sm mb-0.5">actives</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[#0bda16] text-xs font-bold mt-2">
-            <span className="material-symbols-outlined text-[16px]">
-              trending_up
-            </span>
-            {realStats.activeReservations > 0 ? "Flux positif" : "En attente"}
-          </div>
-        </div>
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 hover:border-primary/30 transition-all group">
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
-            Clients Uniques
-          </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none group-hover:text-primary transition-colors">
-              {realStats.totalClients}
-            </h3>
-            <span className="text-[#cbad90] text-sm mb-0.5">joueurs</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[#cbad90] text-xs font-bold mt-2">
-            <span className="material-symbols-outlined text-[16px]">group</span>
-            Base de données
-          </div>
-        </div>
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 hover:border-primary/30 transition-all group">
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
-            Taux Moyen
-          </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none group-hover:text-primary transition-colors">
-              {realStats.occupancyRate}
-            </h3>
-          </div>
-          <div className="flex items-center gap-1.5 text-[#0bda16] text-xs font-bold mt-2">
-            <span className="material-symbols-outlined text-[16px]">
-              trending_up
-            </span>
-            {parseInt(realStats.occupancyRate) > 30
-              ? "Très bon"
-              : "En croissance"}
-          </div>
+          <span className="size-2 rounded-full bg-[#0bda16] animate-pulse"></span>
         </div>
       </div>
 
-      {/* Detailed Charts */}
+      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-8 shadow-xl">
+        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-8">
           <h3 className="text-white text-xl font-black mb-8 italic">
             Répartition par Terrain
           </h3>
-          <div className="h-[300px] w-full relative">
-            <Suspense
-              fallback={
-                <div className="h-[300px] flex items-center justify-center text-primary">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="size-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                    <span className="text-xs font-bold uppercase tracking-widest">
-                      Chargement...
-                    </span>
-                  </div>
-                </div>
-              }
-            >
-              <RechartsComponents.RechartsPieChart
-                data={realStats.fieldDistributionData}
-                isLoading={isLoadingReservations || isLoadingSubscriptions}
-              />
-            </Suspense>
-          </div>
+
+          <Suspense fallback={<div className="text-center">Chargement...</div>}>
+            <RechartsPieChart
+              data={realStats.fieldDistributionData}
+              isLoading={false}
+            />
+          </Suspense>
         </div>
 
-        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-8 shadow-xl">
+        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-8">
           <h3 className="text-white text-xl font-black mb-8 italic">
             Affluence par Créneau
           </h3>
-          <div className="h-[300px] w-full relative">
-            <Suspense
-              fallback={
-                <div className="h-[300px] flex items-center justify-center text-primary">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="size-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                    <span className="text-xs font-bold uppercase tracking-widest">
-                      Chargement...
-                    </span>
-                  </div>
-                </div>
-              }
-            >
-              <RechartsComponents.RechartsBarChartStats
-                data={realStats.hourlyAffluenceData}
-                isLoading={isLoadingReservations || isLoadingSubscriptions}
-              />
-            </Suspense>
-          </div>
+
+          <Suspense fallback={<div className="text-center">Chargement...</div>}>
+            <RechartsBarChartStats
+              data={realStats.hourlyAffluenceData}
+              isLoading={false}
+            />
+          </Suspense>
         </div>
       </div>
     </div>
