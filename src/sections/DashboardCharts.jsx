@@ -41,8 +41,8 @@ const DashboardCharts = () => {
             ? d.toLocaleDateString("fr-FR", { weekday: "short" })
             : d.getDate().toString(),
         players: 0,
-        singleRevenue: 0,
-        subRevenue: 0,
+        matchUnique: 0,
+        abonnement: 0,
         revenue: 0,
       });
     }
@@ -62,9 +62,9 @@ const DashboardCharts = () => {
       const amount = parseAmount(res);
 
       if (isSubscription(res)) {
-        entry.subRevenue += amount;
+        entry.abonnement += amount;
       } else {
-        entry.singleRevenue += amount;
+        entry.matchUnique += amount;
       }
     });
 
@@ -80,11 +80,11 @@ const DashboardCharts = () => {
       const entry = data.find((d) => d.date === date);
       if (!entry) return;
 
-      entry.subRevenue += parseAmount(sub);
+      entry.abonnement += parseAmount(sub);
     });
 
     data.forEach((d) => {
-      d.revenue = d.singleRevenue + d.subRevenue;
+      d.revenue = d.matchUnique + d.abonnement;
     });
 
     return data;

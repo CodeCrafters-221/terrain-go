@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 import { generateTicket } from "../../utils/ticketGenerator";
+import { AvailabilityService } from "../../services/AvailabilityService";
 
 const normalizeStatus = (status) => (status || "").toLowerCase();
 const getStatusColor = (status) => {
@@ -17,6 +18,8 @@ const MyReservations = () => {
     updateReservationStatus,
     archivedIds = [],
     reservations,
+    fields,
+    addOnSiteReservation,
     toggleArchiveReservation,
     highlightedReservationId,
   } = useDashboard();
@@ -26,7 +29,59 @@ const MyReservations = () => {
   const [loadingAction, setLoadingAction] = useState(null);
   const [toast, setToast] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showOnSiteModal, setShowOnSiteModal] = useState(false);
+  const [onSiteForm, setOnSiteForm] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    fieldId: "",
+    date: new Date().toISOString().split("T")[0],
+    duration: "1",
+    timeSlot: "",
+    amount: "",
+  });
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const itemsPerPage = 6;
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!onSiteForm.date || !onSiteForm.fieldId) {
+        setAvailableSlots([]);
+        return;
+      }
+      setLoadingSlots(true);
+      try {
+        const slots = await AvailabilityService.getAvailableSlots(
+          onSiteForm.fieldId,
+          onSiteForm.date,
+          parseFloat(onSiteForm.duration || "1")
+        );
+        setAvailableSlots(slots);
+        
+        if (onSiteForm.timeSlot) {
+          const stillValid = slots.find(s => s.time === onSiteForm.timeSlot && s.available);
+          if (!stillValid) setOnSiteForm(prev => ({ ...prev, timeSlot: "" }));
+        }
+      } catch (err) {
+        console.error("Error fetching slots", err);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    fetchSlots();
+  }, [onSiteForm.date, onSiteForm.fieldId, onSiteForm.duration]);
+
+  useEffect(() => {
+    if (onSiteForm.fieldId) {
+      const field = fields?.find(f => String(f.id) === String(onSiteForm.fieldId));
+      if (field && field.price_per_hour) {
+        const basePrice = field.price_per_hour || 0;
+        const total = basePrice * parseFloat(onSiteForm.duration || "1");
+        setOnSiteForm(prev => ({ ...prev, amount: total.toString() }));
+      }
+    }
+  }, [onSiteForm.fieldId, onSiteForm.duration, fields]);
 
   const filteredReservations = useMemo(() => {
     return reservations.filter((r) => {
@@ -53,6 +108,88 @@ const MyReservations = () => {
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleOnSiteFormChange = (field, value) => {
+    setOnSiteForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const calculateEndTime = (startTime, durationHours) => {
+    if (!startTime) return "";
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const date = new Date(2000, 0, 1, hours, minutes);
+    const durationInMinutes = Math.round(Number(durationHours) * 60);
+    date.setMinutes(date.getMinutes() + durationInMinutes);
+    const h = String(date.getHours()).padStart(2, "0");
+    const m = String(date.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  };
+
+  const handleAddOnSiteReservation = async () => {
+    // Validation du formulaire
+    if (
+      !onSiteForm.firstName ||
+      !onSiteForm.lastName ||
+      !onSiteForm.phone ||
+      !onSiteForm.fieldId ||
+      !onSiteForm.timeSlot ||
+      !onSiteForm.amount
+    ) {
+      showToast("error", "Veuillez remplir tous les champs obligatoires (*)");
+      return;
+    }
+
+    const endTime = calculateEndTime(
+      onSiteForm.timeSlot,
+      parseFloat(onSiteForm.duration)
+    );
+
+    if (!endTime) {
+      showToast("error", "Impossible de calculer l'heure de fin. Vérifiez le créneau.");
+      return;
+    }
+
+    setLoadingAction("onsite");
+    try {
+      console.log("[MyReservations] Submitting onsite reservation:", {
+        fieldId: onSiteForm.fieldId,
+        date: onSiteForm.date,
+        startTime: onSiteForm.timeSlot,
+        endTime,
+        amount: Number(onSiteForm.amount),
+        clientName: `${onSiteForm.firstName.trim()} ${onSiteForm.lastName.trim()}`,
+        clientPhone: onSiteForm.phone.trim(),
+      });
+
+      await addOnSiteReservation({
+        fieldId: String(onSiteForm.fieldId),
+        date: onSiteForm.date,
+        startTime: onSiteForm.timeSlot,
+        endTime,
+        amount: Number(onSiteForm.amount),
+        clientName: `${onSiteForm.firstName.trim()} ${onSiteForm.lastName.trim()}`,
+        clientPhone: onSiteForm.phone.trim(),
+      });
+
+      // Réinitialiser le formulaire
+      setOnSiteForm({
+        firstName: "",
+        lastName: "",
+        phone: "",
+        fieldId: "",
+        date: new Date().toISOString().split("T")[0],
+        duration: "1",
+        timeSlot: "",
+        amount: "",
+      });
+      setShowOnSiteModal(false);
+      showToast("success", "Réservation sur site ajoutée avec succès !");
+    } catch (error) {
+      console.error("[MyReservations] Onsite reservation failed:", error);
+      showToast("error", error?.message || "Erreur lors de l'ajout de la réservation.");
+    } finally {
+      setLoadingAction(null);
+    }
   };
 
   const handleStatusChange = async (id, status) => {
@@ -107,6 +244,13 @@ const MyReservations = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
+          { <button
+            onClick={() => setShowOnSiteModal(true)}
+            className="bg-primary text-[#231a10] px-4 py-2.5 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center gap-2 active:scale-95 shadow-lg"
+          >
+            <span className="material-symbols-outlined text-lg">add</span>
+            Réservation sur site
+          </button> }
           <select
             value={fieldFilter}
             onChange={(e) => {
@@ -305,6 +449,224 @@ const MyReservations = () => {
           >
             <span className="material-symbols-outlined">chevron_right</span>
           </button>
+        </div>
+      )}
+
+      {/* Modal Réservation sur site */}
+      {showOnSiteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#1e160f] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col border border-[#493622] shadow-2xl">
+            {/* Header */}
+            <div className="flex-none p-6 border-b border-[#493622] flex justify-between items-center">
+              <div>
+                <h3 className="text-white text-xl font-black italic">Réservation sur site</h3>
+                <p className="text-[#cbad90] text-sm mt-0.5">Enregistrer un client présent sur place</p>
+              </div>
+              <button
+                onClick={() => setShowOnSiteModal(false)}
+                className="size-10 flex items-center justify-center rounded-xl bg-[#2c241b] text-[#cbad90] hover:text-white hover:bg-[#3d2e1e] transition-all"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+              {/* Nom & Prénom */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                    Prénom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={onSiteForm.firstName}
+                    onChange={(e) => handleOnSiteFormChange("firstName", e.target.value)}
+                    placeholder="Ex: Moussa"
+                    className="w-full bg-[#2c241b] text-white border border-[#493622] rounded-xl px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                    Nom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={onSiteForm.lastName}
+                    onChange={(e) => handleOnSiteFormChange("lastName", e.target.value)}
+                    placeholder="Ex: Diallo"
+                    className="w-full bg-[#2c241b] text-white border border-[#493622] rounded-xl px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Téléphone */}
+              <div>
+                <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                  Téléphone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={onSiteForm.phone}
+                  onChange={(e) => handleOnSiteFormChange("phone", e.target.value)}
+                  placeholder="Ex: +221 77 000 00 00"
+                  className="w-full bg-[#2c241b] text-white border border-[#493622] rounded-xl px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                />
+              </div>
+
+              {/* Terrain */}
+              <div>
+                <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                  Terrain <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={onSiteForm.fieldId}
+                  onChange={(e) => handleOnSiteFormChange("fieldId", e.target.value)}
+                  className="w-full bg-[#2c241b] text-white border border-[#493622] rounded-xl px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                >
+                  <option value="">-- Sélectionner un terrain --</option>
+                  {fields?.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date & Durée */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                    Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={onSiteForm.date}
+                    onChange={(e) => handleOnSiteFormChange("date", e.target.value)}
+                    className="w-full bg-[#2c241b] text-white border border-[#493622] rounded-xl px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                    Durée <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["1", "1.5", "2", "3"].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => handleOnSiteFormChange("duration", d)}
+                        className={`py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                          onSiteForm.duration === d
+                            ? "bg-primary text-[#231a10] border-primary shadow-[0_0_10px_rgba(242,127,13,0.3)]"
+                            : "bg-[#2c241b] text-[#cbad90] border-[#493622] hover:border-primary/50"
+                        }`}
+                      >
+                        {d === "1.5" ? "1h30" : `${d}h`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Créneaux */}
+              <div>
+                <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                  Créneau horaire <span className="text-red-500">*</span>
+                </label>
+                {!onSiteForm.fieldId || !onSiteForm.date ? (
+                  <div className="text-center py-6 border-2 border-dashed border-[#493622] rounded-xl">
+                    <p className="text-[#5d452b] text-sm">Sélectionnez un terrain et une date</p>
+                  </div>
+                ) : loadingSlots ? (
+                  <div className="flex items-center gap-3 py-6 justify-center">
+                    <div className="size-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                    <p className="text-[#cbad90] text-sm">Vérification des disponibilités...</p>
+                  </div>
+                ) : availableSlots.length === 0 ? (
+                  <div className="text-center py-6 border-2 border-dashed border-red-500/30 rounded-xl bg-red-500/5">
+                    <p className="text-red-400 text-sm">Aucun créneau disponible pour ce jour</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot.time}
+                        type="button"
+                        disabled={!slot.available}
+                        onClick={() => handleOnSiteFormChange("timeSlot", slot.time)}
+                        className={`relative py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                          !slot.available
+                            ? "bg-[#1a1208] border-[#2c241b] text-white/20 cursor-not-allowed overflow-hidden"
+                            : onSiteForm.timeSlot === slot.time
+                              ? "bg-primary text-[#231a10] border-primary shadow-[0_0_12px_rgba(242,127,13,0.4)] scale-105"
+                              : "bg-[#2c241b] text-white border-[#493622] hover:border-primary/50"
+                        }`}
+                      >
+                        {slot.time}
+                        {!slot.available && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-full h-[1.5px] bg-red-500/40 -rotate-12"></div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Récap créneau */}
+                {onSiteForm.timeSlot && (
+                  <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-between">
+                    <span className="text-[#cbad90] text-sm">Créneau :</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-bold">{onSiteForm.timeSlot}</span>
+                      <span className="material-symbols-outlined text-primary text-sm">arrow_forward</span>
+                      <span className="text-primary font-bold">{calculateEndTime(onSiteForm.timeSlot, parseFloat(onSiteForm.duration))}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Montant */}
+              <div>
+                <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
+                  Montant total (CFA) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={onSiteForm.amount}
+                  onChange={(e) => handleOnSiteFormChange("amount", e.target.value)}
+                  placeholder="Ex: 5000"
+                  className="w-full bg-[#2c241b] text-white border border-[#493622] rounded-xl px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex-none p-6 border-t border-[#493622] flex gap-3">
+              <button
+                onClick={() => setShowOnSiteModal(false)}
+                className="flex-1 py-3 rounded-xl border border-[#493622] text-[#cbad90] font-bold text-sm hover:bg-[#2c241b] transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleAddOnSiteReservation}
+                disabled={loadingAction === "onsite"}
+                className="flex-1 py-3 rounded-xl bg-primary text-[#231a10] font-black text-sm hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
+              >
+                {loadingAction === "onsite" ? (
+                  <>
+                    <div className="size-4 border-2 border-[#231a10]/30 border-t-[#231a10] rounded-full animate-spin"></div>
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-lg">check_circle</span>
+                    Confirmer la réservation
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

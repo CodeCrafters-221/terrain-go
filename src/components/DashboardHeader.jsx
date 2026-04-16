@@ -82,8 +82,8 @@ const DashboardHeader = ({ onMenuClick }) => {
                           setShowNotifs(false);
                           // Mark as read and highlight the reservation
                           markNotificationAsRead(notif.id, {
-                            reservationId:
-                              notif.reservationId || notif.subscriptionId,
+                            reservationId: notif.reservationId,
+                            subscriptionId: notif.subscriptionId,
                             type: notif.type,
                           });
                           // Navigate to reservations page

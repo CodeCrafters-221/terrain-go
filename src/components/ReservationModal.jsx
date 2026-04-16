@@ -341,42 +341,32 @@ export default function ReservationModal({
           );
 
         // CREATE FIRST RESERVATION ENTRY LINKED TO THIS SUB
-        await supabase.from("reservations").insert([
-          {
-            user_id: user?.id,
-            field_id: stadium.id,
-            date: formData.date,
-            start_time: formData.timeSlot,
-            end_time: endTime,
-            total_price: 0, // Subscription amount is tracked in sub table
-            status: "En attente de paiement",
-            payment_method: formData.paymentMethod || "Espèces",
-            client_name: formData.playerName,
-            client_phone: formData.phone,
-            subscription_id: newSub.id, // THIS LINKS TO THE NEW SUB
-          },
-        ]);
+        await ReservationService.createOnlineReservation({
+          field_id: stadium.id,
+          date: formData.date,
+          start_time: formData.timeSlot,
+          end_time: endTime,
+          total_price: 0, // Subscription amount is tracked in sub table
+          reservation_type: "subscription",
+          subscription_id: newSub.id,
+        });
 
         setStep(3);
         return;
       }
 
-      const { data: insertedData, error: insertError } = await supabase
-        .from("reservations")
-        .insert([reservationData])
-        .select();
-
-      if (insertError) {
-        console.error("DETAILED INSERT ERROR:", insertError);
-        console.error("Error code:", insertError.code);
-        console.error("Error message:", insertError.message);
-        console.error("Error details:", insertError.details);
-        throw insertError;
-      }
+      const insertedData = await ReservationService.createOnlineReservation({
+        field_id: stadium.id,
+        date: formData.date,
+        start_time: formData.timeSlot,
+        end_time: endTime,
+        total_price: calculateTotal(),
+        reservation_type: formData.reservationType || "single",
+      });
 
       console.log("INSERT SUCCESSFUL, RECEIVED DATA:", insertedData);
 
-      setLastReservation(insertedData[0]);
+      setLastReservation(insertedData);
       setStep(3);
       toast.success("Réservation effectuée !");
 

@@ -9,6 +9,7 @@ import {
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "./AuthContext";
 import { toast } from "react-toastify";
+import { ReservationService } from "../services/ReservationService";
 
 const DashboardContext = createContext();
 
@@ -678,21 +679,54 @@ export const DashboardProvider = ({ children }) => {
   const addManualReservation = useCallback(
     async (data) => {
       try {
-        const { error } = await supabase.from("reservations").insert({
+        console.log("[DashboardContext] addManualReservation payload:", data);
+        await ReservationService.createOnsiteReservation({
           field_id: data.fieldId,
           date: data.date,
           start_time: data.startTime,
           end_time: data.endTime,
-          total_price: data.amount || 0,
-          status: "Confirmé",
-          reservation_type: data.reservationType || "single",
+          total_price: Number(data.amount) || 0,
+          client_name: data.clientName?.trim() || "Client non renseigné",
+          client_phone: data.clientPhone?.trim() || "-",
         });
 
-        if (error) throw error;
         await fetchReservations();
         return true;
       } catch (error) {
-        console.error("Error adding manual reservation:", error.message);
+        console.error("[DashboardContext] addManualReservation error:", error.message);
+        throw error;
+      }
+    },
+    [fetchReservations],
+  );
+
+  // ── On-site reservation (walk-in client entered by owner) ──────────────────
+  const addOnSiteReservation = useCallback(
+    async (data) => {
+      try {
+        console.log("[DashboardContext] addOnSiteReservation payload:", data);
+
+        if (!data.fieldId) throw new Error("Aucun terrain sélectionné.");
+        if (!data.date) throw new Error("Date manquante.");
+        if (!data.startTime) throw new Error("Créneau de début manquant.");
+        if (!data.endTime) throw new Error("Créneau de fin manquant.");
+        if (!data.clientName?.trim()) throw new Error("Nom du client manquant.");
+        if (!data.clientPhone?.trim()) throw new Error("Téléphone du client manquant.");
+
+        await ReservationService.createOnsiteReservation({
+          field_id: String(data.fieldId),
+          date: data.date,
+          start_time: data.startTime,
+          end_time: data.endTime,
+          total_price: Number(data.amount) || 0,
+          client_name: data.clientName.trim(),
+          client_phone: data.clientPhone.trim(),
+        });
+
+        await fetchReservations();
+        return true;
+      } catch (error) {
+        console.error("[DashboardContext] addOnSiteReservation error:", error.message);
         throw error;
       }
     },
@@ -1000,6 +1034,7 @@ export const DashboardProvider = ({ children }) => {
       updateReservationStatus,
       updateSubscriptionStatus,
       addManualReservation,
+      addOnSiteReservation,
       toggleFieldStatus,
       fetchFields,
       fetchReservations,
@@ -1034,6 +1069,7 @@ export const DashboardProvider = ({ children }) => {
       updateReservationStatus,
       updateSubscriptionStatus,
       addManualReservation,
+      addOnSiteReservation,
       toggleFieldStatus,
       fetchFields,
       fetchReservations,

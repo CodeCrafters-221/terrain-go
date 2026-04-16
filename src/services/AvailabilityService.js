@@ -3,7 +3,7 @@ import {
   toMinutes,
   getDayOfWeek,
   getDayName,
-  getDayShortName,
+  getDayShortName as getDayShortNameUtil,
   getCurrentDateTimeInfo,
   TIME_CONSTANTS,
 } from "../utils/dateTime";
@@ -29,6 +29,10 @@ export const AvailabilityService = {
       parseInt(parts[2], 10),
     );
     return date.getDay();
+  },
+
+  getDayShortName(dayOfWeek) {
+    return getDayShortNameUtil(dayOfWeek);
   },
 
   // --- FETCH disponibilit�s d'un terrain ---
@@ -133,7 +137,8 @@ export const AvailabilityService = {
     if (!timeStr) return 0;
     const [h, m] = timeStr.split(":").map(Number);
     // Handle midnight as 24:00 for end times in comparisons
-    return h * 60 + (m || 0);
+    const minutes = h * 60 + (m || 0);
+    return minutes === 0 && timeStr.includes("00:00") ? 1440 : minutes;
   },
 
   // --- GET cr�neaux libres pour un terrain � une date pr�cise ---
@@ -265,27 +270,26 @@ export const AvailabilityService = {
     }
 
     // --- G�n�rer les cr�neaux disponibles ---
-    const availableSlots = [];
+    const slots = [];
     const durationMins = durationHours * 60;
 
     for (const slot of mergedAvailability) {
       const slotStartMins = this.toMinutes(slot.start_time);
       const slotEndMins = this.toMinutes(slot.end_time);
 
-      // Pour chaque plage d'ouverture, g�n�rer des cr�neaux de 1h
+      // Pour chaque plage d'ouverture, g�n�rer des cr�neaux d'1h
       for (
         let startMins = slotStartMins;
         startMins + durationMins <= slotEndMins;
         startMins += 60
       ) {
         const endMins = startMins + durationMins;
+        const slotTime = `${String(Math.floor(startMins / 60)).padStart(2, "0")}:${String(startMins % 60).padStart(2, "0")}`;
 
         // V�rifier si c'est aujourd'hui et si le cr�neau n'est pas d�j� pass�
-        if (dateString === todayStr) {
-          if (endMins <= currentMins + BUFFER_TIME_MINUTES) {
-            continue; // Cr�neau pass�
-          }
-        }
+        const isPast =
+          dateString === todayStr &&
+          endMins <= currentMins + BUFFER_TIME_MINUTES;
 
         // V�rifier les conflits avec les r�servations existantes
         const hasReservationConflict = reservations.some((res) => {
@@ -301,20 +305,15 @@ export const AvailabilityService = {
           return !(endMins <= subStart || startMins >= subEnd);
         });
 
-        if (!hasReservationConflict && !hasSubscriptionConflict) {
-          const startTime = `${String(Math.floor(startMins / 60)).padStart(2, "0")}:${String(startMins % 60).padStart(2, "0")}`;
-          const endTime = `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`;
-
-          availableSlots.push({
-            start_time: startTime,
-            end_time: endTime,
-            duration: durationHours,
-          });
-        }
+        slots.push({
+          time: slotTime,
+          available:
+            !isPast && !hasReservationConflict && !hasSubscriptionConflict,
+        });
       }
     }
 
-    return availableSlots;
+    return slots;
   },
 
   // --- HELPER : Validation d'ID ---

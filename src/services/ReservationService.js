@@ -1,89 +1,204 @@
 import { supabase } from "./supabaseClient";
 
+// ─── field_id validator (accepts numeric bigint OR uuid) ─────────────────────
+const isValidFieldId = (value) => {
+  const s = String(value ?? "").trim();
+  if (!s) return false;
+  const isNumeric = /^\d+$/.test(s);
+  const isUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+  return isNumeric || isUUID;
+};
+
+/** Format "HH:MM - HH:MM" from nullable time strings */
+const formatTimeRange = (start, end) => {
+  const s = typeof start === "string" ? start.slice(0, 5) : "--:--";
+  const e = typeof end === "string" ? end.slice(0, 5) : "--:--";
+  return `${s} - ${e}`;
+};
+
+/** Supabase error logger */
+const logSupabaseError = (context, error) => {
+  console.error(`❌ [ReservationService] ${context}`);
+  console.error("  message :", error?.message);
+  console.error("  details :", error?.details);
+  console.error("  hint    :", error?.hint);
+  console.error("  code    :", error?.code);
+};
+
 export const ReservationService = {
+  // ─── Auth helper ────────────────────────────────────────────────────────────
   async _getCurrentUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Accès refusé. Veuillez vous connecter.");
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      throw new Error("Session expirée ou utilisateur non connecté.");
+    }
     return user;
   },
 
-  // --- FETCH ALL (OWNER VIEW) ---
+  // ─── FETCH (OWNER VIEW) ────────────────────────────────────────────────────
   async getOwnerReservations() {
     const user = await this._getCurrentUser();
 
-    // Fetch reservations linked to terrains owned by this user
     const { data, error } = await supabase
       .from("reservations")
-      .select(
-        `
-        *,
-        fields!inner (
-          id, 
-          name, 
-          proprietaire_id
-        )
-      `,
-      )
+      .select(`*, fields!inner (id, name, proprietaire_id)`)
       .eq("fields.proprietaire_id", user.id)
       .order("date", { ascending: false })
       .order("start_time", { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      logSupabaseError("getOwnerReservations", error);
+      throw error;
+    }
 
-    return data.map((r) => this._mapReservation(r, "owner"));
+    return (data ?? []).map((r) => this._mapReservation(r, "owner"));
   },
 
-  // --- FETCH ALL (CLIENT VIEW) ---
+  // ─── FETCH (CLIENT VIEW) ───────────────────────────────────────────────────
   async getUserReservations() {
     const user = await this._getCurrentUser();
 
-    // Requête simplifiée : on récupère d'abord les réservations
     const { data, error } = await supabase
       .from("reservations")
-      .select(
-        `
-                *,
-                fields (
-                    id,
-                    name,
-                    adress,
-                    field_images (url_image)
-                )
-            `,
-      )
+      .select(`*, fields (id, name, adress, field_images (url_image))`)
       .eq("user_id", user.id)
       .order("date", { ascending: false });
 
     if (error) {
-      console.error("Supabase Error (UserReservations):", error);
+      logSupabaseError("getUserReservations", error);
       throw error;
     }
 
-    return data.map((r) => this._mapReservation(r, "client"));
+    return (data ?? []).map((r) => this._mapReservation(r, "client"));
   },
 
-  // --- CREATE (MANUAL BY OWNER) ---
-  async createManualReservation(data) {
-    await this._getCurrentUser();
+  // ─── CREATE — ONLINE (user via app) ────────────────────────────────────────
+  /**
+   * Called from ReservationModal when a client books online.
+   * - user_id  : authenticated client's UUID
+   * - status   : "En attente"  (owner must confirm)
+   * - payment  : "En ligne"
+   * - client_name / client_phone : null (fetched from profiles)
+   */
+  async createOnlineReservation(data) {
+    const user = await this._getCurrentUser();
 
-    // Data: { terrainId, date, startTime, endTime, price, clientName, clientPhone }
-    const { error } = await supabase.from("reservations").insert({
-      field_id: data.terrainId,
+    // ── Validation ───────────────────────────────────────────────────────────
+    if (!isValidFieldId(data.field_id)) {
+      throw new Error(
+        `field_id invalide ou manquant : "${data.field_id}". Attendu : un entier numérique ou un UUID.`
+      );
+    }
+    if (!data.date || !data.start_time || !data.end_time) {
+      throw new Error(
+        "Validation échouée : date, start_time et end_time sont obligatoires."
+      );
+    }
+    const price = Number(data.total_price);
+    if (isNaN(price)) {
+      throw new Error(`total_price invalide : "${data.total_price}".`);
+    }
+
+    // ── Payload ──────────────────────────────────────────────────────────────
+    const payload = {
+      field_id: data.field_id,
+      user_id: user.id,
       date: data.date,
-      start_time: data.startTime,
-      end_time: data.endTime,
-      total_price: data.price,
-      client_name: data.clientName,
-      client_phone: data.clientPhone,
-      status: "Confirmé",
-    });
+      start_time: data.start_time,
+      end_time: data.end_time,
+      total_price: price,
+      status: "En attente",
+      client_name: null,
+      client_phone: null,
+      payment_method: "En ligne",
+      reservation_type: data.reservation_type || "single",
+      subscription_id: data.subscription_id ?? null,
+    };
 
-    if (error) throw error;
+    console.log("📤 [createOnlineReservation] Payload →", payload);
+
+    const { data: inserted, error } = await supabase
+      .from("reservations")
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) {
+      logSupabaseError("createOnlineReservation", error);
+      throw new Error(error.message);
+    }
+
+    console.log("✅ [createOnlineReservation] Inséré →", inserted);
+    return inserted;
   },
 
-  // --- UPDATE STATUS & NOTIFY ---
+  // ─── CREATE — ONSITE (manual entry by field owner) ─────────────────────────
+  /**
+   * Called from Dashboard > MyReservations when an owner registers a walk-in.
+   * - user_id  : null  (no app account for walk-in client)
+   * - status   : "Payé"  (cash paid on site)
+   * - payment  : "Espèces"
+   * - client_name / client_phone : required
+   */
+  async createOnsiteReservation(data) {
+    // ── Validation ───────────────────────────────────────────────────────────
+    if (!isValidFieldId(data.field_id)) {
+      throw new Error(
+        `field_id invalide ou manquant : "${data.field_id}". Attendu : un entier numérique ou un UUID.`
+      );
+    }
+    if (!data.date || !data.start_time || !data.end_time) {
+      throw new Error(
+        "Validation échouée : date, start_time et end_time sont obligatoires."
+      );
+    }
+    if (!data.client_name?.trim()) {
+      throw new Error("Validation échouée : le nom du client est obligatoire.");
+    }
+    if (!data.client_phone?.trim()) {
+      throw new Error(
+        "Validation échouée : le téléphone du client est obligatoire."
+      );
+    }
+    const price = Number(data.total_price);
+    if (isNaN(price)) {
+      throw new Error(`total_price invalide : "${data.total_price}".`);
+    }
+
+    // ── Payload ──────────────────────────────────────────────────────────────
+    const payload = {
+      field_id: data.field_id,
+      user_id: null,
+      date: data.date,
+      start_time: data.start_time,
+      end_time: data.end_time,
+      total_price: price,
+      status: "Payé",
+      client_name: data.client_name.trim(),
+      client_phone: data.client_phone.trim(),
+      payment_method: "Espèces",
+      reservation_type: "onsite",
+    };
+
+    console.log("📤 [createOnsiteReservation] Payload →", payload);
+
+    const { data: inserted, error } = await supabase
+      .from("reservations")
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) {
+      logSupabaseError("createOnsiteReservation", error);
+      throw new Error(error.message);
+    }
+
+    console.log("✅ [createOnsiteReservation] Inséré →", inserted);
+    return inserted;
+  },
+
+  // ─── UPDATE STATUS ─────────────────────────────────────────────────────────
   async updateStatus(id, status) {
     const { data, error } = await supabase
       .from("reservations")
@@ -92,9 +207,11 @@ export const ReservationService = {
       .select("*, fields(name)")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      logSupabaseError("updateStatus", error);
+      throw error;
+    }
 
-    // Automatisation : Déclenchement si payé
     if (status === "Payé" || status === "Confirmé") {
       await this._triggerPaymentNotification(data);
     }
@@ -104,38 +221,45 @@ export const ReservationService = {
 
   async _triggerPaymentNotification(reservation) {
     try {
-      // Option A: Appel à une Supabase Edge Function (Recommandé)
-      // await supabase.functions.invoke('send-confirmation-email', { body: { reservationId: reservation.id } });
-
       console.log(
-        `✉️ Notification automatique : Réservation ${reservation.id} payée pour le terrain ${reservation.fields?.name}`,
+        `✉️ Notification : Réservation ${reservation.id} → ${reservation.fields?.name}`
       );
     } catch (err) {
-      console.error("Erreur lors de l'envoi de la notification:", err);
+      console.error("Erreur notification:", err);
     }
   },
 
-  // --- SUBSCRIPTIONS (Abonnements) ---
+  // ─── SUBSCRIPTIONS ─────────────────────────────────────────────────────────
   async createSubscription(data) {
-    const { data: insertedData, error } = await supabase
+    const payload = {
+      user_id: data.user_id ?? null,
+      field_id: data.field_id,
+      client_name: data.client_name ?? null,
+      client_phone: data.client_phone ?? null,
+      day_of_week: data.day_of_week,
+      start_time: data.start_time,
+      end_time: data.end_time,
+      start_date: data.start_date,
+      end_date: data.end_date,
+      total_amount: Number(data.total_amount ?? 0),
+      status: "En attente de paiement",
+      payment_method: data.payment_method ?? "Espèces",
+    };
+
+    console.log("📤 [createSubscription] Payload →", payload);
+
+    const { data: inserted, error } = await supabase
       .from("subscriptions")
-      .insert({
-        user_id: data.user_id,
-        field_id: data.field_id,
-        client_name: data.client_name,
-        client_phone: data.client_phone,
-        day_of_week: data.day_of_week,
-        start_time: data.start_time,
-        end_time: data.end_time,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        total_amount: data.total_amount,
-        status: "En attente de paiement",
-        payment_method: data.payment_method,
-      })
-      .select();
-    if (error) throw error;
-    return (insertedData || [])[0];
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      logSupabaseError("createSubscription", error);
+      throw error;
+    }
+
+    return inserted;
   },
 
   async getOwnerSubscriptions(ownerId) {
@@ -145,64 +269,69 @@ export const ReservationService = {
       .eq("fields.proprietaire_id", ownerId)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return (data || []).map((s) => this._mapSubscription(s));
+    if (error) {
+      logSupabaseError("getOwnerSubscriptions", error);
+      throw error;
+    }
+    return (data ?? []).map((s) => this._mapSubscription(s));
   },
 
   async cancelSubscription(id) {
     const { error } = await supabase
       .from("subscriptions")
-      .update({ status: "cancelled" })
+      .update({ status: "Annulé" })
       .eq("id", id);
-    if (error) throw error;
+    if (error) {
+      logSupabaseError("cancelSubscription", error);
+      throw error;
+    }
   },
 
-  /**
-   * Mapper privé pour uniformiser les données
-   */
+  // ─── MAPPERS ───────────────────────────────────────────────────────────────
   _mapReservation(r, viewType) {
-    const terrain = r.fields || {};
-    const images = terrain.field_images || [];
+    const terrain = r.fields ?? {};
+    const images = terrain.field_images ?? [];
 
     return {
       id: r.id,
       field_id: r.field_id,
       date: r.date,
-      startTime: r.start_time,
-      endTime: r.end_time,
-      time: `${r.start_time?.slice(0, 5)} - ${r.end_time?.slice(0, 5)}`,
-      price: r.total_price,
-      status:
-        r.status ||
-        (viewType === "owner" ? "Confirmé" : "En attente de paiement"),
-      terrainName: terrain.name || "Terrain inconnu",
-      location: terrain.adress || "Lieu non renseigné",
+      startTime: r.start_time ?? null,
+      endTime: r.end_time ?? null,
+      time: formatTimeRange(r.start_time, r.end_time),
+      price: Number(r.total_price ?? 0),
+      status: r.status ?? (viewType === "owner" ? "En attente" : "En attente de paiement"),
+      terrainName: terrain.name ?? "Terrain inconnu",
+      location: terrain.adress ?? "Lieu non renseigné",
       image: images.length > 0 ? images[0].url_image : null,
-      clientName: viewType === "owner" ? r.client_name || "Client App" : "Moi",
-      isManual: !r.user_id,
-      reservationType: r.reservation_type || "single",
+      clientName:
+        viewType === "owner"
+          ? r.client_name ?? "Client App"
+          : "Moi",
+      clientPhone: r.client_phone ?? "-",
+      isManual: r.user_id === null,
+      reservationType: r.reservation_type ?? "single",
+      paymentMethod: r.payment_method ?? "Non spécifié",
       createdAt: r.created_at,
     };
   },
 
-  /**
-   * Mapper privé pour uniformiser les abonnements
-   */
   _mapSubscription(s) {
     return {
       id: s.id,
-      clientName: s.client_name || "Client App",
-      clientPhone: s.client_phone || "-",
-      fieldName: s.fields?.name || "Terrain inconnu",
+      clientName: s.client_name ?? "Client inconnu",
+      clientPhone: s.client_phone ?? "-",
+      fieldName: s.fields?.name ?? "Terrain inconnu",
       fieldId: s.field_id,
       dayOfWeek: s.day_of_week,
-      startTime: s.start_time,
-      endTime: s.end_time,
-      time: `${s.start_time?.slice(0, 5)} - ${s.end_time?.slice(0, 5)}`,
+      startTime: s.start_time ?? null,
+      endTime: s.end_time ?? null,
+      time: formatTimeRange(s.start_time, s.end_time),
       startDate: s.start_date,
       endDate: s.end_date,
-      price: s.total_amount,
-      status: s.status || "En attente",
+      price: Number(s.total_amount ?? 0),
+      status: s.status ?? "En attente",
+      paymentMethod: s.payment_method ?? "Non spécifié",
       createdAt: s.created_at,
       reservationType: "subscription",
     };
