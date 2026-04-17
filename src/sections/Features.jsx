@@ -4,10 +4,10 @@ import StadiumCard from "../components/StadiumCard";
 import ReservationModal from "../components/ReservationModal";
 import Cta2 from "../components/Cta2";
 
-// Import images
-import firstStadiumCard from "../assets/features3.png";
-import secondStadiumCard from "../assets/features4.png";
-import thirdStadiumCard from "../assets/features5.png";
+// Fallbacks for images that missing in the branch
+const firstStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrain+1";
+const secondStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrain+2";
+const thirdStadiumCard = "https://placehold.co/600x400/222222/FFFFFF?text=Terrain+3";
 
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
