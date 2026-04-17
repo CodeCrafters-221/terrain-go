@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 import { generateTicket } from "../../utils/ticketGenerator";
 import { AvailabilityService } from "../../services/AvailabilityService";
+import { isSubscription } from "../../utils/dateTime";
+import { toast } from "react-toastify";
 
 const normalizeStatus = (status) => (status || "").toLowerCase();
 const getStatusColor = (status) => {
@@ -27,7 +29,6 @@ const MyReservations = () => {
   const [fieldFilter, setFieldFilter] = useState("Tous les terrains");
   const [showArchived, setShowArchived] = useState(false);
   const [loadingAction, setLoadingAction] = useState(null);
-  const [toast, setToast] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnSiteModal, setShowOnSiteModal] = useState(false);
   const [onSiteForm, setOnSiteForm] = useState({
@@ -75,8 +76,8 @@ const MyReservations = () => {
   useEffect(() => {
     if (onSiteForm.fieldId) {
       const field = fields?.find(f => String(f.id) === String(onSiteForm.fieldId));
-      if (field && field.price_per_hour) {
-        const basePrice = field.price_per_hour || 0;
+      if (field && field.price) {
+        const basePrice = field.price || 0;
         const total = basePrice * parseFloat(onSiteForm.duration || "1");
         setOnSiteForm(prev => ({ ...prev, amount: total.toString() }));
       }
@@ -85,6 +86,9 @@ const MyReservations = () => {
 
   const filteredReservations = useMemo(() => {
     return reservations.filter((r) => {
+      // ✅ Séparation Match Unique vs Abonnements via helper centralisé
+      if (isSubscription(r)) return false;
+
       const matchesField =
         fieldFilter === "Tous les terrains" || r.fieldName === fieldFilter;
       const isArchived = archivedIds.includes(String(r.id));
@@ -105,10 +109,7 @@ const MyReservations = () => {
 
   const handleDownloadTicket = (booking) => generateTicket(booking);
 
-  const showToast = (type, message) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 4000);
-  };
+
 
   const handleOnSiteFormChange = (field, value) => {
     setOnSiteForm((prev) => ({ ...prev, [field]: value }));
@@ -132,10 +133,9 @@ const MyReservations = () => {
       !onSiteForm.lastName ||
       !onSiteForm.phone ||
       !onSiteForm.fieldId ||
-      !onSiteForm.timeSlot ||
-      !onSiteForm.amount
+      !onSiteForm.timeSlot
     ) {
-      showToast("error", "Veuillez remplir tous les champs obligatoires (*)");
+      toast.error("Veuillez remplir tous les champs obligatoires (*)");
       return;
     }
 
@@ -145,21 +145,33 @@ const MyReservations = () => {
     );
 
     if (!endTime) {
-      showToast("error", "Impossible de calculer l'heure de fin. Vérifiez le créneau.");
+      toast.error("Impossible de calculer l'heure de fin. Vérifiez le créneau.");
       return;
     }
 
     setLoadingAction("onsite");
     try {
-      console.log("[MyReservations] Submitting onsite reservation:", {
-        fieldId: onSiteForm.fieldId,
-        date: onSiteForm.date,
-        startTime: onSiteForm.timeSlot,
-        endTime,
-        amount: Number(onSiteForm.amount),
-        clientName: `${onSiteForm.firstName.trim()} ${onSiteForm.lastName.trim()}`,
-        clientPhone: onSiteForm.phone.trim(),
-      });
+      // ─── STICK OVERLAP CHECK ───
+      const overlapResult = await AvailabilityService.checkOverlap(
+        onSiteForm.fieldId,
+        onSiteForm.date,
+        onSiteForm.timeSlot,
+        endTime
+      );
+
+      if (!overlapResult.available) {
+        throw new Error(overlapResult.reason);
+      }
+
+      // console.log("[MyReservations] Submitting onsite reservation:", {
+      //   fieldId: onSiteForm.fieldId,
+      //   date: onSiteForm.date,
+      //   startTime: onSiteForm.timeSlot,
+      //   endTime,
+      //   amount: Number(onSiteForm.amount),
+      //   clientName: `${onSiteForm.firstName.trim()} ${onSiteForm.lastName.trim()}`,
+      //   clientPhone: onSiteForm.phone.trim(),
+      // });
 
       await addOnSiteReservation({
         fieldId: String(onSiteForm.fieldId),
@@ -183,10 +195,10 @@ const MyReservations = () => {
         amount: "",
       });
       setShowOnSiteModal(false);
-      showToast("success", "Réservation sur site ajoutée avec succès !");
+      toast.success("Réservation sur site ajoutée avec succès !");
     } catch (error) {
       console.error("[MyReservations] Onsite reservation failed:", error);
-      showToast("error", error?.message || "Erreur lors de l'ajout de la réservation.");
+      toast.error(error?.message || "Erreur lors de l'ajout de la réservation.");
     } finally {
       setLoadingAction(null);
     }
@@ -196,9 +208,9 @@ const MyReservations = () => {
     setLoadingAction(id);
     try {
       await updateReservationStatus(id, status);
-      showToast("success", `Mis à jour : ${status}`);
+      toast.success(`Mis à jour : ${status}`);
     } catch (e) {
-      showToast("error", e.message);
+      toast.error(e.message);
     } finally {
       setLoadingAction(null);
     }
@@ -217,47 +229,32 @@ const MyReservations = () => {
 
   return (
     <div className="flex flex-col gap-8 pb-20 relative">
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed top-6 right-6 z-[100] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-right-10 duration-300 ${
-            toast.type === "success"
-              ? "bg-green-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
-        >
-          <span className="material-symbols-outlined">
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          <p className="text-sm font-bold">{toast.message}</p>
-        </div>
-      )}
 
       {/* Header & Filtres */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col">
-          <h2 className="text-white text-3xl font-black italic tracking-tight">
+          <h2 className="text-white text-2xl md:text-3xl font-black italic tracking-tight">
             Mes Réservations
           </h2>
-          <p className="text-[#cbad90] text-sm mt-1">
+          <p className="text-[#cbad90] text-xs md:text-sm mt-1">
             Gérez vos créneaux et accueillez vos joueurs
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          { <button
+        <div className="flex flex-wrap items-center gap-2">
+          <button
             onClick={() => setShowOnSiteModal(true)}
-            className="bg-primary text-[#231a10] px-4 py-2.5 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center gap-2 active:scale-95 shadow-lg"
+            className="bg-primary text-[#231a10] px-3 md:px-4 py-2.5 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center gap-2 active:scale-95 shadow-lg text-sm flex-shrink-0"
           >
             <span className="material-symbols-outlined text-lg">add</span>
-            Réservation sur site
-          </button> }
+            <span className="hidden sm:inline">Réservation sur site</span>
+          </button>
           <select
             value={fieldFilter}
             onChange={(e) => {
               setFieldFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="bg-[#2c241b] text-[#cbad90] border border-[#493622] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary flex-1 md:flex-none transition-all"
+            className="bg-[#2c241b] text-[#cbad90] border border-[#493622] rounded-xl px-3 md:px-4 py-2.5 text-sm outline-none focus:border-primary flex-1 min-w-0 transition-all"
           >
             <option>Tous les terrains</option>
             {[...new Set(reservations.map((r) => r.fieldName))].map((name) => (
@@ -269,14 +266,14 @@ const MyReservations = () => {
               setShowArchived(!showArchived);
               setCurrentPage(1);
             }}
-            className={`size-11 flex items-center justify-center rounded-xl border transition-all ${
+            className={`size-10 md:size-11 flex items-center justify-center rounded-xl border transition-all flex-shrink-0 ${
               showArchived
                 ? "bg-primary text-[#231a10] border-primary"
                 : "bg-[#2c241b] text-[#cbad90] border-[#493622] hover:border-primary/50"
             }`}
             title={showArchived ? "Voir les actives" : "Voir les archives"}
           >
-            <span className="material-symbols-outlined">
+            <span className="material-symbols-outlined text-[20px]">
               {showArchived ? "visibility" : "inventory_2"}
             </span>
           </button>
@@ -454,13 +451,13 @@ const MyReservations = () => {
 
       {/* Modal Réservation sur site */}
       {showOnSiteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#1e160f] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col border border-[#493622] shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#1e160f] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[92vh] flex flex-col border border-[#493622] shadow-2xl">
             {/* Header */}
-            <div className="flex-none p-6 border-b border-[#493622] flex justify-between items-center">
+            <div className="flex-none px-4 md:px-6 pt-4 md:pt-6 pb-4 border-b border-[#493622] flex justify-between items-center">
               <div>
-                <h3 className="text-white text-xl font-black italic">Réservation sur site</h3>
-                <p className="text-[#cbad90] text-sm mt-0.5">Enregistrer un client présent sur place</p>
+                <h3 className="text-white text-lg md:text-xl font-black italic">Réservation sur site</h3>
+                <p className="text-[#cbad90] text-xs md:text-sm mt-0.5">Enregistrer un client présent sur place</p>
               </div>
               <button
                 onClick={() => setShowOnSiteModal(false)}
@@ -471,9 +468,9 @@ const MyReservations = () => {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-5 flex flex-col gap-4">
               {/* Nom & Prénom */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
                     Prénom <span className="text-red-500">*</span>
@@ -532,7 +529,7 @@ const MyReservations = () => {
               </div>
 
               {/* Date & Durée */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
                     Date <span className="text-red-500">*</span>
@@ -586,7 +583,7 @@ const MyReservations = () => {
                     <p className="text-red-400 text-sm">Aucun créneau disponible pour ce jour</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {availableSlots.map((slot) => (
                       <button
                         key={slot.time}
@@ -628,20 +625,17 @@ const MyReservations = () => {
               {/* Montant */}
               <div>
                 <label className="block text-[#cbad90] text-xs font-bold uppercase tracking-wider mb-2">
-                  Montant total (CFA) <span className="text-red-500">*</span>
+                  Prix total (CFA)
                 </label>
-                <input
-                  type="number"
-                  value={onSiteForm.amount}
-                  onChange={(e) => handleOnSiteFormChange("amount", e.target.value)}
-                  placeholder="Ex: 5000"
-                  className="w-full bg-[#2c241b] text-white border border-[#493622] rounded-xl px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
-                />
+                <div className="w-full bg-[#1a1208] text-primary border border-[#493622]/50 rounded-xl px-4 py-3 text-sm font-bold flex items-center justify-between">
+                  <span>{onSiteForm.amount ? `${Number(onSiteForm.amount).toLocaleString()} FCFA` : "— Sélectionnez un terrain"}</span>
+                  <span className="material-symbols-outlined text-xs opacity-60">lock</span>
+                </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex-none p-6 border-t border-[#493622] flex gap-3">
+            <div className="flex-none px-4 md:px-6 py-4 md:py-5 border-t border-[#493622] flex gap-3">
               <button
                 onClick={() => setShowOnSiteModal(false)}
                 className="flex-1 py-3 rounded-xl border border-[#493622] text-[#cbad90] font-bold text-sm hover:bg-[#2c241b] transition-all"

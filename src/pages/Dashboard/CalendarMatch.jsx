@@ -87,38 +87,38 @@ const CalendarMatch = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5 md:gap-6 pb-20">
       {/* Header Calendrier */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-[#2c241b] p-6 rounded-2xl border border-[#493622] gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-xl">
-            <CalendarIcon className="text-primary w-6 h-6" />
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-[#2c241b] p-4 md:p-6 rounded-2xl border border-[#493622] gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="p-2 md:p-3 bg-primary/10 rounded-xl shrink-0">
+            <CalendarIcon className="text-primary w-5 h-5 md:w-6 md:h-6" />
           </div>
-          <div>
-            <h2 className="text-white text-xl font-bold">
+          <div className="min-w-0">
+            <h2 className="text-white text-lg md:text-xl font-black italic">
               Calendrier des Matchs
             </h2>
-            <p className="text-[#cbad90] text-sm">
-              Consultez les réservations et matchs prévus pour chaque jour.
+            <p className="text-[#cbad90] text-xs md:text-sm truncate">
+              Réservations et matchs prévus par jour.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-[#231a10] p-2 rounded-full border border-[#493622]">
+        <div className="flex items-center justify-between gap-2 bg-[#231a10] p-1.5 md:p-2 rounded-xl md:rounded-full border border-[#493622]">
           <button
             onClick={() => changeDate(-1)}
-            className="p-2 hover:bg-primary/20 hover:text-primary text-[#cbad90] rounded-full transition-all"
+            className="p-2 hover:bg-primary/20 hover:text-primary text-[#cbad90] rounded-lg md:rounded-full transition-all active:scale-90"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5 md:w-5 md:h-5" />
           </button>
-          <span className="text-white font-bold px-4 min-w-[180px] text-center">
+          <span className="text-white text-sm md:text-base font-bold px-2 flex-1 text-center min-w-0 truncate">
             {formatDate(selectedDate)}
           </span>
           <button
             onClick={() => changeDate(1)}
-            className="p-2 hover:bg-primary/20 hover:text-primary text-[#cbad90] rounded-full transition-all"
+            className="p-2 hover:bg-primary/20 hover:text-primary text-[#cbad90] rounded-lg md:rounded-full transition-all active:scale-90"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5 md:w-5 md:h-5" />
           </button>
         </div>
       </div>

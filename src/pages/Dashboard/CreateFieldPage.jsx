@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../../context/DashboardContext';
 import { toast } from 'react-toastify';
 import { AvailabilityService } from '../../services/AvailabilityService';
+import { Camera, Plus, Trash2 } from "lucide-react";
+import { uploadTerrainImage } from "../../services/TerrainService";
 
 const DAYS = [
     { value: 1, label: "Lundi" },
@@ -25,7 +27,7 @@ const CreateFieldPage = () => {
         price: "",
         description: "",
         hours: "08:00 - 00:00",
-        image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnNGA34sSndyAJAfENjmbZRG81TkS1IJSCHEAHafu1htOaj2cazf9VkAzI4xERiSDtxWleAt9uDNrVFcRvfQi2e-ZpTSJYfagli4b3vXbzcv-rH7Q5Hg_1kWirsvM-dr52fv7Qh2gJkNCmn1sXhB7fAXoinUFHJS8fJreTbxZNS322Vr3gPJfaiK-kkfmRlO9tuQrnujBbkoXIQGn-vRNGKl3Nfod6xatgMQk7J7RS2Mq-SVffZwiNQfZH1tY4ghFAAs5v8BYF1w"
+        images: []
     });
 
     // Availability schedule state
@@ -40,6 +42,41 @@ const CreateFieldPage = () => {
     );
 
     const [isLoading, setIsLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = React.useRef(null);
+
+    const handleImageChange = async (e) => {
+        try {
+            setUploading(true);
+            const files = Array.from(e.target.files);
+            if (!files || files.length === 0) return;
+
+            const uploadedUrls = [];
+            for (const file of files) {
+                const url = await uploadTerrainImage(file);
+                uploadedUrls.push(url);
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                images: [...(prev.images || []), ...uploadedUrls]
+            }));
+            toast.success(`${uploadedUrls.length} image(s) ajoutée(s) !`);
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error("Erreur lors de l'envoi des images");
+        } finally {
+            setUploading(false);
+            if (e.target) e.target.value = null;
+        }
+    };
+
+    const removeImage = (indexToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter((_, index) => index !== indexToRemove)
+        }));
+    };
 
     const updateScheduleDay = (index, field, value) => {
         setSchedule(prev => {
@@ -81,7 +118,7 @@ const CreateFieldPage = () => {
             const newFieldData = {
                 ...formData,
                 hours: hoursSummary,
-                price: `${formData.price} CFA/h`,
+                price: formData.price,
                 status: "Disponible"
             };
 
@@ -111,11 +148,13 @@ const CreateFieldPage = () => {
     const labelClasses = "text-white text-sm font-medium mb-1 block";
 
     return (
-        <div className="flex flex-col gap-8 max-w-3xl mx-auto w-full pb-20">
-            <h2 className="text-white text-3xl font-bold">Ajouter un Nouveau Terrain</h2>
+        <div className="flex flex-col gap-6 md:gap-8 max-w-3xl mx-auto w-full pb-20 px-0 sm:px-4">
+            <h2 className="text-white text-2xl md:text-3xl font-black italic tracking-tight px-4 sm:px-0">
+                Ajouter un Nouveau Terrain
+            </h2>
 
-            <div className="bg-[#2c241b] rounded-2xl border border-[#493622] p-8">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-4 sm:p-8">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5 md:gap-6">
                     {/* Name */}
                     <div>
                         <label htmlFor="name" className={labelClasses}>Nom du terrain *</label>
@@ -131,7 +170,7 @@ const CreateFieldPage = () => {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                         {/* Type */}
                         <div>
                             <label htmlFor="type" className={labelClasses}>Type de terrain</label>
@@ -166,6 +205,7 @@ const CreateFieldPage = () => {
                         </div>
                     </div>
 
+
                     {/* Location */}
                     <div>
                         <label htmlFor="location" className={labelClasses}>Adresse / Localisation *</label>
@@ -179,6 +219,73 @@ const CreateFieldPage = () => {
                             className={inputClasses}
                             required
                         />
+                    </div>
+
+                    {/* ═══ SECTION GALERIE PHOTOS ═══ */}
+                    <div className="border-t border-[#493622] pt-6">
+                        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-4 mb-6">
+                            <div>
+                                <h3 className="text-white text-lg font-black mb-1">📸 Galerie Photos</h3>
+                                <p className="text-[#cbad90] text-xs italic">Gérez les photos du terrain (Sélection multiple possible).</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading}
+                                className="flex items-center justify-center gap-2 bg-primary/10 text-primary border border-primary/30 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/20 transition-all disabled:opacity-50 active:scale-95"
+                            >
+                                {uploading ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                ) : (
+                                    <Plus className="w-4 h-4" />
+                                )}
+                                <span>Ajouter des photos</span>
+                            </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleImageChange}
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
+                            {formData.images && formData.images.map((url, idx) => (
+                                <div
+                                    key={idx}
+                                    className="relative group aspect-video rounded-xl overflow-hidden border border-[#493622] bg-[#1a1208]"
+                                >
+                                    <img
+                                        src={url}
+                                        alt={`Terrain ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeImage(idx)}
+                                            className="bg-red-600 text-white p-2 rounded-full hover:scale-110 active:scale-90 transition-all shadow-lg"
+                                            title="Supprimer"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {(!formData.images || formData.images.length === 0) && !uploading && (
+                                <div className="col-span-full py-10 flex flex-col items-center justify-center border border-dashed border-[#493622] rounded-2xl bg-[#1a1208]/30">
+                                    <Camera className="w-10 h-10 text-[#5d452b] mb-2" />
+                                    <p className="text-[#cbad90] text-sm italic">Aucune photo dans la galerie</p>
+                                </div>
+                            )}
+                            {uploading && (
+                                <div className="aspect-video rounded-xl border border-dashed border-primary bg-primary/5 flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Description */}
@@ -197,49 +304,51 @@ const CreateFieldPage = () => {
 
                     {/* ═══ SECTION DISPONIBILITÉS ═══ */}
                     <div className="border-t border-[#493622] pt-6">
-                        <h3 className="text-white text-lg font-bold mb-1">📅 Disponibilités</h3>
-                        <p className="text-[#cbad90] text-xs mb-4">Définissez les jours et heures d'ouverture du terrain.</p>
+                        <h3 className="text-white text-lg font-black mb-1">📅 Disponibilités</h3>
+                        <p className="text-[#cbad90] text-xs mb-6 italic">Définissez les jours et heures d'ouverture du terrain.</p>
 
                         <div className="space-y-3">
                             {schedule.map((day, index) => (
                                 <div
                                     key={day.day_of_week}
-                                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-all ${day.enabled
-                                        ? "bg-[#231a10] border-[#f27f0d]/40"
+                                    className={`flex flex-col xs:flex-row xs:items-center gap-3 p-3 rounded-2xl border transition-all ${day.enabled
+                                        ? "bg-[#231a10] border-primary/40"
                                         : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
                                         }`}
                                 >
-                                    <div className="flex items-center justify-center w-8 sm:w-10 shrink-0">
-                                        <button
-                                            type="button"
-                                            onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
-                                            className={`w-8 h-4 sm:w-10 sm:h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-[#f27f0d]' : 'bg-[#493622]'
-                                                }`}
-                                        >
-                                            <span className={`absolute top-0.5 w-3 h-3 sm:w-5 sm:h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-[18px] sm:translate-x-4' : 'translate-x-0.5'
-                                                }`} />
-                                        </button>
+                                    <div className="flex items-center justify-between xs:justify-start gap-4">
+                                        <div className="flex items-center justify-center shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateScheduleDay(index, 'enabled', !day.enabled)}
+                                                className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${day.enabled ? 'bg-primary' : 'bg-[#493622]'
+                                                    }`}
+                                            >
+                                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${day.enabled ? 'translate-x-4.5' : 'translate-x-0.5'
+                                                    }`} />
+                                            </button>
+                                        </div>
+
+                                        <span className={`text-sm font-bold xs:w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
+                                            }`}>
+                                            {day.label}
+                                        </span>
                                     </div>
 
-                                    <span className={`text-[11px] sm:text-sm font-semibold w-16 sm:w-20 shrink-0 ${day.enabled ? 'text-white' : 'text-[#5d452b]'
-                                        }`}>
-                                        {day.label}
-                                    </span>
-
                                     {day.enabled && (
-                                        <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
+                                        <div className="flex items-center gap-2 flex-1 justify-end">
                                             <input
                                                 type="time"
                                                 value={day.start_time}
                                                 onChange={(e) => updateScheduleDay(index, 'start_time', e.target.value)}
-                                                className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-[#342618] text-white text-[11px] sm:text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-[68px] sm:w-28 text-center"
+                                                className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold"
                                             />
-                                            <span className="text-[#cbad90] text-[10px] sm:text-xs">à</span>
+                                            <span className="text-primary text-xs font-black">→</span>
                                             <input
                                                 type="time"
                                                 value={day.end_time}
                                                 onChange={(e) => updateScheduleDay(index, 'end_time', e.target.value)}
-                                                className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-[#342618] text-white text-[11px] sm:text-sm border border-[#493622] focus:border-[#f27f0d] focus:outline-none w-[68px] sm:w-28 text-center"
+                                                className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold"
                                             />
                                         </div>
                                     )}
@@ -249,20 +358,25 @@ const CreateFieldPage = () => {
                     </div>
 
                     {/* Submit Button */}
-                    <div className="flex justify-end gap-4 mt-6 pt-6 border-t border-[#493622]">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6 pt-6 border-t border-[#493622]">
                         <button
                             type="button"
                             onClick={() => navigate('/dashboard/terrains')}
-                            className="px-6 py-3 rounded-xl border border-[#493622] text-[#cbad90] hover:bg-[#493622] hover:text-white transition-colors"
+                            className="w-full sm:w-auto px-6 py-3 rounded-xl border border-[#493622] text-[#cbad90] hover:bg-[#493622] transition-colors font-bold"
                         >
                             Annuler
                         </button>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="bg-[#f27f0d] text-[#231a10] px-8 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50"
+                            className="w-full sm:w-auto bg-primary text-[#231a10] px-8 py-3 rounded-xl font-black hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
                         >
-                            {isLoading ? "Création..." : "Créer le Terrain"}
+                            {isLoading ? (
+                                <>
+                                    <div className="size-4 border-2 border-[#231a10]/30 border-t-[#231a10] rounded-full animate-spin"></div>
+                                    Enregistrement...
+                                </>
+                            ) : "Créer le Terrain"}
                         </button>
                     </div>
                 </form>

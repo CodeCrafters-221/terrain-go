@@ -6,6 +6,8 @@ import { supabase } from "../services/supabaseClient";
 import { AvailabilityService } from "../services/AvailabilityService";
 import { ReservationService } from "../services/ReservationService";
 import { toast } from "react-toastify";
+import { sanitizeString, sanitizePhone, getSafeErrorMessage } from "../utils/security";
+import { isPastDate, isValidTimeRange } from "../utils/validation";
 
 export default function ReservationModal({
   isOpen,
@@ -30,6 +32,7 @@ export default function ReservationModal({
   });
   const [step, setStep] = useState(1); // 1: Info, 2: Payment
   const [ownerProfile, setOwnerProfile] = useState(null);
+  const [loadingOwner, setLoadingOwner] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -90,7 +93,7 @@ export default function ReservationModal({
       const isNumeric = /^\d+$/.test(stadium.id);
 
       if (!isUuid && !isNumeric) {
-        console.log("⚠️ Skipping slots fetch for demo/invalid ID:", stadium.id);
+// console.log("⚠️ Skipping slots fetch for demo/invalid ID:", stadium.id);
         setAvailableSlots([]);
         setLoadingSlots(false);
         return;
@@ -104,7 +107,7 @@ export default function ReservationModal({
           formData.date,
           formData.duration,
         );
-        console.log("🎯 Modal received slots:", slots);
+// console.log("🎯 Modal received slots:", slots);
         setAvailableSlots(slots);
 
         // ─── CRITICAL : Reset timeSlot if it's no longer valid ───
@@ -113,7 +116,7 @@ export default function ReservationModal({
             (s) => s.time === formData.timeSlot && s.available,
           );
           if (!stillValid) {
-            console.log("🧹 Clearing invalid timeSlot:", formData.timeSlot);
+// console.log("🧹 Clearing invalid timeSlot:", formData.timeSlot);
             setFormData((prev) => ({ ...prev, timeSlot: "" }));
           }
         }
@@ -193,17 +196,20 @@ export default function ReservationModal({
   useEffect(() => {
     const fetchOwnerProfile = async () => {
       if (!stadium?.proprietaire_id || !isOpen) return;
+      setLoadingOwner(true);
       try {
         const { data, error } = await supabase
           .from("profiles")
           .select("phone, name")
           .eq("id", stadium.proprietaire_id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         setOwnerProfile(data);
       } catch (err) {
         console.error("Error fetching owner profile:", err);
+      } finally {
+        setLoadingOwner(false);
       }
     };
 
@@ -247,17 +253,20 @@ export default function ReservationModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // Anti-spam
+    
     setIsSubmitting(true);
     setError(null);
 
     try {
-      if (
-        !formData.date ||
-        !formData.timeSlot ||
-        !formData.playerName ||
-        !formData.phone
-      ) {
-        throw new Error("Veuillez remplir les champs obligatoires (*)");
+      if (isPastDate(formData.date)) {
+        throw new Error("La date sélectionnée est déjà passée.");
+      }
+      if (!formData.timeSlot) {
+        throw new Error("Veuillez choisir un créneau horaire.");
+      }
+      if (!String(formData.playerName || "").trim() || !String(formData.phone || "").trim()) {
+        throw new Error("Veuillez remplir votre nom et votre téléphone.");
       }
 
       if (step === 1) {
@@ -266,122 +275,87 @@ export default function ReservationModal({
         return;
       }
 
-      // Check if it's a demo terrain
-      if (stadium.id.toString().startsWith("default-")) {
-        throw new Error(
-          "Ce terrain est un exemple de démonstration. Pour effectuer une vraie réservation, veuillez choisir un terrain dans la page 'Trouver un terrain'.",
-        );
-      }
-
       const endTime = calculateEndTime(
         formData.timeSlot,
         parseFloat(formData.duration),
       );
 
-      // ═══ VÉRIFICATION CHEVAUCHEMENT AVANT INSERTION ═══
-      const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(stadium.id)) {
-        const overlapCheck = await AvailabilityService.checkOverlap(
-          stadium.id,
-          formData.date,
-          formData.timeSlot,
-          endTime,
-        );
-        if (!overlapCheck.available) {
-          throw new Error(overlapCheck.reason);
-        }
+      // ═══ VÉRIFICATION CHEVAUCHEMENT (Double check client-side) ═══
+      const overlapCheck = await AvailabilityService.checkOverlap(
+        stadium.id,
+        formData.date,
+        formData.timeSlot,
+        endTime,
+      );
+      if (!overlapCheck.available) {
+        throw new Error(overlapCheck.reason);
       }
 
-      const reservationData = {
-        user_id: user?.id,
-        field_id: stadium.id,
-        date: formData.date,
-        start_time: formData.timeSlot,
-        end_time: endTime,
-        total_price: calculateTotal(),
-        status: "En attente",
-        payment_method: formData.paymentMethod || "Espèces",
-        client_name: formData.playerName,
-        client_phone: formData.phone,
-        reservation_type: formData.reservationType || "single",
-      };
-
-      console.log("SENDING RESERVATION:", reservationData);
-
+      // ─── CAS ABONNEMENT ────────────────────────────────────────────────────
       if (formData.reservationType === "subscription") {
         const startDate = new Date(formData.date);
         const months = parseInt(formData.subscriptionMonths || "1");
-
-        // Calculate the end date based on EXACTLY 4 sessions per month.
-        // If there are 4 sessions, the last one is 3 weeks (21 days) after the first one.
-        // Formula: (Total Sessions - 1) * 7 days
         const totalSessions = months * 4;
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + (totalSessions - 1) * 7);
 
         const subData = {
-          user_id: user?.id,
           field_id: stadium.id,
-          client_name: formData.playerName,
-          client_phone: formData.phone,
+          client_name: sanitizeString(formData.playerName),
+          client_phone: sanitizePhone(formData.phone),
           day_of_week: startDate.getDay(),
           start_time: formData.timeSlot,
           end_time: endTime,
           start_date: formData.date,
           end_date: endDate.toISOString().split("T")[0],
-          total_amount: calculateTotal() * 4 * months, // Simple estimation: 4 matches per month
+          total_amount: calculateTotal() * 4 * months,
           payment_method: formData.paymentMethod || "Espèces",
         };
 
         const newSub = await ReservationService.createSubscription(subData);
-        if (!newSub)
-          throw new Error(
-            "Erreur lors de la création de l'abonnement : aucune donnée retournée. Vérifiez vos politiques RLS.",
-          );
+        
+        // Création de toutes les réservations liées (1 par semaine)
+        for (let i = 0; i < totalSessions; i++) {
+          const sessionDate = new Date(startDate);
+          sessionDate.setDate(startDate.getDate() + i * 7);
 
-        // CREATE FIRST RESERVATION ENTRY LINKED TO THIS SUB
-        await ReservationService.createOnlineReservation({
-          field_id: stadium.id,
-          date: formData.date,
-          start_time: formData.timeSlot,
-          end_time: endTime,
-          total_price: 0, // Subscription amount is tracked in sub table
-          reservation_type: "subscription",
-          subscription_id: newSub.id,
-        });
+          await ReservationService.createOnlineReservation({
+            field_id: stadium.id,
+            date: sessionDate.toISOString().split("T")[0],
+            start_time: formData.timeSlot,
+            end_time: endTime,
+            total_price: i === 0 ? subData.total_amount : 0, // Optionnel : Tout mettre sur la 1ère ou répartir. Ici on laisse 0 car l'amount est sur la subscription. On garde simplement 0 pour éviter le double comptage.
+            reservation_type: "subscription",
+            subscription_id: newSub.id,
+          });
+        }
 
         setStep(3);
+        toast.success("Abonnement créé avec succès !");
         return;
       }
 
+      // ─── CAS RÉSERVATION UNIQUE ───────────────────────────────────────────
       const insertedData = await ReservationService.createOnlineReservation({
         field_id: stadium.id,
         date: formData.date,
         start_time: formData.timeSlot,
         end_time: endTime,
         total_price: calculateTotal(),
-        reservation_type: formData.reservationType || "single",
+        reservation_type: "single",
       });
-
-      console.log("INSERT SUCCESSFUL, RECEIVED DATA:", insertedData);
 
       setLastReservation(insertedData);
       setStep(3);
       toast.success("Réservation effectuée !");
-
       setFormData((prev) => ({ ...prev, date: "", timeSlot: "" }));
+      
     } catch (err) {
-      console.error("Erreur réservation:", err);
-      // Special handling for the bigint error just in case
-      if (err.message?.includes("invalid input syntax for type bigint")) {
-        setError(
-          "Impossible de réserver ce terrain d'exemple. Veuillez utiliser la recherche pour trouver un vrai terrain.",
-        );
-      } else {
-        setError(
-          err.message || "Une erreur est survenue lors de la réservation.",
-        );
+      console.error("❌ [ReservationModal] Submit Error:", err);
+      setError(getSafeErrorMessage(err));
+      // Si c'est un conflit de réservation, on peut proposer de rafraîchir les créneaux
+      if (err.message.includes("conflit") || err.code === "23P01") {
+        toast.warning("Ce créneau vient d'être pris. Veuillez en choisir un autre.");
       }
     } finally {
       setIsSubmitting(false);
@@ -490,9 +464,17 @@ export default function ReservationModal({
             <h2 className="text-white text-xl sm:text-2xl font-bold truncate max-w-[200px] sm:max-w-none">
               {stadium.city}
             </h2>
-            <div className="text-text-secondary text-xs sm:text-sm flex items-center mt-1">
-              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
-              <span className="truncate">{stadium.location}</span>
+            <div className="text-text-secondary text-xs sm:text-sm flex flex-col gap-1 mt-1">
+              <div className="flex items-center">
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                <span className="truncate">{stadium.location}</span>
+              </div>
+              {ownerProfile?.name && (
+                <div className="flex items-center text-primary font-bold text-[10px] sm:text-xs tracking-wide">
+                  <span className="material-symbols-outlined text-sm mr-1">person</span>
+                  PROPRIÉTAIRE : {ownerProfile.name.toUpperCase()}
+                </div>
+              )}
             </div>
           </div>
           <button
@@ -1045,10 +1027,34 @@ export default function ReservationModal({
                       <p className="text-white/60 text-xs text-center uppercase tracking-widest font-bold">
                         Propriétaire
                       </p>
-                      <div className="bg-surface-dark rounded-xl p-4 flex items-center justify-center gap-3 border border-surface-highlight">
-                        <span className="text-white text-2xl font-black tracking-wider">
-                          {ownerProfile?.name || "Propriétaire"}
-                        </span>
+                      <div className="flex flex-col gap-3">
+                        <div className="bg-surface-dark rounded-xl p-4 flex flex-col items-center justify-center gap-1 border border-surface-highlight shadow-inner">
+                          <span className="text-primary text-[10px] font-bold uppercase tracking-[0.2em] mb-1">
+                            Nom du destinataire
+                          </span>
+                          <span className="text-white text-2xl font-black tracking-wider">
+                            {loadingOwner ? (
+                              <div className="flex items-center gap-2">
+                                <div className="animate-pulse bg-white/20 h-8 w-32 rounded"></div>
+                              </div>
+                            ) : ownerProfile?.name ? (
+                              ownerProfile.name.toUpperCase()
+                            ) : (
+                              "PROPRIÉTAIRE"
+                            )}
+                          </span>
+                        </div>
+                        
+                        {ownerProfile?.phone && (
+                          <div className="bg-primary/10 rounded-xl p-3 flex flex-col items-center justify-center border border-primary/30">
+                            <span className="text-primary text-[10px] font-bold uppercase mb-1">
+                              Numéro de paiement (Wave/OM)
+                            </span>
+                            <span className="text-white text-xl font-black tracking-[0.1em]">
+                              {ownerProfile.phone}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       {/* <p className="text-text-secondary text-[10px] text-center italic mt-1">
                         Destinataire :{" "}

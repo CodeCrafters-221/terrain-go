@@ -64,41 +64,59 @@ const filterTransactionsByPeriod = (transactions, period) => {
 };
 
 const Revenues = () => {
-  const { reservations = [], subscriptions = [] } = useDashboard();
+  const { 
+    reservations = [], 
+    subscriptions = [], 
+    archivedIds = [] 
+  } = useDashboard();
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [periodFilter, setPeriodFilter] = useState("all"); // "all", "day", "week", "month"
   const itemsPerPage = 6;
 
   const allTransactions = useMemo(() => {
-    const res = reservations.map((r) => {
-      const isSub = !!(
-        r?.subscription_id ||
-        r?.reservation_type === "subscription" ||
-        r?.reservationType === "subscription"
-      );
+    // 1. Mapper toutes les réservations (Matchs Uniques et Séances d'Abonnement)
+    const res = reservations
+      .filter(r => !archivedIds.includes(String(r.id)))
+      .filter(r => r.reservation_type !== "subscription" && r.reservationType !== "subscription" && !r.subscription_id && !r.subscriptionId)
+      .map((r) => {
+        const amount = parseAmount(r);
+        // Utiliser originalDate si dispo car 'date' peut être déjà formatée en FR
+        const rawDate = r?.originalDate || r?.date || r?.created_at;
+        const date = normalizeDate(rawDate);
+        
+        return {
+          id: r?.id,
+          client: r?.clientName || "Client Inconnu",
+          amount,
+          status: r?.status || "Inconnu",
+          date,
+          type: "match",
+          field: r?.terrainName || r?.fieldName || "Terrain Inconnu",
+          subscriptionId: r?.subscriptionId || r?.subscription_id,
+        };
+      })
+      .filter(tx => tx.date !== "Date Invalide");
 
-      return {
-        id: r?.id,
-        client: r?.clientName || r?.userName || "Client Inconnu",
-        amount: parseAmount(r),
-        status: r?.status || "Inconnu",
-        date: normalizeDate(r?.date || r?.created_at),
-        type: isSub ? "subscription" : "match",
-        field: r?.fieldName || r?.field_name || r?.terrain || "Terrain Inconnu",
-      };
-    });
-
-    const subs = subscriptions.map((s) => ({
-      id: s?.id,
-      client: s?.clientName || "Abonné Inconnu",
-      amount: parseAmount(s),
-      status: s?.status || "Inconnu",
-      date: normalizeDate(
-        s?.createdAt || s?.created_at || s?.startDate || s?.start_date,
-      ),
-      type: "subscription",
-      field: "Tous les terrains", // Les abonnements s'appliquent généralement à tous les terrains
-    }));
+    // 2. Mapper tous les abonnements
+    const subs = subscriptions
+      .filter(s => !archivedIds.includes(String(s.id)))
+      .map((s) => {
+        const amount = parseAmount(s);
+        const rawDate = s?.startDate || s?.createdAt || s?.created_at || s?.date;
+        const date = normalizeDate(rawDate);
+        
+        return {
+          id: s?.id,
+          client: s?.clientName || "Abonné Inconnu",
+          amount,
+          status: s?.status || "Inconnu",
+          date,
+          type: "subscription",
+          field: s?.fieldName || "Tous les terrains",
+        };
+      })
+      .filter(tx => tx.date !== "Date Invalide");
 
     // Fusion et tri par date DESC
     return [...res, ...subs].sort((a, b) => {
@@ -106,7 +124,7 @@ const Revenues = () => {
       const dateB = b.date === "Date Inconnue" ? 0 : new Date(b.date).getTime();
       return dateB - dateA;
     });
-  }, [reservations, subscriptions]);
+  }, [reservations, subscriptions, archivedIds]);
 
   const transactions = useMemo(() => {
     return filterTransactionsByPeriod(allTransactions, periodFilter);
@@ -117,8 +135,12 @@ const Revenues = () => {
     return transactions.reduce(
       (acc, tx) => {
         if (isPaidStatus(tx.status)) {
-          if (tx.type === "subscription") acc.subTotal += tx.amount;
-          else acc.matchTotal += tx.amount;
+          if (tx.type === "subscription") {
+            acc.subTotal += tx.amount;
+          } else if (!tx.subscriptionId) {
+            // Uniquement les matchs uniques (pas les séances d'abonnement)
+            acc.matchTotal += tx.amount;
+          }
         }
         return acc;
       },
@@ -275,65 +297,65 @@ const Revenues = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8 pb-20 relative">
+    <div className="flex flex-col gap-6 md:gap-8 pb-20 relative">
       {/* Recapitulatif des Revenus */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+        <div className="bg-[#2c241b] p-5 md:p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform hidden xs:block">
             <span className="material-symbols-outlined text-6xl text-blue-400">
               autorenew
             </span>
           </div>
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
+          <span className="text-[#cbad90] text-[10px] md:text-xs font-bold uppercase tracking-widest">
             Total Abonnements
             {periodFilter !== "all" && (
-              <span className="text-primary ml-2">
+              <span className="text-primary ml-1 md:ml-2">
                 (
                 {periodFilter === "day"
                   ? "Aujourd'hui"
                   : periodFilter === "week"
-                    ? "Cette semaine"
-                    : "Ce mois"}
+                    ? "Semaine"
+                    : "Mois"}
                 )
               </span>
             )}
           </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none">
+          <div className="flex items-end gap-1.5 md:gap-2">
+            <h3 className="text-2xl md:text-3xl font-black text-white leading-none">
               {formatAmount(summary.subTotal)}
             </h3>
-            <span className="text-primary text-sm font-bold">CFA</span>
+            <span className="text-primary text-xs md:text-sm font-bold">CFA</span>
           </div>
           <p className="text-[#cbad90] text-[10px] font-medium mt-1">
             Revenus récurrents mensuels
           </p>
         </div>
 
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+        <div className="bg-[#2c241b] p-5 md:p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform hidden xs:block">
             <span className="material-symbols-outlined text-6xl text-primary">
               sports_soccer
             </span>
           </div>
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
+          <span className="text-[#cbad90] text-[10px] md:text-xs font-bold uppercase tracking-widest">
             Total Matchs Uniques
             {periodFilter !== "all" && (
-              <span className="text-primary ml-2">
+              <span className="text-primary ml-1 md:ml-2">
                 (
                 {periodFilter === "day"
                   ? "Aujourd'hui"
                   : periodFilter === "week"
-                    ? "Cette semaine"
-                    : "Ce mois"}
+                    ? "Semaine"
+                    : "Mois"}
                 )
               </span>
             )}
           </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none">
+          <div className="flex items-end gap-1.5 md:gap-2">
+            <h3 className="text-2xl md:text-3xl font-black text-white leading-none">
               {formatAmount(summary.matchTotal)}
             </h3>
-            <span className="text-primary text-sm font-bold">CFA</span>
+            <span className="text-primary text-xs md:text-sm font-bold">CFA</span>
           </div>
           <p className="text-[#cbad90] text-[10px] font-medium mt-1">
             Revenus des réservations ponctuelles
@@ -342,33 +364,33 @@ const Revenues = () => {
       </div>
 
       {/* Header avec bouton d'export */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col">
-          <h2 className="text-white text-3xl font-black italic tracking-tight">
+          <h2 className="text-white text-2xl md:text-3xl font-black italic tracking-tight">
             Historique des Revenus
           </h2>
-          <p className="text-[#cbad90] text-sm mt-1">
+          <p className="text-[#cbad90] text-xs md:text-sm mt-1">
             Suivez l'ensemble de vos encaissements en temps réel
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={handleExportExcel}
-            className="bg-green-600 text-sm text-white px-4 py-2 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all flex items-center justify-center gap-1 active:scale-95 shadow-lg"
+            className="flex-1 xs:flex-none bg-green-600 text-[11px] md:text-sm text-white px-3 md:px-4 py-2.5 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg"
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">
               description
             </span>
-            Excel
+            <span>Excel</span>
           </button>
           <button
             onClick={handleExportPDF}
-            className="bg-primary text-sm text-[#231a10] px-4 py-2 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center justify-center gap-1 active:scale-95 shadow-lg"
+            className="flex-1 xs:flex-none bg-primary text-[11px] md:text-sm text-[#231a10] px-3 md:px-4 py-2.5 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg"
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">
               picture_as_pdf
             </span>
-            PDF
+            <span>PDF</span>
           </button>
         </div>
       </div>

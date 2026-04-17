@@ -1,10 +1,9 @@
 import { supabase } from "./supabaseClient";
+import { sanitizeString, getSafeErrorMessage } from "../utils/security";
 
 export const ReviewService = {
   /**
    * Récupère tous les avis pour un terrain spécifique
-   * @param {string} terrainId - L'ID du terrain
-   * @returns {Promise<Array>} - Liste des avis avec les infos du profil utilisateur
    */
   async getTerrainReviews(terrainId) {
     const { data, error } = await supabase
@@ -18,38 +17,40 @@ export const ReviewService = {
       .eq("terrain_id", terrainId)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) throw new Error(getSafeErrorMessage(error));
     return data || [];
   },
 
   /**
    * Ajoute un nouvel avis
-   * @param {Object} reviewData - Les données de l'avis
-   * @returns {Promise<Object>} - L'avis créé
    */
   async addReview(reviewData) {
-    // reviewData: { utilisateur_id, note, commentaire, terrain_id }
+    // On récupère l'ID utilisateur depuis la session pour éviter l'usurpation
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Vous devez être connecté pour laisser un avis.");
+
+    const payload = {
+      utilisateur_id: user.id,
+      terrain_id: reviewData.terrain_id,
+      note: Math.min(5, Math.max(1, Number(reviewData.note))),
+      commentaire: sanitizeString(reviewData.commentaire),
+    };
+
     const { data, error } = await supabase
       .from("avis")
-      .insert([reviewData])
+      .insert([payload])
       .select()
       .single();
 
     if (error) {
-      console.error("Supabase Review Insert Error:", {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-      });
-      throw error;
+      console.error("Supabase Review Insert Error:", error);
+      throw new Error(getSafeErrorMessage(error));
     }
     return data;
   },
 
   /**
    * Calcule la note moyenne pour un terrain
-   * @param {string} terrainId
    */
   async getAverageRating(terrainId) {
     const { data, error } = await supabase
@@ -57,7 +58,7 @@ export const ReviewService = {
       .select("note")
       .eq("terrain_id", terrainId);
 
-    if (error) throw error;
+    if (error) throw new Error(getSafeErrorMessage(error));
     if (!data || data.length === 0) return { average: 0, count: 0 };
 
     const sum = data.reduce((acc, curr) => acc + curr.note, 0);
@@ -69,7 +70,6 @@ export const ReviewService = {
 
   /**
    * Récupère les avis d'un utilisateur
-   * @param {string} userId
    */
   async getUserReviews(userId) {
     const { data, error } = await supabase
@@ -83,6 +83,7 @@ export const ReviewService = {
       .eq("utilisateur_id", userId)
       .order("created_at", { ascending: false });
 
-    return { data, error };
+    if (error) throw new Error(getSafeErrorMessage(error));
+    return { data, error: null };
   },
 };

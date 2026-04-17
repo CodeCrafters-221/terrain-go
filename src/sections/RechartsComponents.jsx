@@ -178,10 +178,17 @@ export const RechartsAreaChart = ({ data = [], isLoading }) => {
         <YAxis tick={{ fill: "#cbad90", fontSize: 11 }} axisLine={false} />
 
         <Tooltip content={<CustomTooltip />} />
+        <Legend 
+          layout="horizontal" 
+          align="top" 
+          verticalAlign="top" 
+          wrapperStyle={{ paddingBottom: '20px' }}
+        />
 
         <Area
           type="monotone"
           dataKey="matchUnique"
+          name="Match Unique"
           stroke="#f27f0d"
           fill="url(#colorSingle)"
           strokeWidth={3}
@@ -191,6 +198,7 @@ export const RechartsAreaChart = ({ data = [], isLoading }) => {
         <Area
           type="monotone"
           dataKey="abonnement"
+          name="abonnement"
           stroke="#3b82f6"
           fill="url(#colorSub)"
           strokeWidth={3}

@@ -19,6 +19,9 @@ const DashboardCharts = () => {
     reservations = [],
     subscriptions = [],
     isLoadingReservations,
+    isLoadingSubscriptions,
+    archivedIds = [],
+    archivedSubIds = []
   } = useDashboard();
 
   const [timeRange, setTimeRange] = useState("week");
@@ -29,6 +32,9 @@ const DashboardCharts = () => {
     const data = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const filteredReservations = reservations.filter(r => !archivedIds.map(String).includes(String(r.id)));
+    const filteredSubscriptions = subscriptions.filter(s => !archivedSubIds.map(String).includes(String(s.id)));
 
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(today);
@@ -47,11 +53,12 @@ const DashboardCharts = () => {
       });
     }
 
-    (reservations || []).forEach((res) => {
+    (filteredReservations || []).forEach((res) => {
       const status = (res.status || "").toLowerCase();
       if (["annulé", "expired", "expiré", "refusé"].includes(status)) return;
 
-      const date = normalizeDate(res.date);
+      const rawDate = res.originalDate || res.date;
+      const date = normalizeDate(rawDate);
       if (!date) return;
 
       const entry = data.find((d) => d.date === date);
@@ -62,17 +69,17 @@ const DashboardCharts = () => {
       const amount = parseAmount(res);
 
       if (isSubscription(res)) {
-        entry.abonnement += amount;
+        // Le revenu des abonnements est calculé via filteredSubscriptions
       } else {
         entry.matchUnique += amount;
       }
     });
 
-    (subscriptions || []).forEach((sub) => {
+    (filteredSubscriptions || []).forEach((sub) => {
       if (!isPaidStatus(sub.status)) return;
 
       const date = normalizeDate(
-        sub.start_date || sub.startDate || sub.created_at || sub.createdAt,
+        sub.created_at || sub.createdAt || sub.start_date || sub.startDate,
       );
 
       if (!date) return;
@@ -88,21 +95,43 @@ const DashboardCharts = () => {
     });
 
     return data;
-  }, [reservations, subscriptions, timeRange]);
+  }, [reservations, subscriptions, timeRange, archivedIds, archivedSubIds]);
 
   const totals = useMemo(() => {
+    const days = timeRange === "week" ? 7 : 30;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() - days + 1);
+    cutoff.setHours(0, 0, 0, 0);
+
+    const inRange = (dateInput) => {
+      if (!dateInput) return false;
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return false;
+      return d >= cutoff && d <= today;
+    };
+
     let single = 0;
     let sub = 0;
 
-    reservations.forEach((r) => {
+    const filteredReservations = reservations.filter(r => !archivedIds.includes(String(r.id)));
+    const filteredSubscriptions = subscriptions.filter(s => !archivedSubIds.includes(String(s.id)));
+
+    filteredReservations.forEach((r) => {
+      const rawDate = r?.originalDate || r?.date;
+      if (!inRange(rawDate)) return;
       if (isPaidStatus(r?.status)) {
         const amt = parseAmount(r);
-        if (isSubscription(r)) sub += amt;
-        else single += amt;
+        if (!isSubscription(r)) {
+           single += amt;
+        }
       }
     });
 
-    subscriptions.forEach((s) => {
+    filteredSubscriptions.forEach((s) => {
+      const dateStr = s?.created_at || s?.createdAt || s?.start_date || s?.startDate;
+      if (!inRange(dateStr)) return;
       if (isPaidStatus(s?.status)) {
         sub += parseAmount(s);
       }
@@ -113,9 +142,9 @@ const DashboardCharts = () => {
       subscription: sub,
       all: single + sub,
     };
-  }, [reservations, subscriptions]);
+  }, [reservations, subscriptions, timeRange, archivedIds, archivedSubIds]);
 
-  if (isLoadingReservations) {
+  if (isLoadingReservations || isLoadingSubscriptions) {
     return (
       <div className="h-[400px] flex items-center justify-center text-primary">
         <div className="flex flex-col items-center gap-4">
@@ -136,17 +165,17 @@ const DashboardCharts = () => {
         : totals.all;
 
   return (
-    <div className="bg-[#2c241b] rounded-2xl border border-[#493622] p-6 h-full flex flex-col">
+    <div className="bg-[#2c241b] rounded-2xl border border-[#493622] p-4 sm:p-6 h-full flex flex-col">
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-white text-xl font-black">
+      <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-4 mb-6">
+        <h3 className="text-white text-lg md:text-xl font-black">
           Performance Financière
         </h3>
 
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="bg-[#231a10] text-[#cbad90] text-xs px-3 py-2 rounded-lg border border-[#493622]"
+          className="bg-[#231a10] text-[#cbad90] text-xs px-3 py-2 rounded-lg border border-[#493622] w-full xs:w-auto"
         >
           <option value="week">7 jours</option>
           <option value="month">30 jours</option>
@@ -155,7 +184,7 @@ const DashboardCharts = () => {
 
       {/* TOTAL */}
       <div className="mb-6">
-        <h4 className="text-white text-4xl font-black">
+        <h4 className="text-white text-3xl sm:text-4xl font-black">
           {totalRevenue.toLocaleString()} FCFA
         </h4>
       </div>
@@ -165,7 +194,7 @@ const DashboardCharts = () => {
         <Suspense fallback={<div className="text-white">Chargement...</div>}>
           <RechartsAreaChart
             data={chartData}
-            isLoading={isLoadingReservations}
+            isLoading={isLoadingReservations || isLoadingSubscriptions}
           />
         </Suspense>
       </div>
