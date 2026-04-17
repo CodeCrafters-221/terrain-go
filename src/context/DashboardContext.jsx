@@ -9,6 +9,11 @@ import {
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "./AuthContext";
 import { toast } from "react-toastify";
+import { ReservationService } from "../services/ReservationService";
+import { TerrainService, uploadTerrainImage } from "../services/TerrainService";
+import { getSafeErrorMessage } from "../utils/security";
+
+import { isSubscription } from "../utils/dateTime";
 
 const DashboardContext = createContext();
 
@@ -19,6 +24,7 @@ export const DashboardProvider = ({ children }) => {
   const [fields, setFields] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [reservationTypes, setReservationTypes] = useState([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
   const [isLoadingReservations, setIsLoadingReservations] = useState(true);
   const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(true);
@@ -28,47 +34,55 @@ export const DashboardProvider = ({ children }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingField, setEditingField] = useState(null);
   const [archivedIds, setArchivedIds] = useState([]);
+  const [archivedSubIds, setArchivedSubIds] = useState([]);
   const [highlightedReservationId, setHighlightedReservationId] =
     useState(null);
+
+  // --- PERSISTENCE: LOAD ---
+  useEffect(() => {
+    if (user) {
+      const savedRes = localStorage.getItem(`archived_reservations_${user.id}`);
+      const savedSub = localStorage.getItem(`archived_subscriptions_${user.id}`);
+      if (savedRes) setArchivedIds(JSON.parse(savedRes));
+      if (savedSub) setArchivedSubIds(JSON.parse(savedSub));
+    }
+  }, [user]);
+
+  // --- PERSISTENCE: SAVE ---
+  useEffect(() => {
+    if (user && (archivedIds.length > 0 || archivedSubIds.length > 0)) {
+      localStorage.setItem(`archived_reservations_${user.id}`, JSON.stringify(archivedIds));
+      localStorage.setItem(`archived_subscriptions_${user.id}`, JSON.stringify(archivedSubIds));
+    } else if (user) {
+      // Handle the case where someone archives everything then unarchives everything (length 0)
+      // but only if we have already "loaded" or if it's a deliberate clear.
+      // To be safe, just always save if user exists, but we need to watch out for the initial mount.
+      localStorage.setItem(`archived_reservations_${user.id}`, JSON.stringify(archivedIds));
+      localStorage.setItem(`archived_subscriptions_${user.id}`, JSON.stringify(archivedSubIds));
+    }
+  }, [archivedIds, archivedSubIds, user]);
+
+  // --- FETCH RESERVATION TYPES ---
+  const fetchReservationTypes = useCallback(() => {
+    // Note: table 'reservation_types' non existante en base, on utilise une liste fixe.
+    setReservationTypes([
+      { id: "single", label: "Match unique" },
+      { id: "subscription", label: "Abonnement" },
+      { id: "onsite", label: "Sur site (Manuel)" },
+    ]);
+  }, []);
 
   // --- FETCH FIELDS ---
   const fetchFields = useCallback(async () => {
     if (!user) return;
     setIsLoadingFields(true);
     try {
-      const { data, error } = await supabase
-        .from("fields")
-        .select(
-          `
-          *,
-          field_images (url_image)
-        `,
-        )
-        .eq("proprietaire_id", user.id);
-
-      if (error) throw error;
-
-      const mappedFields = data.map((field) => {
-        const imagesList = field.field_images || [];
-        const mainImage =
-          imagesList.length > 0 ? imagesList[0].url_image : null;
-
-        return {
-          ...field,
-          type: field.pelouse,
-          location: field.adress,
-          image: mainImage || "https://placehold.co/600x400?text=No+Image",
-          price: field.price_per_hour
-            ? `${field.price_per_hour} CFA/h`
-            : "0 CFA/h",
-          hours: field.opening_hours || "08:00 - 00:00",
-          status: "Disponible",
-        };
-      });
-
-      setFields(mappedFields);
+      const mappedFields = await TerrainService.getAllTerrains();
+      // On filtre pour ne garder que ceux du propriétaire (sécurité supplémentaire avant RLS)
+      setFields(mappedFields.filter(f => f.proprietaire_id === user.id));
     } catch (error) {
       console.error("Error fetching fields:", error.message);
+      toast.error("Erreur lors de la récupération des terrains.");
     } finally {
       setIsLoadingFields(false);
     }
@@ -77,7 +91,7 @@ export const DashboardProvider = ({ children }) => {
   // --- NOTIFICATIONS ---
   const processNotifications = (reservs, subs = []) => {
     const resNotifs = reservs
-      .filter((r) => r.status === "En attente")
+      .filter((r) => r.status === "En attente" && !isSubscription(r))
       .map((r) => ({
         id: r.id,
         title: "Nouvelle réservation",
@@ -116,55 +130,33 @@ export const DashboardProvider = ({ children }) => {
       if (!user) return;
       setIsLoadingReservations(true);
       try {
-        const { data, error } = await supabase
-          .from("reservations")
-          .select(
-            `
-            *,
-            fields!inner (name, proprietaire_id)
-          `,
-          )
-          .eq("fields.proprietaire_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        const mappedReservations = data.map((r) => {
-          const clientName = r.client_name || "Client Inconnu";
-          const clientPhone = r.client_phone || "-";
-          const initials = clientName
+        const mappedReservations = await ReservationService.getOwnerReservations();
+        
+        // On re-mappe pour le format du Dashboard (initiales, etc.)
+        const dashboardReservations = mappedReservations.map(r => {
+          const initials = (r.clientName || "CI")
             .split(" ")
             .map((n) => n[0])
             .join("")
             .substring(0, 2)
             .toUpperCase();
+          
           return {
-            id: r.id,
-            clientName,
-            clientPhone,
-            fieldId: r.field_id,
-            fieldName: r.fields?.name || "Terrain inconnu",
-            date: r.date
-              ? new Date(r.date).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "Date invalide",
-            originalDate: r.date, // ISO string 'YYYY-MM-DD'
-            time: `${(r.start_time || "").substring(0, 5)} - ${(r.end_time || "").substring(0, 5)}`,
-            status: r.status,
-            amount: r.total_price || 0,
-            paymentMethod: r.payment_method || "Non spécifié",
+            ...r,
+            amount: r.price,
+            fieldName: r.terrainName,
             initials,
-            createdAt: r.created_at,
-            reservationType: r.subscription_id ? "subscription" : "single",
-            subscriptionId: r.subscription_id,
+            originalDate: r.date,
+            date: new Date(r.date).toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })
           };
         });
 
-        setReservations(mappedReservations);
-        processNotifications(mappedReservations, subsData || subscriptions);
+        setReservations(dashboardReservations);
+        processNotifications(dashboardReservations, subsData || subscriptions);
       } catch (error) {
         console.error("Error fetching reservations:", error.message);
       } finally {
@@ -179,370 +171,127 @@ export const DashboardProvider = ({ children }) => {
       if (!user) return;
       setIsLoadingSubscriptions(true);
       try {
-        const { data, error } = await supabase
-          .from("subscriptions")
-          .select(
-            `
-            *,
-            fields!inner (name, proprietaire_id)
-          `,
-          )
-          .eq("fields.proprietaire_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        const mappedSubscriptions = data.map((s) => {
-          const clientName = s.client_name || "Client Inconnu";
-          const initials = clientName
+        const mappedSubscriptions = await ReservationService.getOwnerSubscriptions(user.id);
+        
+        // On re-mappe pour le format du Dashboard (initiales, etc.)
+        const dashboardSubscriptions = mappedSubscriptions.map(s => ({
+          ...s,
+          amount: s.price,
+          fieldName: s.fieldName,
+          initials: (s.clientName || "CI")
             .split(" ")
             .map((n) => n[0])
             .join("")
             .substring(0, 2)
-            .toUpperCase();
-          return {
-            id: s.id,
-            clientName,
-            clientPhone: s.client_phone || "-",
-            fieldId: s.field_id,
-            fieldName: s.fields?.name || "Terrain inconnu",
-            dayOfWeek: s.day_of_week,
-            time: `${(s.start_time || "").substring(0, 5)} - ${(s.end_time || "").substring(0, 5)}`,
-            startDate: s.start_date,
-            endDate: s.end_date,
-            status: s.status,
-            amount: s.total_amount || 0,
-            paymentMethod: s.payment_method || "Non spécifié",
-            initials,
-            createdAt: s.created_at,
-            reservationType: "subscription",
-          };
-        });
+            .toUpperCase()
+        }));
 
-        setSubscriptions(mappedSubscriptions);
-        processNotifications(resData || reservations, mappedSubscriptions);
+        setSubscriptions(dashboardSubscriptions);
+        // On évite d'utiliser 'reservations' du state directement ici pour éviter la boucle
+        if (resData) processNotifications(resData, dashboardSubscriptions);
       } catch (error) {
         console.error("Error fetching subscriptions:", error.message);
       } finally {
         setIsLoadingSubscriptions(false);
       }
     },
-    [user], // eslint-disable-line react-hooks/exhaustive-deps
+    [user], // Removed reservations from deps
   );
 
-  // --- REALTIME SUBSCRIPTION ---
+  // --- INITIAL DATA FETCH ---
+  useEffect(() => {
+    if (!user) return;
+
+    const loadData = async () => {
+      try {
+        setIsLoadingReservations(true);
+        setIsLoadingSubscriptions(true);
+        
+        const [resData, subsData] = await Promise.all([
+          ReservationService.getOwnerReservations(),
+          ReservationService.getOwnerSubscriptions(user.id)
+        ]);
+
+        const formatRes = (r) => ({
+          ...r,
+          amount: r.price,
+          fieldName: r.terrainName,
+          initials: (r.clientName || "CI").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase(),
+          originalDate: r.date,
+          date: new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+        });
+
+        const formatSub = (s) => ({
+          ...s,
+          amount: s.price,
+          fieldName: s.fieldName,
+          initials: (s.clientName || "CI").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()
+        });
+
+        const mappedRes = resData.map(formatRes);
+        const mappedSub = subsData.map(formatSub);
+
+        setReservations(mappedRes);
+        setSubscriptions(mappedSub);
+        processNotifications(mappedRes, mappedSub);
+      } catch (err) {
+        console.error("Erreur initialisation Dashboard:", err);
+      } finally {
+        setIsLoadingReservations(false);
+        setIsLoadingSubscriptions(false);
+      }
+    };
+
+    loadData();
+    fetchFields();
+    fetchReservationTypes();
+  }, [user]); // Only run on user change
+
   // --- REALTIME SUBSCRIPTION ---
   useEffect(() => {
     if (!user) return;
 
-    // Fetch both in parallel and handle synchronously
-    (async () => {
-      const [resData, subsData] = await Promise.all([
-        (async () => {
-          try {
-            const { data, error } = await supabase
-              .from("reservations")
-              .select(`*,fields!inner (name, proprietaire_id)`)
-              .eq("fields.proprietaire_id", user.id)
-              .order("created_at", { ascending: false });
-            if (error) throw error;
-            return data || [];
-          } catch {
-            console.error("Error fetching reservations");
-            return [];
-          }
-        })(),
-        (async () => {
-          try {
-            const { data, error } = await supabase
-              .from("subscriptions")
-              .select(`*,fields!inner (name, proprietaire_id)`)
-              .eq("fields.proprietaire_id", user.id)
-              .order("created_at", { ascending: false });
-            if (error) throw error;
-            return data || [];
-          } catch {
-            console.error("Error fetching subscriptions");
-            return [];
-          }
-        })(),
-      ]);
-
-      setIsLoadingReservations(true);
-      setIsLoadingSubscriptions(true);
-
-      // Process reservations
-      const mappedReservations = resData.map((r) => ({
-        id: r.id,
-        clientName: r.client_name || "Client Inconnu",
-        clientPhone: r.client_phone || "-",
-        fieldId: r.field_id,
-        fieldName: r.fields?.name || "Terrain inconnu",
-        date: new Date(r.date).toLocaleDateString("fr-FR", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }),
-        originalDate: r.date,
-        time: `${(r.start_time || "").substring(0, 5)} - ${(r.end_time || "").substring(0, 5)}`,
-        status: r.status,
-        amount: r.total_price || 0,
-        paymentMethod: r.payment_method || "Non spécifié",
-        initials: (r.client_name || "CI")
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .substring(0, 2)
-          .toUpperCase(),
-        createdAt: r.created_at,
-        reservationType: r.subscription_id ? "subscription" : "single",
-        subscriptionId: r.subscription_id,
-      }));
-
-      // Process subscriptions
-      const mappedSubscriptions = subsData.map((s) => ({
-        id: s.id,
-        clientName: s.client_name || "Client Inconnu",
-        clientPhone: s.client_phone || "-",
-        fieldId: s.field_id,
-        fieldName: s.fields?.name || "Terrain inconnu",
-        dayOfWeek: s.day_of_week,
-        time: `${(s.start_time || "").substring(0, 5)} - ${(s.end_time || "").substring(0, 5)}`,
-        startDate: s.start_date,
-        endDate: s.end_date,
-        status: s.status,
-        amount: s.total_amount || 0,
-        paymentMethod: s.payment_method || "Non spécifié",
-        initials: (s.client_name || "CI")
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .substring(0, 2)
-          .toUpperCase(),
-        createdAt: s.created_at,
-        reservationType: "subscription",
-      }));
-
-      setReservations(mappedReservations);
-      setSubscriptions(mappedSubscriptions);
-      processNotifications(mappedReservations, mappedSubscriptions);
-
-      setIsLoadingReservations(false);
-      setIsLoadingSubscriptions(false);
-    })();
-
     const channel = supabase
       .channel("dashboard-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "reservations",
-        },
-        async (payload) => {
-          console.log("Realtime change detected for reservations:", payload);
-
-          // Handle INSERT - immediately add to notifications without waiting for full fetch
-          if (payload.eventType === "INSERT" && payload.new) {
-            const newReservation = payload.new;
-            if (newReservation.status === "En attente") {
-              // Fetch field name for notification message
-              const { data: fieldData } = await supabase
-                .from("fields")
-                .select("name")
-                .eq("id", newReservation.field_id)
-                .single();
-
-              const fieldName = fieldData?.name || "Terrain inconnu";
-              const clientName = newReservation.client_name || "Client Inconnu";
-
-              const newNotification = {
-                id: newReservation.id,
-                title: "Nouvelle réservation",
-                message: `${clientName} a réservé ${fieldName}`,
-                time: newReservation.start_time?.substring(0, 5) || "00:00",
-                date: newReservation.date
-                  ? new Date(newReservation.date).toLocaleDateString("fr-FR", {
-                      day: "numeric",
-                      month: "short",
-                    })
-                  : "Date invalide",
-                status: newReservation.status,
-                type: "reservation",
-                reservationId: newReservation.id,
-                fieldId: newReservation.field_id,
-              };
-
-              // Update notifications instantly
-              setNotifications((prev) => [newNotification, ...prev]);
-              setUnreadCount((prev) => prev + 1);
-              toast.info("Une nouvelle réservation vient d'arriver !");
-            }
-          }
-
-          // For other changes, fetch to ensure data is updated
-          await fetchReservations();
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "subscriptions",
-        },
-        async (payload) => {
-          console.log("Realtime change detected for subscriptions:", payload);
-
-          // Handle INSERT - immediately add to notifications without waiting for full fetch
-          if (payload.eventType === "INSERT" && payload.new) {
-            const newSubscription = payload.new;
-            if (newSubscription.status === "En attente") {
-              // Fetch field name for notification message
-              const { data: fieldData } = await supabase
-                .from("fields")
-                .select("name")
-                .eq("id", newSubscription.field_id)
-                .single();
-
-              const fieldName = fieldData?.name || "Terrain inconnu";
-              const clientName =
-                newSubscription.client_name || "Client Inconnu";
-
-              const newNotification = {
-                id: newSubscription.id,
-                title: "Nouvel Abonnement",
-                message: `${clientName} s'est abonné à ${fieldName}`,
-                time: "Hebdo",
-                date: "Hebdomadaire",
-                status: newSubscription.status,
-                type: "subscription",
-                subscriptionId: newSubscription.id,
-                fieldId: newSubscription.field_id,
-              };
-
-              // Update notifications instantly
-              setNotifications((prev) => [newNotification, ...prev]);
-              setUnreadCount((prev) => prev + 1);
-              toast.info("Un nouvel abonnement vient d'être créé !");
-            }
-          }
-
-          // For other changes, fetch to ensure data is updated
-          await fetchSubscriptions();
-        },
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "reservations" }, async (payload) => {
+        if (payload.eventType === "INSERT") {
+          toast.info("Nouvelle réservation détectée !");
+        }
+        await fetchReservations();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "subscriptions" }, async (payload) => {
+        if (payload.eventType === "INSERT") {
+          toast.info("Nouvel abonnement détecté !");
+        }
+        await fetchSubscriptions();
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user, fetchReservations, fetchSubscriptions]);
 
-  useEffect(() => {
-    if (user) {
-      fetchFields();
-      // fetchReservations() and fetchSubscriptions() are now called in the realtime useEffect
-    }
-  }, [user, fetchFields]);
-
-  // --- FIELD ACTIONS ---
   const addField = useCallback(
-    async (newFieldData) => {
+    async (newFieldData, imageFile) => {
       try {
-        const numericPrice =
-          parseInt(String(newFieldData.price).replace(/[^0-9]/g, "")) || 0;
-        const insertPayload = {
-          proprietaire_id: user.id,
-          name: newFieldData.name,
-          description: newFieldData.description,
-          adress: newFieldData.location,
-          pelouse: newFieldData.type,
-          opening_hours: newFieldData.hours,
-          price_per_hour: numericPrice,
-        };
-
-        const { data: fieldData, error: fieldError } = await supabase
-          .from("fields")
-          .insert([insertPayload])
-          .select()
-          .single();
-
-        if (fieldError) throw fieldError;
-
-        if (
-          newFieldData.images &&
-          newFieldData.images.length > 0 &&
-          fieldData?.id
-        ) {
-          const imageInserts = newFieldData.images.map((url) => ({
-            terrain_id: fieldData.id,
-            url_image: url,
-          }));
-
-          const { error: imagesError } = await supabase
-            .from("field_images")
-            .insert(imageInserts);
-
-          if (imagesError)
-            console.error("Error inserting multiple images:", imagesError);
-        }
-
+        const field = await TerrainService.createTerrain(newFieldData, imageFile);
         await fetchFields();
-        return fieldData;
+        return field;
       } catch (error) {
-        console.error("Error adding field:", error.message);
+        toast.error(`Erreur : ${error.message}`);
         throw error;
       }
     },
-    [user, fetchFields],
+    [fetchFields],
   );
 
   const deleteField = useCallback(
     async (id) => {
       try {
-        // 1. Clean up linked data (Foreign Key dependencies)
-        // We use both field_id and terrain_id in different tables to be safe
-        const cleanups = [
-          { table: "field_images", col: "terrain_id" },
-          { table: "field_images", col: "field_id" }, // Added to match inconsistent column names
-          { table: "disponibilite", col: "field_id" },
-          { table: "reservations", col: "field_id" },
-          { table: "subscriptions", col: "field_id" },
-          { table: "avis", col: "terrain_id" },
-        ];
-
-        for (const cleanup of cleanups) {
-          const { error: cleanupError } = await supabase
-            .from(cleanup.table)
-            .delete()
-            .eq(cleanup.col, id);
-
-          if (cleanupError) {
-            console.warn(
-              `Warning deleting from ${cleanup.table}:`,
-              cleanupError.message,
-            );
-            // We don't throw here to try to delete as much as possible
-          }
-        }
-
-        // 2. Finally delete the field
-        const { error } = await supabase.from("fields").delete().eq("id", id);
-
-        if (error) {
-          console.error("Error deleting field:", error.message);
-          toast.error(
-            `Impossible de supprimer le terrain : ${error.message}. Il reste peut-être des données liées que vous n'avez pas le droit de supprimer.`,
-          );
-          throw error;
-        }
-
+        await TerrainService.deleteTerrain(id);
         setFields(fields.filter((f) => f.id !== id));
         toast.success("Terrain supprimé avec succès !");
       } catch (error) {
-        console.error("Delete operation failed:", error);
+        toast.error(`Erreur lors de la suppression : ${getSafeErrorMessage(error)}`);
         throw error;
       }
     },
@@ -552,37 +301,12 @@ export const DashboardProvider = ({ children }) => {
   const updateField = useCallback(
     async (id, updatedAttributes) => {
       try {
-        const numericPrice = updatedAttributes.price
-          ? parseInt(updatedAttributes.price.replace(/[^0-9]/g, ""))
-          : undefined;
-        const dbPayload = {};
-        if (updatedAttributes.name) dbPayload.name = updatedAttributes.name;
-        if (updatedAttributes.description)
-          dbPayload.description = updatedAttributes.description;
-        if (updatedAttributes.location)
-          dbPayload.adress = updatedAttributes.location;
-        if (updatedAttributes.type) dbPayload.pelouse = updatedAttributes.type;
-        if (updatedAttributes.hours)
-          dbPayload.opening_hours = updatedAttributes.hours;
-        if (numericPrice !== undefined) dbPayload.price_per_hour = numericPrice; // Corrected field name
-
-        const { error } = await supabase
-          .from("fields")
-          .update(dbPayload)
-          .eq("id", id);
-        if (error) throw error;
-
-        if (updatedAttributes.image && !updatedAttributes.skipImageUpdate) {
-          await supabase.from("field_images").delete().eq("terrain_id", id);
-          await supabase
-            .from("field_images")
-            .insert({ terrain_id: id, url_image: updatedAttributes.image });
-        }
-
+        await TerrainService.updateTerrain(id, updatedAttributes);
         await fetchFields();
+        toast.success("Terrain mis à jour !");
         return true;
       } catch (error) {
-        console.error("Error updating field:", error.message);
+        toast.error(`Erreur : ${error.message}`);
         throw error;
       }
     },
@@ -593,29 +317,12 @@ export const DashboardProvider = ({ children }) => {
   const updateReservationStatus = useCallback(
     async (id, status) => {
       try {
-        console.log(`Updating reservation ${id} to status: ${status}`);
-        const { data, error } = await supabase
-          .from("reservations")
-          .update({ status: status })
-          .eq("id", id)
-          .select();
-
-        if (error) {
-          console.error("Supabase error details:", JSON.stringify(error));
-          throw error;
-        }
-
-        if (!data || data.length === 0) {
-          console.warn("No rows were updated. This may be a RLS policy issue.");
-          throw new Error(
-            "La mise à jour a échoué. Vérifiez les permissions (RLS).",
-          );
-        }
-
+        await ReservationService.updateStatus(id, status);
+        toast.success("Statut mis à jour !");
         await fetchReservations();
         return true;
       } catch (error) {
-        console.error("Error updating reservation status:", error.message);
+        toast.error(`Erreur : ${error.message}`);
         throw error;
       }
     },
@@ -625,49 +332,12 @@ export const DashboardProvider = ({ children }) => {
   const updateSubscriptionStatus = useCallback(
     async (id, status) => {
       try {
-        console.log(`Updating subscription ${id} to status: ${status}`);
-        // 1. Update the subscription itself
-        const { data, error: subError } = await supabase
-          .from("subscriptions")
-          .update({ status: status })
-          .eq("id", id)
-          .select();
-
-        if (subError) {
-          console.error("Supabase error (sub):", subError);
-          throw subError;
-        }
-
-        if (!data || data.length === 0) {
-          throw new Error(
-            "Mise à jour refusée par la base de données (Vérifiez vos RLS).",
-          );
-        }
-
-        // 2. Proactively update the status of all linked reservations
-        const { error: resError } = await supabase
-          .from("reservations")
-          .update({
-            status:
-              status === "Confirmé"
-                ? "Confirmé"
-                : status === "Annulé"
-                  ? "Annulé"
-                  : status,
-          })
-          .eq("subscription_id", id);
-
-        if (resError)
-          console.warn(
-            "Failed to update linked reservations:",
-            resError.message,
-          );
-
+        await ReservationService.updateSubscriptionStatus(id, status);
+        toast.success("Abonnement mis à jour !");
         await fetchSubscriptions();
         await fetchReservations();
         return true;
       } catch (error) {
-        console.error("Error updating subscription status:", error.message);
         toast.error(`Erreur : ${error.message}`);
         throw error;
       }
@@ -675,28 +345,85 @@ export const DashboardProvider = ({ children }) => {
     [fetchSubscriptions, fetchReservations],
   );
 
-  const addManualReservation = useCallback(
+  const addOnSiteReservation = useCallback(
     async (data) => {
       try {
-        const { error } = await supabase.from("reservations").insert({
+        await ReservationService.createOnsiteReservation({
           field_id: data.fieldId,
           date: data.date,
           start_time: data.startTime,
           end_time: data.endTime,
-          total_price: data.amount || 0,
-          status: "Confirmé",
-          reservation_type: data.reservationType || "single",
+          total_price: Number(data.amount) || 0,
+          client_name: data.clientName,
+          client_phone: data.clientPhone,
+          reservation_type: data.reservationType || "onsite",
         });
 
-        if (error) throw error;
         await fetchReservations();
+        toast.success("Réservation ajoutée !");
         return true;
       } catch (error) {
-        console.error("Error adding manual reservation:", error.message);
+        toast.error(`Erreur : ${error.message}`);
         throw error;
       }
     },
     [fetchReservations],
+  );
+
+  const addManualReservation = addOnSiteReservation;
+
+  const addOnSiteSubscription = useCallback(
+    async (data) => {
+      try {
+        if (!data.fieldId) throw new Error("Aucun terrain sélectionné.");
+        
+        const newSub = await ReservationService.createSubscription({
+          field_id: data.fieldId,
+          client_name: data.clientName,
+          client_phone: data.clientPhone,
+          day_of_week: data.dayOfWeek,
+          start_time: data.startTime,
+          end_time: data.endTime,
+          start_date: data.startDate,
+          end_date: data.endDate,
+          total_amount: Number(data.amount) || 0,
+          status: "Confirmé",
+        });
+
+        if (newSub?.id) {
+          const startDate = new Date(data.startDate);
+          const totalSessions = (data.months || 1) * 4;
+          const sessionPrice = (Number(data.amount) || 0) / totalSessions;
+
+          // Création des sessions individuelles via OnSiteReservation pour valider la propriété
+          for (let i = 0; i < totalSessions; i++) {
+            const sessionDate = new Date(startDate);
+            sessionDate.setDate(startDate.getDate() + i * 7);
+
+            await ReservationService.createOnsiteReservation({
+              field_id: data.fieldId,
+              date: sessionDate.toISOString().split("T")[0],
+              start_time: data.startTime,
+              end_time: data.endTime,
+              total_price: sessionPrice, // Prix au prorata de l'abonnement
+              client_name: data.clientName,
+              client_phone: data.clientPhone,
+              reservation_type: "subscription",
+              subscription_id: newSub.id,
+            });
+          }
+        }
+
+        await fetchSubscriptions();
+        await fetchReservations();
+        toast.success("Abonnement créé avec succès !");
+        return true;
+      } catch (error) {
+        toast.error(`Erreur : ${error.message}`);
+        throw error;
+      }
+    },
+    [fetchSubscriptions, fetchReservations],
   );
 
   const toggleFieldStatus = useCallback(async () => {
@@ -851,16 +578,21 @@ export const DashboardProvider = ({ children }) => {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (user) {
-      const storageKey = `archived_reservations_${user.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(archivedIds));
-    }
-  }, [archivedIds, user]);
+  // (Replaced by the logic above)
 
   const toggleArchiveReservation = useCallback((id) => {
     const idStr = String(id);
     setArchivedIds((prev) => {
+      const isArchived = prev.includes(idStr);
+      return isArchived
+        ? prev.filter((hid) => String(hid) !== idStr)
+        : [...prev, idStr];
+    });
+  }, []);
+
+  const toggleArchiveSubscription = useCallback((id) => {
+    const idStr = String(id);
+    setArchivedSubIds((prev) => {
       const isArchived = prev.includes(idStr);
       return isArchived
         ? prev.filter((hid) => String(hid) !== idStr)
@@ -977,6 +709,7 @@ export const DashboardProvider = ({ children }) => {
       fields,
       reservations,
       subscriptions,
+      reservationTypes,
       stats,
       notifications,
       unreadCount,
@@ -1000,17 +733,21 @@ export const DashboardProvider = ({ children }) => {
       updateReservationStatus,
       updateSubscriptionStatus,
       addManualReservation,
+      addOnSiteReservation,
+      addOnSiteSubscription,
       toggleFieldStatus,
       fetchFields,
       fetchReservations,
-      uploadFieldImage,
-      uploadMultipleFieldImages,
       deleteFieldImage,
+      uploadMultipleFieldImages,
+      archivedSubIds,
+      toggleArchiveSubscription,
     }),
     [
       fields,
       reservations,
       subscriptions,
+      reservationTypes,
       stats,
       notifications,
       unreadCount,
@@ -1034,12 +771,14 @@ export const DashboardProvider = ({ children }) => {
       updateReservationStatus,
       updateSubscriptionStatus,
       addManualReservation,
+      addOnSiteReservation,
+      addOnSiteSubscription,
       toggleFieldStatus,
       fetchFields,
-      fetchReservations,
-      uploadFieldImage,
-      uploadMultipleFieldImages,
       deleteFieldImage,
+      uploadMultipleFieldImages,
+      archivedSubIds,
+      toggleArchiveSubscription,
     ],
   );
 

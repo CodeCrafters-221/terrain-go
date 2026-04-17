@@ -12,10 +12,33 @@ import {
   Tooltip,
   AreaChart,
   Area,
+  Legend,
 } from "recharts";
 
 // 🎨 Palette premium
 const COLORS = ["#f27f0d", "#ffb347", "#ffcc80", "#7d5a37", "#493622"];
+
+const renderPieLabel = ({ name, percent, x, y }) => {
+  if (!name || percent < 0.03) return null;
+  const shortName = name.length > 20 ? `${name.slice(0, 18)}...` : name;
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#FFF"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={10}
+    >
+      <tspan x={x} dy="0">
+        {shortName}
+      </tspan>
+      <tspan x={x} dy="1.4em">
+        {`${(percent * 100).toFixed(0)}%`}
+      </tspan>
+    </text>
+  );
+};
 
 //
 // ✨ TOOLTIP MODERNE
@@ -24,7 +47,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="backdrop-blur-xl bg-[#1a140d]/90 border border-[#493622] px-4 py-3 rounded-2xl shadow-2xl">
-        <p className="text-[#cbad90] text-[10px] uppercase tracking-widest mb-1">
+        <p className="text-[#cbad90] text-[8px] uppercase tracking-widest mb-1">
           {label || payload[0]?.name}
         </p>
 
@@ -55,14 +78,13 @@ export const RechartsPieChart = ({ data = [], isLoading }) => {
           data={data}
           dataKey="value"
           nameKey="name"
-          outerRadius={110}
+          outerRadius={105}
           innerRadius={60} // 👈 effet donut
           paddingAngle={4}
           isAnimationActive
           animationDuration={800}
-          label={({ name, percent }) =>
-            `${name} ${(percent * 100).toFixed(0)}%`
-          }
+          labelLine={false}
+          label={renderPieLabel}
         >
           {data.map((_, index) => (
             <Cell
@@ -77,6 +99,16 @@ export const RechartsPieChart = ({ data = [], isLoading }) => {
         </Pie>
 
         <Tooltip content={<CustomTooltip />} />
+        <Legend
+          layout="horizontal"
+          align="center"
+          verticalAlign="bottom"
+          iconType="circle"
+          formatter={(value) =>
+            value.length > 24 ? `${value.slice(0, 22)}...` : value
+          }
+          wrapperStyle={{ marginTop: 10 }}
+        />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -146,10 +178,17 @@ export const RechartsAreaChart = ({ data = [], isLoading }) => {
         <YAxis tick={{ fill: "#cbad90", fontSize: 11 }} axisLine={false} />
 
         <Tooltip content={<CustomTooltip />} />
+        <Legend 
+          layout="horizontal" 
+          align="top" 
+          verticalAlign="top" 
+          wrapperStyle={{ paddingBottom: '20px' }}
+        />
 
         <Area
           type="monotone"
-          dataKey="singleRevenue"
+          dataKey="matchUnique"
+          name="Match Unique"
           stroke="#f27f0d"
           fill="url(#colorSingle)"
           strokeWidth={3}
@@ -158,7 +197,8 @@ export const RechartsAreaChart = ({ data = [], isLoading }) => {
 
         <Area
           type="monotone"
-          dataKey="subRevenue"
+          dataKey="abonnement"
+          name="abonnement"
           stroke="#3b82f6"
           fill="url(#colorSub)"
           strokeWidth={3}

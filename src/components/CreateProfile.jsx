@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";

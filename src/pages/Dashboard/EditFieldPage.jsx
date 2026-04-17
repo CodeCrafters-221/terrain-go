@@ -245,11 +245,11 @@ const EditFieldPage = () => {
   const labelClasses = "text-white text-sm font-medium mb-1 block";
 
   return (
-    <div className="flex flex-col gap-8 max-w-3xl mx-auto w-full pb-20">
-      <h2 className="text-white text-3xl font-bold">Modifier le Terrain</h2>
+    <div className="flex flex-col gap-6 md:gap-8 max-w-3xl mx-auto w-full pb-20 px-0 sm:px-4">
+      <h2 className="text-white text-2xl md:text-3xl font-black italic tracking-tight px-4 sm:px-0">Modifier le Terrain</h2>
 
-      <div className="bg-surface-dark rounded-2xl border border-surface-highlight p-8">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-4 sm:p-8">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 md:gap-6">
           {/* Name */}
           <div>
             <label htmlFor="name" className={labelClasses}>
@@ -267,7 +267,7 @@ const EditFieldPage = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
             {/* Type */}
             <div>
               <label htmlFor="type" className={labelClasses}>
@@ -348,28 +348,28 @@ const EditFieldPage = () => {
           </div>
 
           {/* ═══ SECTION GALERIE PHOTOS ═══ */}
-          <div className="border-t border-surface-highlight pt-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="border-t border-[#493622] pt-6">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-white text-lg font-bold mb-1">
+                <h3 className="text-white text-lg font-black mb-1">
                   📸 Galerie Photos
                 </h3>
-                <p className="text-text-secondary text-xs">
-                  Gérez les photos du terrain (Sélection multiple possible).
+                <p className="text-[#cbad90] text-xs italic">
+                  Gérez les photos du terrain (Sélection multiple).
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage}
-                className="flex items-center gap-2 bg-primary-new/10 text-primary-new border border-primary-new/30 px-4 py-2 rounded-xl text-sm font-bold hover:bg-primary-new/20 transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-2 bg-primary/10 text-primary border border-primary/30 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-primary/20 transition-all disabled:opacity-50 active:scale-95"
               >
                 {isUploadingImage ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-new"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                 ) : (
                   <Plus className="w-4 h-4" />
                 )}
-                Ajouter des photos
+                <span>Ajouter des photos</span>
               </button>
               <input
                 type="file"
@@ -381,22 +381,22 @@ const EditFieldPage = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
               {fieldImages.map((img, idx) => (
                 <div
                   key={idx}
-                  className="relative group aspect-video rounded-xl overflow-hidden border border-[#493622]"
+                  className="relative group aspect-video rounded-xl overflow-hidden border border-[#493622] bg-[#1a1208]"
                 >
                   <img
                     src={img.url_image}
                     alt={`Terrain ${idx + 1}`}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2 backdrop-blur-[2px]">
                     <button
                       type="button"
                       onClick={() => handleReplaceImageTrigger(img.url_image)}
-                      className="bg-primary-new text-background-dark p-2 rounded-full hover:bg-primary-new/80 transition-colors shadow-lg"
+                      className="bg-primary text-[#231a10] p-2 rounded-full hover:scale-110 active:scale-90 transition-all shadow-lg"
                       title="Modifier/Remplacer"
                     >
                       <Pencil className="w-4 h-4" />
@@ -404,7 +404,7 @@ const EditFieldPage = () => {
                     <button
                       type="button"
                       onClick={() => handleDeleteImage(img.url_image)}
-                      className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                      className="bg-red-600 text-white p-2 rounded-full hover:scale-110 active:scale-90 transition-all shadow-lg"
                       title="Supprimer"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -413,27 +413,27 @@ const EditFieldPage = () => {
                 </div>
               ))}
               {fieldImages.length === 0 && !isUploadingImage && (
-                <div className="col-span-full py-8 flex flex-col items-center justify-center border border-dashed border-surface-highlight rounded-xl bg-background-dark/50">
-                  <Camera className="w-8 h-8 text-text-muted mb-2" />
-                  <p className="text-text-secondary text-sm">
+                <div className="col-span-full py-10 flex flex-col items-center justify-center border border-dashed border-[#493622] rounded-2xl bg-[#1a1208]/30">
+                  <Camera className="w-10 h-10 text-[#5d452b] mb-2" />
+                  <p className="text-[#cbad90] text-sm italic">
                     Aucune photo dans la galerie
                   </p>
                 </div>
               )}
               {isUploadingImage && (
-                <div className="aspect-video rounded-xl border border-dashed border-primary-new bg-primary-new/5 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-new"></div>
+                <div className="aspect-video rounded-xl border border-dashed border-primary bg-primary/5 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               )}
             </div>
           </div>
 
           {/* ═══ SECTION DISPONIBILITÉS ═══ */}
-          <div className="border-t border-surface-highlight pt-6">
-            <h3 className="text-white text-lg font-bold mb-1">
+          <div className="border-t border-[#493622] pt-6">
+            <h3 className="text-white text-lg font-black mb-1">
               📅 Disponibilités
             </h3>
-            <p className="text-text-secondary text-xs mb-4">
+            <p className="text-[#cbad90] text-xs mb-6 italic">
               Définissez les jours et heures d'ouverture du terrain.
             </p>
 
@@ -441,56 +441,58 @@ const EditFieldPage = () => {
               {schedule.map((day, index) => (
                 <div
                   key={day.day_of_week}
-                  className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-all ${
+                  className={`flex flex-col xs:flex-row xs:items-center gap-3 p-3 rounded-2xl border transition-all ${
                     day.enabled
-                      ? "bg-background-dark border-primary-new/40"
-                      : "bg-background-dark/50 border-surface-highlight/50 opacity-60"
+                      ? "bg-[#231a10] border-primary/40"
+                      : "bg-[#231a10]/50 border-[#493622]/50 opacity-60"
                   }`}
                 >
-                  <div className="flex items-center justify-center w-8 sm:w-10 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateScheduleDay(index, "enabled", !day.enabled)
-                      }
-                      className={`w-8 h-4 sm:w-10 sm:h-6 rounded-full relative transition-all flex-shrink-0 ${
-                        day.enabled ? "bg-primary-new" : "bg-surface-highlight"
+                  <div className="flex items-center justify-between xs:justify-start gap-4">
+                    <div className="flex items-center justify-center shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateScheduleDay(index, "enabled", !day.enabled)
+                        }
+                        className={`w-10 h-6 rounded-full relative transition-all flex-shrink-0 ${
+                          day.enabled ? "bg-primary" : "bg-[#493622]"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                            day.enabled ? "translate-x-4.5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <span
+                      className={`text-sm font-bold xs:w-20 shrink-0 ${
+                        day.enabled ? "text-white" : "text-[#5d452b]"
                       }`}
                     >
-                      <span
-                        className={`absolute top-0.5 w-3 h-3 sm:w-5 sm:h-5 bg-white rounded-full shadow transition-transform ${
-                          day.enabled ? "translate-x-[18px] sm:translate-x-4" : "translate-x-0.5"
-                        }`}
-                      />
-                    </button>
+                      {day.label}
+                    </span>
                   </div>
 
-                  <span
-                    className={`text-[11px] sm:text-sm font-semibold w-16 sm:w-20 shrink-0 ${
-                      day.enabled ? "text-white" : "text-text-muted"
-                    }`}
-                  >
-                    {day.label}
-                  </span>
-
                   {day.enabled && (
-                    <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
+                    <div className="flex items-center gap-2 flex-1 justify-end">
                       <input
                         type="time"
                         value={day.start_time}
                         onChange={(e) =>
                           updateScheduleDay(index, "start_time", e.target.value)
                         }
-                        className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
+                        className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold"
                       />
-                      <span className="text-text-secondary text-[10px] sm:text-xs">à</span>
+                      <span className="text-primary text-xs font-black">→</span>
                       <input
                         type="time"
                         value={day.end_time}
                         onChange={(e) =>
                           updateScheduleDay(index, "end_time", e.target.value)
                         }
-                        className="px-1 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-surface-dark text-white text-[11px] sm:text-sm border border-surface-highlight focus:border-primary-new focus:outline-none w-[68px] sm:w-28 text-center"
+                        className="px-3 py-2 rounded-xl bg-[#1a1208] text-white text-sm border border-[#493622] focus:border-primary focus:outline-none flex-1 xs:flex-none xs:w-24 text-center font-bold"
                       />
                     </div>
                   )}
@@ -500,22 +502,27 @@ const EditFieldPage = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end gap-4 mt-6 pt-6 border-t border-surface-highlight">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6 pt-6 border-t border-[#493622]">
             <button
               type="button"
               onClick={() => navigate("/dashboard/terrains")}
-              className="px-6 py-3 rounded-xl border border-surface-highlight text-text-secondary hover:bg-surface-highlight hover:text-white transition-colors"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl border border-[#493622] text-[#cbad90] hover:bg-[#493622] transition-colors font-bold"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="bg-primary-new text-background-dark px-8 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50"
+              className="w-full sm:w-auto bg-primary text-[#231a10] px-8 py-3 rounded-xl font-black hover:shadow-[0_0_20px_rgba(242,127,13,0.5)] transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
             >
-              {isLoading
-                ? "Enregistrement..."
-                : "Enregistrer les modifications"}
+              {isLoading ? (
+                <>
+                  <div className="size-4 border-2 border-[#231a10]/30 border-t-[#231a10] rounded-full animate-spin"></div>
+                  <span>Enregistrement...</span>
+                </>
+              ) : (
+                "Enregistrer les modifications"
+              )}
             </button>
           </div>
         </form>

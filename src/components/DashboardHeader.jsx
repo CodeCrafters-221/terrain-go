@@ -82,12 +82,16 @@ const DashboardHeader = ({ onMenuClick }) => {
                           setShowNotifs(false);
                           // Mark as read and highlight the reservation
                           markNotificationAsRead(notif.id, {
-                            reservationId:
-                              notif.reservationId || notif.subscriptionId,
+                            reservationId: notif.type === "reservation" ? notif.id : undefined,
+                            subscriptionId: notif.type === "subscription" ? notif.id : undefined,
                             type: notif.type,
                           });
-                          // Navigate to reservations page
-                          navigate("/dashboard/reservations");
+                          // Navigate to the proper page based on type
+                          if (notif.type === "subscription") {
+                            navigate("/dashboard/abonnements");
+                          } else {
+                            navigate("/dashboard/reservations");
+                          }
                         }}
                         className="p-4 border-b border-[#493622]/50 hover:bg-[#342618] transition-colors cursor-pointer group"
                       >
@@ -130,11 +134,11 @@ const DashboardHeader = ({ onMenuClick }) => {
                   )}
                 </div>
                 <div
-                  onClick={() => navigate("/dashboard/reservations")}
+                  onClick={() => navigate("/dashboard/revenues")}
                   className="p-3 text-center bg-[#231a10]/50 hover:bg-[#231a10] cursor-pointer transition-colors"
                 >
                   <span className="text-[#f27f0d] text-xs font-bold">
-                    Voir toutes les réservations
+                    Voir l'historique complet
                   </span>
                 </div>
               </div>

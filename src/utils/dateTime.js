@@ -117,6 +117,7 @@ export const isPaidStatus = (status) => {
 export const isSubscription = (res) =>
   !!(
     res?.subscription_id ||
+    res?.subscriptionId ||
     res?.reservation_type === "subscription" ||
     res?.reservationType === "subscription"
   );

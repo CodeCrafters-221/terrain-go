@@ -1,22 +1,16 @@
 import { supabase } from "./supabaseClient";
+import { getSafeErrorMessage } from "../utils/security";
 import {
   toMinutes,
   getDayOfWeek,
   getDayName,
-  getDayShortName,
+  getDayShortName as getDayShortNameUtil,
   getCurrentDateTimeInfo,
   TIME_CONSTANTS,
 } from "../utils/dateTime";
 
 /**
- * Service de gestion des disponibilit�s (table disponibilite)
- *
- * Table schema:
- *   id          - UUID (auto)
- *   field_id    - UUID (FK vers fields)
- *   day_of_week - integer (0=Dimanche, 1=Lundi, ..., 6=Samedi)
- *   start_time  - time (ex: "08:00:00")
- *   end_time    - time (ex: "22:00:00")
+ * Service de gestion des disponibilités (table disponibilite)
  */
 export const AvailabilityService = {
   // Helper to get day of week (0-6) from "YYYY-MM-DD"
@@ -31,7 +25,22 @@ export const AvailabilityService = {
     return date.getDay();
   },
 
-  // --- FETCH disponibilit�s d'un terrain ---
+  getDayShortName(dayOfWeek) {
+    return getDayShortNameUtil(dayOfWeek);
+  },
+
+  calculateEndTime(startTime, durationHours) {
+    if (!startTime) return "";
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const date = new Date(2000, 0, 1, hours, minutes);
+    const durationInMinutes = Math.round(Number(durationHours) * 60);
+    date.setMinutes(date.getMinutes() + durationInMinutes);
+    const h = String(date.getHours()).padStart(2, "0");
+    const m = String(date.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  },
+
+  // --- FETCH disponibilités d'un terrain ---
   async getFieldAvailability(fieldId) {
     const { data, error } = await supabase
       .from("disponibilite")
@@ -40,21 +49,19 @@ export const AvailabilityService = {
       .order("day_of_week", { ascending: true })
       .order("start_time", { ascending: true });
 
-    if (error) throw error;
+    if (error) throw new Error(getSafeErrorMessage(error));
     return data || [];
   },
 
-  // --- SET disponibilit�s d'un terrain (bulk insert apr�s suppression) ---
+  // --- SET disponibilités d'un terrain ---
   async setFieldAvailability(fieldId, availabilities) {
-    // 1. Supprimer l'ancienne disponibilit�
     const { error: deleteError } = await supabase
       .from("disponibilite")
       .delete()
       .eq("field_id", fieldId);
 
-    if (deleteError) throw deleteError;
+    if (deleteError) throw new Error(getSafeErrorMessage(deleteError));
 
-    // 2. Ins�rer les nouvelles disponibilit�s
     if (availabilities.length === 0) return [];
 
     const rows = availabilities.map((a) => ({
@@ -69,16 +76,14 @@ export const AvailabilityService = {
       .insert(rows)
       .select();
 
-    if (insertError) throw insertError;
+    if (insertError) throw new Error(getSafeErrorMessage(insertError));
     return data;
   },
 
-  // --- GET disponibilit� pour un terrain � une date pr�cise ---
+  // --- GET disponibilité pour un terrain à une date précise ---
   async getAvailabilityForDate(fieldId, dateString) {
     const dayOfWeek = this.getDayOfWeek(dateString);
     if (dayOfWeek === -1) return [];
-
-    console.log(`📅 getAvailabilityForDate: ${dateString} -> day ${dayOfWeek}`);
 
     try {
       const { data, error } = await supabase
@@ -87,29 +92,16 @@ export const AvailabilityService = {
         .eq("field_id", fieldId)
         .eq("day_of_week", dayOfWeek);
 
-      if (error) {
-        if (error.code === "22P02") {
-          console.warn(`⚠️ Format UUID invalide pour field_id: ${fieldId}`);
-          return [];
-        }
-        throw error;
-      }
+      if (error) throw error;
       return data || [];
     } catch (err) {
-      console.error("? Erreur getAvailabilityForDate:", err);
+      console.error("Error getAvailabilityForDate:", err);
       return [];
     }
   },
 
-  // --- V�rifier si un terrain a des disponibilit�s d�finies ---
+  // --- Vérifier si un terrain a des disponibilités définies ---
   async hasDefinedAvailability(fieldId) {
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        fieldId,
-      );
-    const isNumeric = /^\d+$/.test(fieldId);
-    if (!isUuid && !isNumeric) return false;
-
     try {
       const { data, error } = await supabase
         .from("disponibilite")
@@ -117,214 +109,89 @@ export const AvailabilityService = {
         .eq("field_id", fieldId)
         .limit(1);
 
-      if (error) {
-        if (error.code === "22P02") return false; // Invalid UUID
-        throw error;
-      }
+      if (error) return false;
       return data && data.length > 0;
     } catch (err) {
-      console.warn("?? hasDefinedAvailability error:", err.message || err);
       return false;
     }
   },
 
-  // --- HELPER : Convert "HH:MM" to minutes from start of day ---
   toMinutes(timeStr) {
     if (!timeStr) return 0;
     const [h, m] = timeStr.split(":").map(Number);
-    // Handle midnight as 24:00 for end times in comparisons
-    return h * 60 + (m || 0);
+    const minutes = h * 60 + (m || 0);
+    return minutes === 0 && timeStr.includes("00:00") ? 1440 : minutes;
   },
 
-  // --- GET cr�neaux libres pour un terrain � une date pr�cise ---
+  // --- GET créneaux libres ---
   async getAvailableSlots(fieldId, dateString, durationHours = 1) {
-    const EXPIRATION_LIMIT_MINUTES = 20;
-    const BUFFER_TIME_MINUTES = 10;
-
     const DEFAULT_HOURS = [{ start_time: "08:00:00", end_time: "00:00:00" }];
-    let availability = []; // On part d'un terrain FERM� par d�faut pour les vrais terrains
+    let availability = [];
 
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        fieldId,
-      );
-    const isNumeric = /^\d+$/.test(fieldId);
-    const isReal = isUuid || isNumeric;
-
-    if (isReal) {
-      try {
-        const hasDefined = await this.hasDefinedAvailability(fieldId);
-
-        if (hasDefined) {
-          const dayAvailability = await this.getAvailabilityForDate(
-            fieldId,
-            dateString,
-          );
-          if (dayAvailability && dayAvailability.length > 0) {
-            availability = dayAvailability;
-          } else {
-            // EXPLICITEMENT FERM� : Le terrain a des horaires, mais rien pour ce jour
-            return [];
-          }
-        } else {
-          // FALLBACK : Terrain sans aucune config -> on ouvre par d�faut
-          availability = DEFAULT_HOURS;
-        }
-      } catch (err) {
-        console.error("? Crash checking availability, assuming closed:", err);
+    const hasDefined = await this.hasDefinedAvailability(fieldId);
+    if (hasDefined) {
+      const dayAvailability = await this.getAvailabilityForDate(fieldId, dateString);
+      if (dayAvailability && dayAvailability.length > 0) {
+        availability = dayAvailability;
+      } else {
         return [];
       }
     } else {
-      // Demo / Mock (IDs type 'default-1', 'p1'...)
       availability = DEFAULT_HOURS;
     }
 
-    // --- D�terminer si c'est aujourd'hui pour bloquer les cr�neaux pass�s ---
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    const todayStr = `${year}-${month}-${day}`;
+    const todayStr = now.toISOString().split("T")[0];
     const currentMins = now.getHours() * 60 + now.getMinutes();
 
-    let reservations = [];
-    let subscriptions = [];
+    const [resResult, subResult] = await Promise.all([
+      supabase.from("reservations").select("start_time, end_time, status").eq("field_id", fieldId).eq("date", dateString).neq("status", "Annulé").neq("status", "Expiré"),
+      supabase.from("subscriptions").select("start_time, end_time").eq("field_id", fieldId).eq("day_of_week", this.getDayOfWeek(dateString)).lte("start_date", dateString).gte("end_date", dateString).in("status", ["active", "Confirmé", "En attente de paiement", "Payé"])
+    ]);
 
-    try {
-      const targetDayOfWeek = this.getDayOfWeek(dateString);
+    const reservations = resResult.data || [];
+    const subscriptions = subResult.data || [];
 
-      const reservationsQuery = supabase
-        .from("reservations")
-        .select("start_time, end_time, status, created_at")
-        .eq("field_id", fieldId)
-        .eq("date", dateString)
-        .neq("status", "Annul�")
-        .neq("status", "Expir�");
-
-      const subscriptionsQuery = supabase
-        .from("subscriptions")
-        .select("start_time, end_time, start_date, end_date")
-        .eq("field_id", fieldId)
-        .eq("day_of_week", targetDayOfWeek)
-        .in("status", ["active", "Confirm�", "En attente de paiement", "Pay�"])
-        .lte("start_date", dateString)
-        .gte("end_date", dateString);
-
-      // Execute both queries
-      const [resResult, subResult] = await Promise.all([
-        reservationsQuery,
-        subscriptionsQuery,
-      ]);
-
-      if (resResult.error) {
-        console.error("? Error fetching reservations:", resResult.error);
-      } else {
-        reservations = resResult.data || [];
-        // Filter out expired pending reservations
-        reservations = reservations.filter((res) => {
-          if (res.status === "En attente de paiement") {
-            const createdMs = new Date(res.created_at).getTime();
-            const minutesSinceCreation =
-              (now.getTime() - createdMs) / (1000 * 60);
-            return minutesSinceCreation < EXPIRATION_LIMIT_MINUTES;
-          }
-          return true;
-        });
-      }
-
-      if (subResult.error) {
-        console.error("? Error fetching subscriptions:", subResult.error);
-      } else {
-        subscriptions = subResult.data || [];
-      }
-    } catch (err) {
-      console.error("Error fetching availability data:", err);
-    }
-
-    // --- Fusionner les plages d'ouverture pour le jour J ---
-    const mergedAvailability = [];
-    if (availability.length > 0) {
-      const sorted = [...availability].sort(
-        (a, b) => this.toMinutes(a.start_time) - this.toMinutes(b.start_time),
-      );
-
-      let current = { ...sorted[0] };
-      for (let i = 1; i < sorted.length; i++) {
-        const next = sorted[i];
-        if (
-          this.toMinutes(next.start_time) <= this.toMinutes(current.end_time)
-        ) {
-          // Fusionner les plages qui se chevauchent
-          current.end_time = next.end_time;
-        } else {
-          mergedAvailability.push(current);
-          current = { ...next };
-        }
-      }
-      mergedAvailability.push(current);
-    }
-
-    // --- G�n�rer les cr�neaux disponibles ---
-    const availableSlots = [];
+    const slots = [];
     const durationMins = durationHours * 60;
 
-    for (const slot of mergedAvailability) {
-      const slotStartMins = this.toMinutes(slot.start_time);
-      const slotEndMins = this.toMinutes(slot.end_time);
+    for (const range of availability) {
+      const rangeStart = this.toMinutes(range.start_time);
+      const rangeEnd = this.toMinutes(range.end_time);
 
-      // Pour chaque plage d'ouverture, g�n�rer des cr�neaux de 1h
-      for (
-        let startMins = slotStartMins;
-        startMins + durationMins <= slotEndMins;
-        startMins += 60
-      ) {
+      for (let startMins = rangeStart; startMins + durationMins <= rangeEnd; startMins += 60) {
         const endMins = startMins + durationMins;
+        const timeSlot = `${String(Math.floor(startMins / 60)).padStart(2, "0")}:${String(startMins % 60).padStart(2, "0")}`;
 
-        // V�rifier si c'est aujourd'hui et si le cr�neau n'est pas d�j� pass�
-        if (dateString === todayStr) {
-          if (endMins <= currentMins + BUFFER_TIME_MINUTES) {
-            continue; // Cr�neau pass�
-          }
-        }
-
-        // V�rifier les conflits avec les r�servations existantes
-        const hasReservationConflict = reservations.some((res) => {
-          const resStart = this.toMinutes(res.start_time);
-          const resEnd = this.toMinutes(res.end_time);
-          return !(endMins <= resStart || startMins >= resEnd);
+        const isPast = dateString === todayStr && endMins <= currentMins + 10;
+        const hasConflict = [...reservations, ...subscriptions].some(b => {
+          const bStart = this.toMinutes(b.start_time);
+          const bEnd = this.toMinutes(b.end_time);
+          return !(endMins <= bStart || startMins >= bEnd);
         });
 
-        // V�rifier les conflits avec les abonnements
-        const hasSubscriptionConflict = subscriptions.some((sub) => {
-          const subStart = this.toMinutes(sub.start_time);
-          const subEnd = this.toMinutes(sub.end_time);
-          return !(endMins <= subStart || startMins >= subEnd);
-        });
-
-        if (!hasReservationConflict && !hasSubscriptionConflict) {
-          const startTime = `${String(Math.floor(startMins / 60)).padStart(2, "0")}:${String(startMins % 60).padStart(2, "0")}`;
-          const endTime = `${String(Math.floor(endMins / 60)).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`;
-
-          availableSlots.push({
-            start_time: startTime,
-            end_time: endTime,
-            duration: durationHours,
-          });
-        }
+        slots.push({ time: timeSlot, available: !isPast && !hasConflict });
       }
     }
-
-    return availableSlots;
+    return slots;
   },
 
-  // --- HELPER : Validation d'ID ---
-  _isValidId(id) {
-    if (!id) return false;
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        id,
-      );
-    const isNumeric = /^\d+$/.test(id);
-    return isUuid || isNumeric;
-  },
+  async checkOverlap(fieldId, date, startTime, endTime) {
+    const startMins = this.toMinutes(startTime);
+    const endMins = this.toMinutes(endTime);
+    const dayOfWeek = this.getDayOfWeek(date);
+
+    const [resResult, subResult] = await Promise.all([
+      supabase.from("reservations").select("start_time, end_time").eq("field_id", fieldId).eq("date", date).neq("status", "Annulé").neq("status", "Expiré"),
+      supabase.from("subscriptions").select("start_time, end_time").eq("field_id", fieldId).eq("day_of_week", dayOfWeek).lte("start_date", date).gte("end_date", date).in("status", ["active", "Confirmé", "En attente de paiement", "Payé"])
+    ]);
+
+    const conflicts = [...(resResult.data || []), ...(subResult.data || [])];
+    for (const b of conflicts) {
+      if (!(endMins <= this.toMinutes(b.start_time) || startMins >= this.toMinutes(b.end_time))) {
+        return { available: false, reason: "Ce créneau chevauche une réservation ou un abonnement existant." };
+      }
+    }
+    return { available: true };
+  }
 };

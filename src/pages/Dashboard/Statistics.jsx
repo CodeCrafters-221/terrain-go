@@ -163,7 +163,7 @@ const Statistics = () => {
 
     return {
       monthlyRevenue,
-      activeReservations: activeRes.length,
+      activeReservations: activeRes.length + paidSubs.length,
       totalClients: clientSet.size,
       occupancyRate: `${occupancy}%`,
       fieldDistributionData,
@@ -189,11 +189,11 @@ const Statistics = () => {
   };
 
   return (
-    <div className="flex flex-col gap-10 pb-10">
-      {/* HEADER inchangé */}
+    <div className="flex flex-col gap-6 md:gap-10 pb-10">
+      {/* HEADER */}
       <div className="flex flex-col">
         <div className="flex items-center gap-2">
-          <h2 className="text-white text-2xl md:text-3xl font-black">
+          <h2 className="text-white text-2xl md:text-3xl font-black italic">
             Analyse Approfondie
           </h2>
           <span className="size-2 rounded-full bg-[#0bda16] animate-pulse"></span>
@@ -201,13 +201,13 @@ const Statistics = () => {
       </div>
 
       {/* CHARTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-8">
-          <h3 className="text-white text-xl font-black mb-8 italic">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-4 sm:p-8">
+          <h3 className="text-white text-lg md:text-xl font-black mb-4 md:mb-8 italic">
             Répartition par Terrain
           </h3>
 
-          <Suspense fallback={<div className="text-center">Chargement...</div>}>
+          <Suspense fallback={<div className="text-center py-10 text-[#cbad90]">Chargement du graphique...</div>}>
             <RechartsPieChart
               data={realStats.fieldDistributionData}
               isLoading={false}
@@ -215,12 +215,12 @@ const Statistics = () => {
           </Suspense>
         </div>
 
-        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-8">
-          <h3 className="text-white text-xl font-black mb-8 italic">
+        <div className="bg-[#2c241b] rounded-3xl border border-[#493622] p-4 sm:p-8">
+          <h3 className="text-white text-lg md:text-xl font-black mb-4 md:mb-8 italic">
             Affluence par Créneau
           </h3>
 
-          <Suspense fallback={<div className="text-center">Chargement...</div>}>
+          <Suspense fallback={<div className="text-center py-10 text-[#cbad90]">Chargement du graphique...</div>}>
             <RechartsBarChartStats
               data={realStats.hourlyAffluenceData}
               isLoading={false}

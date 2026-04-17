@@ -31,39 +31,92 @@ const isPaidStatus = (status) =>
     (status || "").toLowerCase(),
   );
 
+// Fonction pour formater le montant avec espaces
+const formatAmount = (amount) => {
+  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+};
+const filterTransactionsByPeriod = (transactions, period) => {
+  if (period === "all") return transactions;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  return transactions.filter((tx) => {
+    const txDate = new Date(tx.date);
+    if (isNaN(txDate.getTime())) return false;
+
+    switch (period) {
+      case "day":
+        return txDate >= today;
+      case "week": {
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        return txDate >= weekStart;
+      }
+      case "month": {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return txDate >= monthStart;
+      }
+      default:
+        return true;
+    }
+  });
+};
+
 const Revenues = () => {
-  const { reservations = [], subscriptions = [] } = useDashboard();
+  const { 
+    reservations = [], 
+    subscriptions = [], 
+    archivedIds = [] 
+  } = useDashboard();
+  
   const [currentPage, setCurrentPage] = useState(1);
+  const [periodFilter, setPeriodFilter] = useState("all"); // "all", "day", "week", "month"
   const itemsPerPage = 6;
 
-  const transactions = useMemo(() => {
-    const res = reservations.map((r) => {
-      const isSub = !!(
-        r?.subscription_id ||
-        r?.reservation_type === "subscription" ||
-        r?.reservationType === "subscription"
-      );
+  const allTransactions = useMemo(() => {
+    // 1. Mapper toutes les réservations (Matchs Uniques et Séances d'Abonnement)
+    const res = reservations
+      .filter(r => !archivedIds.includes(String(r.id)))
+      .filter(r => r.reservation_type !== "subscription" && r.reservationType !== "subscription" && !r.subscription_id && !r.subscriptionId)
+      .map((r) => {
+        const amount = parseAmount(r);
+        // Utiliser originalDate si dispo car 'date' peut être déjà formatée en FR
+        const rawDate = r?.originalDate || r?.date || r?.created_at;
+        const date = normalizeDate(rawDate);
+        
+        return {
+          id: r?.id,
+          client: r?.clientName || "Client Inconnu",
+          amount,
+          status: r?.status || "Inconnu",
+          date,
+          type: "match",
+          field: r?.terrainName || r?.fieldName || "Terrain Inconnu",
+          subscriptionId: r?.subscriptionId || r?.subscription_id,
+        };
+      })
+      .filter(tx => tx.date !== "Date Invalide");
 
-      return {
-        id: r?.id,
-        client: r?.clientName || r?.userName || "Client Inconnu",
-        amount: parseAmount(r),
-        status: r?.status || "Inconnu",
-        date: normalizeDate(r?.date || r?.created_at),
-        type: isSub ? "subscription" : "match",
-      };
-    });
-
-    const subs = subscriptions.map((s) => ({
-      id: s?.id,
-      client: s?.clientName || "Abonné Inconnu",
-      amount: parseAmount(s),
-      status: s?.status || "Inconnu",
-      date: normalizeDate(
-        s?.createdAt || s?.created_at || s?.startDate || s?.start_date,
-      ),
-      type: "subscription",
-    }));
+    // 2. Mapper tous les abonnements
+    const subs = subscriptions
+      .filter(s => !archivedIds.includes(String(s.id)))
+      .map((s) => {
+        const amount = parseAmount(s);
+        const rawDate = s?.startDate || s?.createdAt || s?.created_at || s?.date;
+        const date = normalizeDate(rawDate);
+        
+        return {
+          id: s?.id,
+          client: s?.clientName || "Abonné Inconnu",
+          amount,
+          status: s?.status || "Inconnu",
+          date,
+          type: "subscription",
+          field: s?.fieldName || "Tous les terrains",
+        };
+      })
+      .filter(tx => tx.date !== "Date Invalide");
 
     // Fusion et tri par date DESC
     return [...res, ...subs].sort((a, b) => {
@@ -71,15 +124,23 @@ const Revenues = () => {
       const dateB = b.date === "Date Inconnue" ? 0 : new Date(b.date).getTime();
       return dateB - dateA;
     });
-  }, [reservations, subscriptions]);
+  }, [reservations, subscriptions, archivedIds]);
+
+  const transactions = useMemo(() => {
+    return filterTransactionsByPeriod(allTransactions, periodFilter);
+  }, [allTransactions, periodFilter]);
 
   // Calcul des totaux par catégorie
   const summary = useMemo(() => {
     return transactions.reduce(
       (acc, tx) => {
         if (isPaidStatus(tx.status)) {
-          if (tx.type === "subscription") acc.subTotal += tx.amount;
-          else acc.matchTotal += tx.amount;
+          if (tx.type === "subscription") {
+            acc.subTotal += tx.amount;
+          } else if (!tx.subscriptionId) {
+            // Uniquement les matchs uniques (pas les séances d'abonnement)
+            acc.matchTotal += tx.amount;
+          }
         }
         return acc;
       },
@@ -101,6 +162,7 @@ const Revenues = () => {
     const headers = [
       "ID",
       "Client",
+      "Terrain",
       "Montant (CFA)",
       "Statut",
       "Date",
@@ -110,16 +172,30 @@ const Revenues = () => {
     const rows = transactions.map((t) => [
       t.id,
       t.client,
+      t.field,
       t.amount,
       t.status,
       t.date,
       t.type === "subscription" ? "Abonnement" : "Match Unique",
     ]);
 
-    // Construction du CSV avec guillemets pour éviter que tout soit mélangé
+    // Construction du CSV avec virgules (format Excel standard)
     const csvContent = [headers, ...rows]
       .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"),
+        row
+          .map((cell) => {
+            // Échapper les guillemets et entourer de guillemets si nécessaire
+            const cellStr = String(cell);
+            if (
+              cellStr.includes(",") ||
+              cellStr.includes('"') ||
+              cellStr.includes("\n")
+            ) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          })
+          .join(","),
       )
       .join("\n");
 
@@ -128,8 +204,9 @@ const Revenues = () => {
     });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `revenus_footbooking_${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `revenus_footbooking_${periodFilter}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
+    toast.success("Fichier Excel généré avec succès");
   };
 
   const handleExportPDF = async () => {
@@ -144,22 +221,33 @@ const Revenues = () => {
       const doc = new jsPDF();
 
       // En-tête du document
-      doc.setFontSize(22);
+      doc.setFontSize(14, "bold", "italic");
       doc.setTextColor(35, 26, 16); // #231a10
-      doc.text("FOOTBOOKING - RAPPORT FINANCIER", 14, 22);
+      const periodLabels = {
+        all: "TOUTES PÉRIODES",
+        day: "AUJOURD'HUI",
+        week: "CETTE SEMAINE",
+        month: "CE MOIS",
+      };
+      doc.text(
+        `FOOTBOOKING - RAPPORT FINANCIER (${periodLabels[periodFilter]})
+        `,
+        14,
+        22,
+      );
 
       doc.setFontSize(11);
       doc.setTextColor(100);
       doc.text(
         `Généré le : ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}`,
-        14,
+        12,
         32,
       );
 
       // Résumé des totaux
       doc.setFont("helvetica", "bold");
       doc.setTextColor(35, 26, 16);
-      const total = (summary.subTotal + summary.matchTotal).toLocaleString();
+      const total = formatAmount(summary.subTotal + summary.matchTotal);
       doc.text(`TOTAL DES ENCAISSEMENTS : ${total} CFA`, 14, 42);
 
       doc.setDrawColor(242, 127, 13); // Couleur primaire
@@ -169,14 +257,17 @@ const Revenues = () => {
       const tableData = transactions.map((t) => [
         String(t.id ?? "N/A").substring(0, 8),
         t.client,
-        `${t.amount.toLocaleString()} CFA`,
+        t.field,
+        `${formatAmount(t.amount)} CFA`,
         t.date,
         t.type === "subscription" ? "Abonnement" : "Match Unique",
         t.status.toUpperCase(),
       ]);
 
       autoTable(doc, {
-        head: [["ID", "Client", "Montant", "Date", "Type", "Statut"]],
+        head: [
+          ["ID", "Client", "Terrain", "Montant", "Date", "Type", "Statut"],
+        ],
         body: tableData,
         startY: 55,
         theme: "striped",
@@ -196,7 +287,7 @@ const Revenues = () => {
       });
 
       doc.save(
-        `rapport_revenus_footbooking_${new Date().toISOString().split("T")[0]}.pdf`,
+        `rapport_revenus_footbooking_${periodFilter}_${new Date().toISOString().split("T")[0]}.pdf`,
       );
       toast.success("PDF généré avec succès");
     } catch (error) {
@@ -206,43 +297,65 @@ const Revenues = () => {
   };
 
   return (
-    <div className="flex flex-col gap-8 pb-20 relative">
+    <div className="flex flex-col gap-6 md:gap-8 pb-20 relative">
       {/* Recapitulatif des Revenus */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+        <div className="bg-[#2c241b] p-5 md:p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform hidden xs:block">
             <span className="material-symbols-outlined text-6xl text-blue-400">
               autorenew
             </span>
           </div>
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
+          <span className="text-[#cbad90] text-[10px] md:text-xs font-bold uppercase tracking-widest">
             Total Abonnements
+            {periodFilter !== "all" && (
+              <span className="text-primary ml-1 md:ml-2">
+                (
+                {periodFilter === "day"
+                  ? "Aujourd'hui"
+                  : periodFilter === "week"
+                    ? "Semaine"
+                    : "Mois"}
+                )
+              </span>
+            )}
           </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none">
-              {summary.subTotal.toLocaleString()}
+          <div className="flex items-end gap-1.5 md:gap-2">
+            <h3 className="text-2xl md:text-3xl font-black text-white leading-none">
+              {formatAmount(summary.subTotal)}
             </h3>
-            <span className="text-primary text-sm font-bold">CFA</span>
+            <span className="text-primary text-xs md:text-sm font-bold">CFA</span>
           </div>
           <p className="text-[#cbad90] text-[10px] font-medium mt-1">
             Revenus récurrents mensuels
           </p>
         </div>
 
-        <div className="bg-[#2c241b] p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+        <div className="bg-[#2c241b] p-5 md:p-6 rounded-3xl border border-[#493622] flex flex-col gap-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform hidden xs:block">
             <span className="material-symbols-outlined text-6xl text-primary">
               sports_soccer
             </span>
           </div>
-          <span className="text-[#cbad90] text-xs font-bold uppercase tracking-widest">
+          <span className="text-[#cbad90] text-[10px] md:text-xs font-bold uppercase tracking-widest">
             Total Matchs Uniques
+            {periodFilter !== "all" && (
+              <span className="text-primary ml-1 md:ml-2">
+                (
+                {periodFilter === "day"
+                  ? "Aujourd'hui"
+                  : periodFilter === "week"
+                    ? "Semaine"
+                    : "Mois"}
+                )
+              </span>
+            )}
           </span>
-          <div className="flex items-end gap-2">
-            <h3 className="text-3xl font-black text-white leading-none">
-              {summary.matchTotal.toLocaleString()}
+          <div className="flex items-end gap-1.5 md:gap-2">
+            <h3 className="text-2xl md:text-3xl font-black text-white leading-none">
+              {formatAmount(summary.matchTotal)}
             </h3>
-            <span className="text-primary text-sm font-bold">CFA</span>
+            <span className="text-primary text-xs md:text-sm font-bold">CFA</span>
           </div>
           <p className="text-[#cbad90] text-[10px] font-medium mt-1">
             Revenus des réservations ponctuelles
@@ -251,25 +364,65 @@ const Revenues = () => {
       </div>
 
       {/* Header avec bouton d'export */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col">
-          <h2 className="text-white text-3xl font-black italic tracking-tight">
+          <h2 className="text-white text-2xl md:text-3xl font-black italic tracking-tight">
             Historique des Revenus
           </h2>
-          <p className="text-[#cbad90] text-sm mt-1">
+          <p className="text-[#cbad90] text-xs md:text-sm mt-1">
             Suivez l'ensemble de vos encaissements en temps réel
           </p>
         </div>
-        <div className="">
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportExcel}
+            className="flex-1 xs:flex-none bg-green-600 text-[11px] md:text-sm text-white px-3 md:px-4 py-2.5 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg"
+          >
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">
+              description
+            </span>
+            <span>Excel</span>
+          </button>
           <button
             onClick={handleExportPDF}
-            className="bg-primary text-sm text-[#231a10] px-4 py-2 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center justify-center gap-1 active:scale-95 shadow-lg flex-1"
+            className="flex-1 xs:flex-none bg-primary text-[11px] md:text-sm text-[#231a10] px-3 md:px-4 py-2.5 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(242,127,13,0.4)] transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg"
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[18px] md:text-[20px]">
               picture_as_pdf
             </span>
-            Exporter
+            <span>PDF</span>
           </button>
+        </div>
+      </div>
+
+      {/* Filtres de période */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col">
+          <h3 className="text-white text-lg font-bold">Filtrer par période</h3>
+          <p className="text-[#cbad90] text-sm">
+            Choisissez la période pour afficher les revenus
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { key: "all", label: "Tout", icon: "calendar_view_month" },
+            { key: "day", label: "Aujourd'hui", icon: "today" },
+            { key: "week", label: "Cette semaine", icon: "date_range" },
+            { key: "month", label: "Ce mois", icon: "calendar_month" },
+          ].map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => setPeriodFilter(key)}
+              className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-2 active:scale-95 shadow-lg ${
+                periodFilter === key
+                  ? "bg-primary text-[#231a10] shadow-[0_0_20px_rgba(242,127,13,0.4)]"
+                  : "bg-[#2c241b] text-white border border-[#493622] hover:border-primary/50"
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">{icon}</span>
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -348,7 +501,7 @@ const Revenues = () => {
                     Montant encaissé
                   </p>
                   <p className="text-white text-2xl font-black tracking-tighter">
-                    {tx.amount.toLocaleString()}{" "}
+                    {formatAmount(tx.amount)}{" "}
                     <span className="text-primary text-xs ml-0.5 uppercase">
                       CFA
                     </span>
